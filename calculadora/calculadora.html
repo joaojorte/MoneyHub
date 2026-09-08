@@ -16,7 +16,13 @@
 
     <header class="app-header">
       <a href="../app/app.html" class="logo">Money<span class="dot">Hub</span></a>
-      <button type="button" id="limpar-dados" class="btn-limpar">Limpar dados</button>
+      <div class="header-actions">
+        <div id="auth-user-bar" class="auth-user-bar hidden">
+          <span id="user-email-display" class="user-email-badge"></span>
+          <button type="button" id="btn-signout" class="btn-signout" title="Encerrar sessão">Sair</button>
+        </div>
+        <button type="button" id="limpar-dados" class="btn-limpar hidden">Limpar dados</button>
+      </div>
     </header>
 
     <nav class="nav-tabs" role="tablist" aria-label="Navegação entre módulos">

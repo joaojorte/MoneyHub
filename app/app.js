@@ -7,8 +7,8 @@
   'use strict';
 
   // --- Configuração Supabase & Nuvem ---
-  const SUPABASE_URL = window.SUPABASE_URL || 'https://sua-url-supabase.supabase.co';
-  const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'sua-chave-anon-publica';
+  const SUPABASE_URL = window.SUPABASE_URL || 'https://sywvuaugyuxjhvpgmvxz.supabase.co';
+  const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'sb_publishable_kIPPe6HSm1gXNE7CJXZ9Ug_KbCgbg8J';
   const USUARIO_ID = 'meu-cofre-secreto';
   const TABELA_NUVEM = 'moneyhub_nuvem';
 

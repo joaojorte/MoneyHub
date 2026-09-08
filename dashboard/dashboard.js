@@ -524,6 +524,39 @@
     });
   }
 
+  // --- Renderização Completa do Dashboard (Sincronização em Tempo Real) ---
+  function renderizarTudo() {
+    const activeEl = document.activeElement;
+
+    if (projecaoTaxaInput && activeEl !== projecaoTaxaInput) {
+      projecaoTaxaInput.value = state.taxaProjecao || '0.8';
+    }
+    if (projecaoAnosInput && activeEl !== projecaoAnosInput) {
+      projecaoAnosInput.value = state.anosProjecao || '10';
+    }
+    if (projecaoPmtInput && activeEl !== projecaoPmtInput) {
+      if (state.usuarioEditouAporteFuturo && state.aporteFuturoManual) {
+        projecaoPmtInput.value = state.aporteFuturoManual;
+      } else {
+        const media = calcularMediaHistoricaAporte();
+        projecaoPmtInput.value = media > 0 ? formatarBRL(media) : (state.investimentoTotalAtual > 0 ? formatarBRL(state.investimentoTotalAtual) : '');
+      }
+    }
+
+    atualizarDashboard();
+    atualizarDisplayPatrimonioAtual();
+    renderizarProjecao();
+  }
+
+  window.renderizarTudo = renderizarTudo;
+  window.atualizarDashboard = atualizarDashboard;
+  window.atualizarGraficos = atualizarDashboard;
+  window.renderizarGraficos = renderizarGraficos;
+
+  if (window.MoneyHub && typeof window.MoneyHub.on === 'function') {
+    window.MoneyHub.on('dadosAtualizados', renderizarTudo);
+  }
+
   // --- Inicialização ao Carregar a Página ---
   document.addEventListener('DOMContentLoaded', async () => {
     inicializarDOM();

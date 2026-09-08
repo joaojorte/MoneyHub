@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MoneyHub — Calculadora Financeira Pessoal</title>
+<link rel="stylesheet" href="../app/app.css">
+<link rel="stylesheet" href="calculadora.css">
+<script src="../app/app.js" defer></script>
+<script src="calculadora.js" defer></script>
+</head>
+<body>
+
+  <div class="app">
+
+    <header class="app-header">
+      <a href="../app/app.html" class="logo">Money<span class="dot">Hub</span></a>
+      <button type="button" id="limpar-dados" class="btn-limpar">Limpar dados</button>
+    </header>
+
+    <nav class="nav-tabs" role="tablist" aria-label="Navegação entre módulos">
+      <a href="calculadora.html" class="nav-tab active" role="tab" aria-selected="true">Calculadora</a>
+      <a href="../dashboard/dashboard.html" class="nav-tab" role="tab" aria-selected="false">Dashboard</a>
+    </nav>
+
+    <div id="aba-calculadora">
+
+      <section class="display-panel" aria-label="Resultado: livre para gastar">
+        <span class="display-label">Livre para gastar</span>
+        <div class="display-value">
+          <span class="currency-symbol">R$</span>
+          <span class="digits">0,00</span>
+        </div>
+        <p class="display-sub">Total de Entradas − Total de Saídas − Investimento − Reserva</p>
+      </section>
+
+      <main class="cards-grid">
+
+        <section class="card card-income" aria-labelledby="income-title">
+          <div class="card-header">
+            <span class="card-icon">+</span>
+            <h2 id="income-title">Entradas</h2>
+          </div>
+
+          <form id="form-entrada" class="form-lancamento" novalidate>
+            <input
+              type="text"
+              id="entrada-descricao"
+              name="entrada-descricao"
+              class="form-lancamento-descricao"
+              placeholder="Descrição (ex.: Salário, Freela, Dividendos)"
+              aria-label="Descrição da entrada"
+              autocomplete="off"
+            >
+
+            <div class="form-lancamento-linha">
+              <div class="input-group form-lancamento-valor-group">
+                <span class="prefix">R$</span>
+                <input type="text" id="entrada-valor" name="entrada-valor" placeholder="0,00" inputmode="decimal" autocomplete="off" aria-label="Valor da entrada">
+              </div>
+
+              <select id="entrada-categoria" name="entrada-categoria" class="form-lancamento-categoria" aria-label="Categoria da entrada">
+                <option value="Salário">Salário</option>
+                <option value="Dividendos">Dividendos</option>
+                <option value="Rendimentos">Rendimentos</option>
+                <option value="Estorno/Devolução">Estorno/Devolução</option>
+                <option value="Outros" selected>Outros</option>
+              </select>
+            </div>
+
+            <div class="form-lancamento-acoes">
+              <input type="date" id="entrada-data" name="entrada-data" class="form-lancamento-data" aria-label="Data da entrada">
+              <button type="submit" id="incluir-entrada" class="btn-incluir">+ Incluir</button>
+            </div>
+          </form>
+
+          <ul id="historico-entradas" class="historico-lancamentos" aria-label="Histórico de entradas"></ul>
+        </section>
+
+        <section class="card card-expense" aria-labelledby="expense-title">
+          <div class="card-header">
+            <span class="card-icon">−</span>
+            <h2 id="expense-title">Saídas</h2>
+          </div>
+
+          <form id="form-saida" class="form-lancamento" novalidate>
+            <input
+              type="text"
+              id="saida-descricao"
+              name="saida-descricao"
+              class="form-lancamento-descricao"
+              placeholder="Descrição (ex.: Gasto com cinema)"
+              aria-label="Descrição da saída"
+              autocomplete="off"
+            >
+
+            <div class="form-lancamento-linha">
+              <div class="input-group form-lancamento-valor-group">
+                <span class="prefix">R$</span>
+                <input type="text" id="saida-valor" name="saida-valor" placeholder="0,00" inputmode="decimal" autocomplete="off" aria-label="Valor da saída">
+              </div>
+
+              <select id="saida-categoria" name="saida-categoria" class="form-lancamento-categoria" aria-label="Categoria da saída">
+                <option value="Alimentação">Alimentação</option>
+                <option value="Mercado">Mercado</option>
+                <option value="Transporte">Transporte</option>
+                <option value="Saúde">Saúde</option>
+                <option value="Educação">Educação</option>
+                <option value="Comunicação">Comunicação</option>
+                <option value="Compras">Compras</option>
+                <option value="Serviços">Serviços</option>
+                <option value="Transferências/Pagamentos pessoais">Transferências/Pagamentos pessoais</option>
+                <option value="Não identificado" selected>Não identificado</option>
+              </select>
+            </div>
+
+            <div class="form-lancamento-acoes">
+              <input type="date" id="saida-data" name="saida-data" class="form-lancamento-data" aria-label="Data da saída">
+              <button type="submit" id="incluir-saida" class="btn-incluir">+ Incluir</button>
+            </div>
+          </form>
+
+          <ul id="historico-saidas" class="historico-lancamentos" aria-label="Histórico de saídas"></ul>
+        </section>
+
+        <section class="card card-distribution" aria-labelledby="dist-title">
+          <div class="card-header">
+            <span class="card-icon">%</span>
+            <h2 id="dist-title">Distribuição</h2>
+          </div>
+
+          <div class="distribution-row">
+
+            <div class="field field-slider">
+              <div class="field-slider-head">
+                <label for="investimento-range">Investimentos</label>
+                <span class="field-value">
+                  <input type="number" id="investimento-num" min="0" max="100" step="1" value="20" inputmode="numeric" aria-label="Percentual de investimento">%
+                </span>
+              </div>
+              <input type="range" id="investimento-range" min="0" max="100" step="1" value="20" aria-label="Slider de percentual de investimento">
+
+              <div class="field aporte-extra">
+                <label for="aporte-extra">Aporte Extra</label>
+                <div class="input-group">
+                  <span class="prefix">R$</span>
+                  <input type="text" id="aporte-extra" name="aporte-extra" placeholder="0,00" inputmode="decimal" autocomplete="off">
+                </div>
+              </div>
+
+              <div class="mini-display" aria-label="Total investido: porcentagem do salário, aporte extra e 100% dos dividendos">
+                <span class="mini-display-label">total investido</span>
+                <div class="mini-display-value">
+                  <span class="mini-currency">R$</span>
+                  <span class="mini-digits" id="investimento-total-digits">0,00</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="field field-slider">
+              <div class="field-slider-head">
+                <label for="reserva-range">Reserva de Emergência</label>
+                <span class="field-value">
+                  <input type="number" id="reserva-num" min="0" max="100" step="1" value="10" inputmode="numeric" aria-label="Percentual de reserva de emergência">%
+                </span>
+              </div>
+              <input type="range" id="reserva-range" min="0" max="100" step="1" value="10" aria-label="Slider de percentual de reserva de emergência">
+              <div class="mini-display" aria-label="Valor estimado destinado à reserva de emergência">
+                <span class="mini-display-label">valor estimado</span>
+                <div class="mini-display-value">
+                  <span class="mini-currency">R$</span>
+                  <span class="mini-digits">0,00</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="distribuicao-efetivar-section">
+            <div class="distribuicao-efetivar-header">
+              <div>
+                <h3 class="distribuicao-subtitulo">Efetivar Aporte no Patrimônio</h3>
+                <p class="distribuicao-subdescricao">Salva o Total Investido atual no seu histórico real de patrimônio.</p>
+              </div>
+              <span class="distribuicao-acumulado-badge" id="investimento-acumulado-tag">Acumulado: R$ 0,00 (0 aportes)</span>
+            </div>
+
+            <div class="distribuicao-efetivar-linha">
+              <input type="date" id="investimento-data" name="investimento-data" class="form-lancamento-data" aria-label="Data do investimento">
+              <button type="button" id="btn-efetivar-investimento" class="btn-efetivar">+ Efetivar Investimento</button>
+            </div>
+            <p id="feedback-investimento" class="feedback-investimento hidden" role="status" aria-live="polite"></p>
+            <ul id="historico-investimentos-lista" class="historico-lancamentos historico-investimentos-lista" aria-label="Histórico de aportes efetivados"></ul>
+          </div>
+        </section>
+
+      </main>
+
+    </div>
+
+  </div>
+
+</body>
+</html>

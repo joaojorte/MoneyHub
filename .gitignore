@@ -1,0 +1,14 @@
+# Ambientes e Editores Locais
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sistema Operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs e Temporários
+*.log
+scratch/

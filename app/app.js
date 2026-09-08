@@ -160,9 +160,149 @@
       }));
   }
 
+  // --- Padrões de Categorias ---
+  const CATEGORIAS_ENTRADA_PADRAO_LISTA = ['Salário', 'Dividendos', 'Rendimentos', 'Estorno/Devolução', 'Outros'];
+  const CATEGORIAS_SAIDA_PADRAO_LISTA   = [
+    'Alimentação', 'Mercado', 'Transporte', 'Saúde', 'Educação',
+    'Comunicação', 'Compras', 'Serviços', 'Transferências/Pagamentos pessoais', 'Não identificado'
+  ];
+
+  // --- Controle de Sincronização & Realtime ---
+  let canalRealtime = null;
+  let estaAtualizandoRealtime = false;
+  let ultimoPacoteSalvoJSON = '';
+
+  function renderizarTudo() {
+    // 1. Notificar ouvintes no barramento de eventos interno
+    emit('dadosAtualizados', state);
+    emit('realtimeUpdate', state);
+
+    // 2. Disparar evento customizado no Window
+    try {
+      window.dispatchEvent(new CustomEvent('moneyhub:atualizar', { detail: state }));
+    } catch (e) {}
+
+    // 3. Executar funções de renderização globais disponíveis
+    if (typeof window.renderizarTudo === 'function' && window.renderizarTudo !== renderizarTudo) {
+      try { window.renderizarTudo(); } catch (e) { console.error(e); }
+    }
+    if (typeof window.atualizarDashboard === 'function') {
+      try { window.atualizarDashboard(); } catch (e) { console.error(e); }
+    }
+    if (typeof window.atualizarGraficos === 'function') {
+      try { window.atualizarGraficos(); } catch (e) { console.error(e); }
+    }
+    if (typeof window.renderizarGraficos === 'function') {
+      try { window.renderizarGraficos(); } catch (e) { console.error(e); }
+    }
+  }
+
+  function aplicarNovosDados(novosDados, novoHistorico) {
+    let dados = novosDados;
+    if (typeof dados === 'string') {
+      try { dados = JSON.parse(dados); } catch (e) { dados = {}; }
+    }
+    dados = (dados && typeof dados === 'object') ? dados : {};
+
+    let historico = novoHistorico;
+    if (typeof historico === 'string') {
+      try { historico = JSON.parse(historico); } catch (e) { historico = null; }
+    }
+    if (!historico && dados.historicoInvestimentos) {
+      historico = dados.historicoInvestimentos;
+    } else if (!historico && dados.historico) {
+      historico = dados.historico;
+    }
+
+    if (Array.isArray(dados.entradas)) {
+      state.entradas = sanitizarLancamentos(dados.entradas, CATEGORIAS_ENTRADA_PADRAO_LISTA, 'Outros');
+    }
+    if (Array.isArray(dados.saidas)) {
+      state.saidas = sanitizarLancamentos(dados.saidas, CATEGORIAS_SAIDA_PADRAO_LISTA, 'Não identificado');
+    }
+    if (Array.isArray(historico)) {
+      state.historicoInvestimentos = sanitizarInvestimentos(historico);
+    }
+
+    if (dados.percentualInvestimento !== undefined) {
+      state.percentualInvestimento = String(dados.percentualInvestimento);
+    }
+    if (dados.percentualReserva !== undefined) {
+      state.percentualReserva = String(dados.percentualReserva);
+    }
+    if (dados.aporteExtra !== undefined) {
+      state.aporteExtra = String(dados.aporteExtra);
+    }
+    if (dados.taxaProjecao !== undefined) {
+      state.taxaProjecao = String(dados.taxaProjecao);
+    }
+    if (dados.anosProjecao !== undefined) {
+      state.anosProjecao = String(dados.anosProjecao);
+    }
+    if (dados.aporteFuturoManual !== undefined) {
+      state.aporteFuturoManual = String(dados.aporteFuturoManual);
+    }
+    if (dados.usuarioEditouAporteFuturo !== undefined) {
+      state.usuarioEditouAporteFuturo = Boolean(dados.usuarioEditouAporteFuturo);
+    }
+    if (dados.investimentoTotalAtual !== undefined) {
+      state.investimentoTotalAtual = Number(dados.investimentoTotalAtual) || 0;
+    }
+  }
+
+  function processarAtualizacaoRealtime(payload) {
+    if (!payload || !payload.new) return;
+    if (payload.new.id && payload.new.id !== USUARIO_ID) return;
+
+    const novosDados = payload.new.dados;
+    const novoHistorico = payload.new.historico;
+
+    // Se os novos dados forem exatamente o que acabamos de salvar localmente, ignorar eco
+    if (novosDados) {
+      const novosDadosJSON = typeof novosDados === 'string' ? novosDados : JSON.stringify(novosDados);
+      if (novosDadosJSON === ultimoPacoteSalvoJSON) {
+        return;
+      }
+    }
+
+    estaAtualizandoRealtime = true;
+    try {
+      aplicarNovosDados(novosDados, novoHistorico);
+      renderizarTudo();
+    } catch (err) {
+      console.warn('MoneyHub (Realtime): Erro ao aplicar atualização:', err);
+    } finally {
+      estaAtualizandoRealtime = false;
+    }
+  }
+
+  function iniciarRealtime() {
+    if (!supabase || canalRealtime) return;
+
+    try {
+      canalRealtime = supabase
+        .channel('moneyhub_nuvem_realtime')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: TABELA_NUVEM,
+            filter: `id=eq.${USUARIO_ID}`
+          },
+          (payload) => {
+            processarAtualizacaoRealtime(payload);
+          }
+        )
+        .subscribe();
+    } catch (err) {
+      console.warn('MoneyHub (Realtime): Erro ao configurar canal:', err);
+    }
+  }
+
   // --- Persistência em Nuvem (Supabase) ---
   async function salvarDados() {
-    if (!supabase) return;
+    if (!supabase || estaAtualizandoRealtime) return;
     try {
       const pacote = {
         entradas: state.entradas,
@@ -176,6 +316,8 @@
         aporteFuturoManual: state.aporteFuturoManual,
         usuarioEditouAporteFuturo: state.usuarioEditouAporteFuturo
       };
+
+      ultimoPacoteSalvoJSON = JSON.stringify(pacote);
 
       const { error } = await supabase
         .from(TABELA_NUVEM)
@@ -228,15 +370,17 @@
       if (error) {
         console.warn('MoneyHub (Supabase): Erro ao carregar dados:', error.message);
         redefinirPadroes();
+        iniciarRealtime();
         return state;
       }
 
       if (data) {
         const dados = (data.dados && typeof data.dados === 'object') ? data.dados : data;
+        const historico = data.historico || (dados && (dados.historicoInvestimentos || dados.historico));
 
-        state.entradas = sanitizarLancamentos(dados.entradas, categoriasEntrada, categoriaEntradaPadrao);
-        state.saidas   = sanitizarLancamentos(dados.saidas, categoriasSaida, categoriaSaidaPadrao);
-        state.historicoInvestimentos = sanitizarInvestimentos(dados.historicoInvestimentos);
+        state.entradas = sanitizarLancamentos(dados.entradas, categoriasEntrada.length ? categoriasEntrada : CATEGORIAS_ENTRADA_PADRAO_LISTA, categoriaEntradaPadrao);
+        state.saidas   = sanitizarLancamentos(dados.saidas, categoriasSaida.length ? categoriasSaida : CATEGORIAS_SAIDA_PADRAO_LISTA, categoriaSaidaPadrao);
+        state.historicoInvestimentos = sanitizarInvestimentos(historico || dados.historicoInvestimentos);
         state.percentualInvestimento = String(dados.percentualInvestimento ?? PERCENTUAL_INVESTIMENTO_PADRAO);
         state.percentualReserva      = String(dados.percentualReserva ?? PERCENTUAL_RESERVA_PADRAO);
         state.aporteExtra            = String(dados.aporteExtra || '');
@@ -247,9 +391,13 @@
       } else {
         redefinirPadroes();
       }
+
+      // Inicializa escuta ativa em tempo real logo após carregar os dados iniciais
+      iniciarRealtime();
     } catch (err) {
       console.warn('MoneyHub: Falha de rede ao carregar dados:', err);
       redefinirPadroes();
+      iniciarRealtime();
     }
 
     return state;
@@ -336,8 +484,14 @@
     carregarDados,
     limparDados,
     supabase,
-    USUARIO_ID
+    USUARIO_ID,
+    iniciarRealtime,
+    renderizarTudo
   };
+
+  if (typeof window.renderizarTudo !== 'function') {
+    window.renderizarTudo = renderizarTudo;
+  }
 
   document.addEventListener('DOMContentLoaded', inicializarBotaoLimpar);
 

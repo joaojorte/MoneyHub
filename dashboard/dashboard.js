@@ -525,9 +525,9 @@
   }
 
   // --- Inicialização ao Carregar a Página ---
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     inicializarDOM();
-    carregarDados();
+    await carregarDados();
 
     projecaoTaxaInput.value = state.taxaProjecao || '0.8';
     projecaoAnosInput.value = state.anosProjecao || '10';

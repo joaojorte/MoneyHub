@@ -9,8 +9,8 @@
   // --- Configuração Supabase & Nuvem ---
   const SUPABASE_URL = window.SUPABASE_URL || 'https://sywvuaugyuxjhvpgmvxz.supabase.co';
   const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'sb_publishable_kIPPe6HSm1gXNE7CJXZ9Ug_KbCgbg8J';
-  const USUARIO_ID = 'meu-cofre-secreto';
   const TABELA_NUVEM = 'moneyhub_nuvem';
+  let currentUser = null;
 
   // Inicialização do cliente Supabase no escopo global
   const supabase = (typeof window.supabase !== 'undefined' && window.supabase.createClient)
@@ -180,7 +180,7 @@
     if (typeof BroadcastChannel !== 'undefined') {
       localBroadcast = new BroadcastChannel('moneyhub_simultaneo_sync');
       localBroadcast.onmessage = function (ev) {
-        if (ev && ev.data && ev.data.clienteId !== MEU_CLIENTE_ID) {
+        if (ev && ev.data && currentUser && ev.data.user_id === currentUser.id && ev.data.clienteId !== MEU_CLIENTE_ID) {
           processarAtualizacaoRealtime({ new: ev.data });
         }
       };
@@ -192,12 +192,298 @@
     if (e.key === 'moneyhub_sync_event' && e.newValue) {
       try {
         const pacote = JSON.parse(e.newValue);
-        if (pacote && pacote.clienteId !== MEU_CLIENTE_ID) {
+        if (pacote && currentUser && pacote.user_id === currentUser.id && pacote.clienteId !== MEU_CLIENTE_ID) {
           processarAtualizacaoRealtime({ new: pacote });
         }
       } catch (err) {}
     }
   });
+
+  // --- Funções do Supabase Auth ---
+  async function signIn(email, password) {
+    if (!supabase) throw new Error('Cliente Supabase indisponível.');
+    return await supabase.auth.signInWithPassword({ email, password });
+  }
+
+  async function signUp(email, password) {
+    if (!supabase) throw new Error('Cliente Supabase indisponível.');
+    return await supabase.auth.signUp({ email, password });
+  }
+
+  async function signOut() {
+    if (!supabase) return;
+    return await supabase.auth.signOut();
+  }
+
+  async function obterUsuarioAtual() {
+    if (currentUser) return currentUser;
+    if (!supabase) return null;
+    try {
+      const { data } = await supabase.auth.getUser();
+      currentUser = data && data.user ? data.user : null;
+      return currentUser;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // --- Controle de Interface & Telas de Autenticação ---
+  function alternarVisibilidadeApp(autenticado, userEmail = '') {
+    const authScreen = document.getElementById('auth-screen');
+    const navTabs = document.querySelector('.nav-tabs');
+    const abaCalculadora = document.getElementById('aba-calculadora');
+    const abaDashboard = document.getElementById('aba-dashboard');
+    const moduloDashboard = document.getElementById('modulo-dashboard') || document.querySelector('.dashboard-content') || document.querySelector('main.app-landing');
+    const btnLimpar = document.getElementById('limpar-dados');
+    const authUserBar = document.getElementById('auth-user-bar');
+    const userEmailDisplay = document.getElementById('user-email-display');
+
+    if (autenticado) {
+      if (authScreen) authScreen.classList.add('hidden');
+      if (navTabs) navTabs.classList.remove('hidden');
+      if (abaCalculadora) abaCalculadora.classList.remove('hidden');
+      if (abaDashboard) abaDashboard.classList.remove('hidden');
+      if (moduloDashboard) moduloDashboard.classList.remove('hidden');
+      if (btnLimpar) btnLimpar.classList.remove('hidden');
+      if (authUserBar) authUserBar.classList.remove('hidden');
+      if (userEmailDisplay) userEmailDisplay.textContent = userEmail || (currentUser ? currentUser.email : '');
+    } else {
+      if (authScreen) authScreen.classList.remove('hidden');
+      if (navTabs) navTabs.classList.add('hidden');
+      if (abaCalculadora) abaCalculadora.classList.add('hidden');
+      if (abaDashboard) abaDashboard.classList.add('hidden');
+      if (moduloDashboard) moduloDashboard.classList.add('hidden');
+      if (btnLimpar) btnLimpar.classList.add('hidden');
+      if (authUserBar) authUserBar.classList.add('hidden');
+      if (userEmailDisplay) userEmailDisplay.textContent = '';
+    }
+  }
+
+  function criarTelaAutenticacaoHTML() {
+    if (document.getElementById('auth-screen')) return;
+
+    const container = document.createElement('div');
+    container.id = 'auth-screen';
+    container.className = 'auth-screen';
+    container.innerHTML = `
+      <div class="auth-card">
+        <div class="auth-card-header">
+          <div class="auth-logo">Money<span class="dot">Hub</span></div>
+          <h1 id="auth-title" class="auth-title">Acesse seu Cofre Pessoal</h1>
+          <p id="auth-subtitle" class="auth-subtitle">Entre com sua conta ou cadastre-se para sincronizar seus dados financeiros na nuvem com segurança.</p>
+        </div>
+
+        <div class="auth-tabs" role="tablist">
+          <button type="button" id="tab-login" class="auth-tab active" role="tab" aria-selected="true">Entrar</button>
+          <button type="button" id="tab-signup" class="auth-tab" role="tab" aria-selected="false">Criar Conta</button>
+        </div>
+
+        <form id="auth-form" class="auth-form" novalidate>
+          <div class="auth-field">
+            <label for="auth-email">E-mail</label>
+            <input type="email" id="auth-email" placeholder="seu@email.com" autocomplete="email" required>
+          </div>
+
+          <div class="auth-field">
+            <label for="auth-password">Senha</label>
+            <input type="password" id="auth-password" placeholder="Sua senha secreta (mínimo 6 caracteres)" autocomplete="current-password" required>
+          </div>
+
+          <div id="auth-confirm-group" class="auth-field hidden">
+            <label for="auth-confirm-password">Confirmar Senha</label>
+            <input type="password" id="auth-confirm-password" placeholder="Confirme sua senha" autocomplete="new-password">
+          </div>
+
+          <div id="auth-feedback" class="auth-feedback hidden" role="alert"></div>
+
+          <button type="submit" id="auth-submit-btn" class="btn-auth">
+            <span class="btn-auth-text">Entrar no MoneyHub</span>
+          </button>
+        </form>
+      </div>
+    `;
+
+    const appEl = document.querySelector('.app') || document.body;
+    const header = appEl.querySelector('.app-header');
+    if (header && header.nextSibling) {
+      appEl.insertBefore(container, header.nextSibling);
+    } else {
+      appEl.appendChild(container);
+    }
+  }
+
+  function configurarBarraUsuario() {
+    const header = document.querySelector('.app-header');
+    if (!header) return;
+
+    let actions = header.querySelector('.header-actions');
+    if (!actions) {
+      actions = document.createElement('div');
+      actions.className = 'header-actions';
+      const btnLimpar = document.getElementById('limpar-dados');
+      if (btnLimpar) {
+        btnLimpar.parentNode.insertBefore(actions, btnLimpar);
+        actions.appendChild(btnLimpar);
+      } else {
+        header.appendChild(actions);
+      }
+    }
+
+    if (!document.getElementById('auth-user-bar')) {
+      const userBar = document.createElement('div');
+      userBar.id = 'auth-user-bar';
+      userBar.className = 'auth-user-bar hidden';
+      userBar.innerHTML = `
+        <span id="user-email-display" class="user-email-badge"></span>
+        <button type="button" id="btn-signout" class="btn-signout" title="Encerrar sessão">Sair</button>
+      `;
+      actions.insertBefore(userBar, actions.firstChild);
+
+      const btnSignout = userBar.querySelector('#btn-signout');
+      if (btnSignout) {
+        btnSignout.addEventListener('click', async () => {
+          if (confirm('Deseja realmente sair da sua conta?')) {
+            await signOut();
+          }
+        });
+      }
+    }
+  }
+
+  function inicializarAutenticacaoUI() {
+    configurarBarraUsuario();
+    criarTelaAutenticacaoHTML();
+
+    const tabLogin = document.getElementById('tab-login');
+    const tabSignup = document.getElementById('tab-signup');
+    const confirmGroup = document.getElementById('auth-confirm-group');
+    const submitBtn = document.getElementById('auth-submit-btn');
+    const submitText = submitBtn ? submitBtn.querySelector('.btn-auth-text') : null;
+    const authForm = document.getElementById('auth-form');
+    const emailInput = document.getElementById('auth-email');
+    const passwordInput = document.getElementById('auth-password');
+    const confirmInput = document.getElementById('auth-confirm-password');
+    const feedbackEl = document.getElementById('auth-feedback');
+    const authTitle = document.getElementById('auth-title');
+
+    let modoAtual = 'login'; // 'login' | 'signup'
+
+    function exibirFeedback(mensagem, tipo = 'error') {
+      if (!feedbackEl) return;
+      feedbackEl.textContent = mensagem;
+      feedbackEl.className = 'auth-feedback ' + tipo;
+      feedbackEl.classList.remove('hidden');
+    }
+
+    function limparFeedback() {
+      if (!feedbackEl) return;
+      feedbackEl.textContent = '';
+      feedbackEl.className = 'auth-feedback hidden';
+    }
+
+    function setModo(modo) {
+      modoAtual = modo;
+      limparFeedback();
+
+      if (modo === 'login') {
+        tabLogin.classList.add('active');
+        tabLogin.setAttribute('aria-selected', 'true');
+        tabSignup.classList.remove('active');
+        tabSignup.setAttribute('aria-selected', 'false');
+        confirmGroup.classList.add('hidden');
+        if (submitText) submitText.textContent = 'Entrar no MoneyHub';
+        if (authTitle) authTitle.textContent = 'Acesse seu Cofre Pessoal';
+        passwordInput.setAttribute('autocomplete', 'current-password');
+      } else {
+        tabSignup.classList.add('active');
+        tabSignup.setAttribute('aria-selected', 'true');
+        tabLogin.classList.remove('active');
+        tabLogin.setAttribute('aria-selected', 'false');
+        confirmGroup.classList.remove('hidden');
+        if (submitText) submitText.textContent = 'Criar Minha Conta Grátis';
+        if (authTitle) authTitle.textContent = 'Crie sua Conta no MoneyHub';
+        passwordInput.setAttribute('autocomplete', 'new-password');
+      }
+    }
+
+    if (tabLogin) tabLogin.addEventListener('click', () => setModo('login'));
+    if (tabSignup) tabSignup.addEventListener('click', () => setModo('signup'));
+
+    if (authForm) {
+      authForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        limparFeedback();
+
+        const email = (emailInput.value || '').trim();
+        const password = passwordInput.value || '';
+        const confirmPassword = confirmInput ? confirmInput.value : '';
+
+        if (!email || !email.includes('@')) {
+          exibirFeedback('Informe um endereço de e-mail válido.', 'error');
+          emailInput.focus();
+          return;
+        }
+
+        if (password.length < 6) {
+          exibirFeedback('A senha deve conter no mínimo 6 caracteres.', 'error');
+          passwordInput.focus();
+          return;
+        }
+
+        if (modoAtual === 'signup' && password !== confirmPassword) {
+          exibirFeedback('As senhas não conferem. Digite a mesma senha nos dois campos.', 'error');
+          confirmInput.focus();
+          return;
+        }
+
+        submitBtn.disabled = true;
+        if (submitText) submitText.textContent = modoAtual === 'login' ? 'Entrando...' : 'Criando conta...';
+
+        try {
+          if (modoAtual === 'login') {
+            const { data, error } = await signIn(email, password);
+            if (error) {
+              if (error.message.includes('Invalid login credentials')) {
+                exibirFeedback('E-mail ou senha incorretos. Verifique suas credenciais.', 'error');
+              } else if (error.message.includes('Email not confirmed')) {
+                exibirFeedback('Seu e-mail ainda não foi confirmado. Verifique sua caixa de entrada.', 'error');
+              } else {
+                exibirFeedback(error.message || 'Erro ao entrar na conta.', 'error');
+              }
+            } else if (data && data.user) {
+              currentUser = data.user;
+              alternarVisibilidadeApp(true, currentUser.email);
+              await carregarDados();
+              renderizarTudo();
+            }
+          } else {
+            const { data, error } = await signUp(email, password);
+            if (error) {
+              if (error.message.includes('User already registered')) {
+                exibirFeedback('Este e-mail já está cadastrado. Clique na aba "Entrar".', 'error');
+              } else {
+                exibirFeedback(error.message || 'Erro ao cadastrar conta.', 'error');
+              }
+            } else if (data && data.user) {
+              currentUser = data.user;
+              if (data.session) {
+                alternarVisibilidadeApp(true, currentUser.email);
+                await carregarDados();
+                renderizarTudo();
+              } else {
+                exibirFeedback('Conta criada com sucesso! Se solicitado, confirme o link enviado ao seu e-mail para ativar.', 'success');
+              }
+            }
+          }
+        } catch (err) {
+          exibirFeedback(err.message || 'Falha de comunicação com o servidor.', 'error');
+        } finally {
+          submitBtn.disabled = false;
+          if (submitText) submitText.textContent = modoAtual === 'login' ? 'Entrar no MoneyHub' : 'Criar Minha Conta Grátis';
+        }
+      });
+    }
+  }
 
   function renderizarTudo() {
     // 1. Notificar ouvintes no barramento de eventos interno do MoneyHub
@@ -279,7 +565,8 @@
 
   function processarAtualizacaoRealtime(payload) {
     if (!payload || !payload.new) return;
-    if (payload.new.id && payload.new.id !== USUARIO_ID) return;
+    if (!currentUser) return;
+    if (payload.new.user_id && payload.new.user_id !== currentUser.id) return;
     if (payload.new.clienteId && payload.new.clienteId === MEU_CLIENTE_ID) return;
 
     const novosDados = payload.new.dados;
@@ -307,31 +594,37 @@
     }
   }
 
-  function iniciarRealtime() {
-    if (!supabase || canalRealtime) return;
+  function iniciarRealtime(userId) {
+    if (!supabase || !userId) return;
+    if (canalRealtime) {
+      supabase.removeChannel(canalRealtime);
+      canalRealtime = null;
+    }
 
     try {
-      canalRealtime = supabase.channel('moneyhub_nuvem_realtime', {
+      const canalNome = 'moneyhub_user_' + userId;
+      canalRealtime = supabase.channel(canalNome, {
         config: {
           broadcast: { ack: false, self: false }
         }
       });
 
-      // 1. Escuta Broadcast Supabase (Transmissão simultânea entre diferentes computadores/celulares)
+      // 1. Escuta Broadcast Supabase (Transmissão simultânea entre diferentes computadores/celulares do mesmo usuário)
       canalRealtime.on('broadcast', { event: 'dados_sincronizados' }, (envelope) => {
         const dadosRecebidos = (envelope && envelope.payload) ? envelope.payload : envelope;
-        if (dadosRecebidos && dadosRecebidos.clienteId !== MEU_CLIENTE_ID) {
+        if (dadosRecebidos && dadosRecebidos.user_id === userId && dadosRecebidos.clienteId !== MEU_CLIENTE_ID) {
           processarAtualizacaoRealtime({ new: dadosRecebidos });
         }
       });
 
-      // 2. Escuta Postgres Changes (Transmissão via replicação nativa do PostgreSQL)
+      // 2. Escuta Postgres Changes filtrado exclusivamente pelo user_id do usuário conectado
       canalRealtime.on('postgres_changes', {
         event: '*',
         schema: 'public',
-        table: TABELA_NUVEM
+        table: TABELA_NUVEM,
+        filter: `user_id=eq.${userId}`
       }, (payload) => {
-        if (payload && payload.new && payload.new.id === USUARIO_ID) {
+        if (payload && payload.new && payload.new.user_id === userId) {
           if (payload.new.clienteId && payload.new.clienteId === MEU_CLIENTE_ID) return;
           processarAtualizacaoRealtime(payload);
         }
@@ -340,10 +633,10 @@
       canalRealtime.subscribe((status) => {
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           setTimeout(() => {
-            if (canalRealtime && supabase) {
+            if (canalRealtime && supabase && currentUser) {
               try { supabase.removeChannel(canalRealtime); } catch (e) {}
               canalRealtime = null;
-              iniciarRealtime();
+              iniciarRealtime(currentUser.id);
             }
           }, 3000);
         }
@@ -355,13 +648,13 @@
 
   // Checagem ativa e de foco para sincronização 100% à prova de falhas
   async function checarAtualizacoesNuvem() {
-    if (!supabase || estaAtualizandoRealtime || pollingAtivo) return;
+    if (!supabase || estaAtualizandoRealtime || pollingAtivo || !currentUser) return;
     pollingAtivo = true;
     try {
       const { data, error } = await supabase
         .from(TABELA_NUVEM)
         .select('*')
-        .eq('id', USUARIO_ID)
+        .eq('user_id', currentUser.id)
         .maybeSingle();
 
       if (!error && data) {
@@ -377,25 +670,25 @@
     }
   }
 
-  // Polling em background a cada 3 segundos
-  setInterval(checarAtualizacoesNuvem, 3000);
+  // Polling em background a cada 4 segundos para o usuário logado
+  setInterval(checarAtualizacoesNuvem, 4000);
 
   // Sincronização imediata ao reativar a aba ou focar na janela
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
+    if (document.visibilityState === 'visible' && currentUser) {
       checarAtualizacoesNuvem();
     }
   });
-  window.addEventListener('focus', checarAtualizacoesNuvem);
+  window.addEventListener('focus', () => {
+    if (currentUser) checarAtualizacoesNuvem();
+  });
 
-  // Iniciar conexão Realtime imediatamente
-  if (supabase) {
-    iniciarRealtime();
-  }
-
-  // --- Persistência em Nuvem (Supabase) ---
+  // --- Persistência em Nuvem (Supabase Multi-Usuário) ---
   async function salvarDados() {
     if (!supabase || estaAtualizandoRealtime) return;
+    const user = currentUser || (await obterUsuarioAtual());
+    if (!user) return;
+
     try {
       const pacote = {
         entradas: state.entradas,
@@ -411,7 +704,7 @@
       };
 
       const payloadSync = {
-        id: USUARIO_ID,
+        user_id: user.id,
         dados: pacote,
         historico: state.historicoInvestimentos,
         clienteId: MEU_CLIENTE_ID,
@@ -430,7 +723,7 @@
         localStorage.setItem('moneyhub_sync_event', JSON.stringify(payloadSync));
       } catch (e) {}
 
-      // 3. Envio Simultâneo para outros dispositivos (Supabase WebSocket Broadcast)
+      // 3. Envio Simultâneo para outros dispositivos do usuário (Supabase WebSocket Broadcast)
       if (canalRealtime) {
         try {
           canalRealtime.send({
@@ -441,50 +734,48 @@
         } catch (e) {}
       }
 
-      // 4. Persistência permanente no banco de dados do Supabase
+      // 4. Persistência permanente no banco de dados do Supabase (com RLS: user_id = auth.uid())
       const { error } = await supabase
         .from(TABELA_NUVEM)
         .upsert({
-          id: USUARIO_ID,
+          user_id: user.id,
           dados: pacote,
           historico: state.historicoInvestimentos,
           updated_at: new Date().toISOString()
         });
 
       if (error) {
-        // Fallback caso a tabela aceite colunas no nível raiz
-        if (error.message && (error.message.includes('dados') || error.code === 'PGRST204')) {
-          const { error: fallbackErr } = await supabase
-            .from(TABELA_NUVEM)
-            .upsert({ id: USUARIO_ID, ...pacote });
-          if (fallbackErr) {
-            console.warn('MoneyHub (Supabase): Erro ao salvar dados:', fallbackErr.message);
-          }
-        } else {
-          console.warn('MoneyHub (Supabase): Erro ao salvar dados:', error.message);
-        }
+        console.warn('MoneyHub (Supabase): Erro ao salvar dados:', error.message);
       }
     } catch (err) {
       console.warn('MoneyHub: Erro de rede ao salvar na nuvem:', err);
     }
   }
 
-  async function carregarDados(categoriasEntrada = [], categoriaEntradaPadrao = 'Outros', categoriasSaida = [], categoriaSaidaPadrao = 'Não identificado') {
-    function redefinirPadroes() {
-      state.entradas = [];
-      state.saidas = [];
-      state.historicoInvestimentos = [];
-      state.percentualInvestimento = PERCENTUAL_INVESTIMENTO_PADRAO;
-      state.percentualReserva = PERCENTUAL_RESERVA_PADRAO;
-      state.aporteExtra = '';
-      state.taxaProjecao = TAXA_MENSAL_PADRAO;
-      state.anosProjecao = PRAZO_ANOS_PADRAO;
-      state.aporteFuturoManual = '';
-      state.usuarioEditouAporteFuturo = false;
-    }
+  function redefinirPadroes() {
+    state.entradas = [];
+    state.saidas = [];
+    state.historicoInvestimentos = [];
+    state.percentualInvestimento = PERCENTUAL_INVESTIMENTO_PADRAO;
+    state.percentualReserva = PERCENTUAL_RESERVA_PADRAO;
+    state.aporteExtra = '';
+    state.taxaProjecao = TAXA_MENSAL_PADRAO;
+    state.anosProjecao = PRAZO_ANOS_PADRAO;
+    state.aporteFuturoManual = '';
+    state.usuarioEditouAporteFuturo = false;
+    state.investimentoTotalAtual = 0;
+  }
 
+  async function carregarDados(categoriasEntrada = [], categoriaEntradaPadrao = 'Outros', categoriasSaida = [], categoriaSaidaPadrao = 'Não identificado') {
     if (!supabase) {
       redefinirPadroes();
+      return state;
+    }
+
+    const user = currentUser || (await obterUsuarioAtual());
+    if (!user) {
+      redefinirPadroes();
+      alternarVisibilidadeApp(false);
       return state;
     }
 
@@ -492,13 +783,13 @@
       const { data, error } = await supabase
         .from(TABELA_NUVEM)
         .select('*')
-        .eq('id', USUARIO_ID)
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (error) {
         console.warn('MoneyHub (Supabase): Erro ao carregar dados:', error.message);
         redefinirPadroes();
-        iniciarRealtime();
+        iniciarRealtime(user.id);
         return state;
       }
 
@@ -520,19 +811,21 @@
         redefinirPadroes();
       }
 
-      // Inicializa escuta ativa em tempo real logo após carregar os dados iniciais
-      iniciarRealtime();
+      // Inicializa escuta ativa em tempo real para o usuário conectado
+      iniciarRealtime(user.id);
     } catch (err) {
       console.warn('MoneyHub: Falha de rede ao carregar dados:', err);
       redefinirPadroes();
-      iniciarRealtime();
+      iniciarRealtime(user.id);
     }
 
     return state;
   }
 
   async function limparDados() {
-    if (!confirm('Deseja realmente limpar todos os dados cadastrados?')) return;
+    if (!confirm('Deseja realmente limpar todos os dados cadastrados no seu cofre?')) return;
+    const user = currentUser || (await obterUsuarioAtual());
+    if (!user) return;
 
     const pacoteVazio = {
       entradas: [],
@@ -549,40 +842,22 @@
 
     if (supabase) {
       try {
-        const { error } = await supabase
+        await supabase
           .from(TABELA_NUVEM)
-          .upsert({ id: USUARIO_ID, dados: pacoteVazio });
-
-        if (error) {
-          if (error.message && (error.message.includes('dados') || error.code === 'PGRST204')) {
-            const { error: fallbackErr } = await supabase
-              .from(TABELA_NUVEM)
-              .upsert({ id: USUARIO_ID, ...pacoteVazio });
-            if (fallbackErr) {
-              console.warn('MoneyHub (Supabase): Erro ao limpar dados:', fallbackErr.message);
-            }
-          } else {
-            console.warn('MoneyHub (Supabase): Erro ao limpar dados:', error.message);
-          }
-        }
+          .upsert({
+            user_id: user.id,
+            dados: pacoteVazio,
+            historico: [],
+            updated_at: new Date().toISOString()
+          });
       } catch (err) {
         console.warn('MoneyHub: Falha de rede ao limpar dados:', err);
       }
     }
 
-    state.entradas = [];
-    state.saidas = [];
-    state.historicoInvestimentos = [];
-    state.percentualInvestimento = PERCENTUAL_INVESTIMENTO_PADRAO;
-    state.percentualReserva = PERCENTUAL_RESERVA_PADRAO;
-    state.aporteExtra = '';
-    state.taxaProjecao = TAXA_MENSAL_PADRAO;
-    state.anosProjecao = PRAZO_ANOS_PADRAO;
-    state.aporteFuturoManual = '';
-    state.usuarioEditouAporteFuturo = false;
+    redefinirPadroes();
     state.investimentoTotalAtual = 0;
-
-    window.location.reload();
+    renderizarTudo();
   }
 
   function inicializarBotaoLimpar() {
@@ -590,6 +865,46 @@
     if (botaoLimpar) {
       botaoLimpar.addEventListener('click', limparDados);
     }
+  }
+
+  function configurarMonitoramentoSessao() {
+    if (!supabase) return;
+
+    // Checagem da sessão ativa inicial
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session && session.user) {
+        currentUser = session.user;
+        alternarVisibilidadeApp(true, currentUser.email);
+        carregarDados().then(() => renderizarTudo());
+      } else {
+        currentUser = null;
+        alternarVisibilidadeApp(false);
+      }
+    }).catch(() => {
+      currentUser = null;
+      alternarVisibilidadeApp(false);
+    });
+
+    // Ouvinte reativo para eventos de autenticação
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+        if (session && session.user) {
+          currentUser = session.user;
+          alternarVisibilidadeApp(true, currentUser.email);
+          await carregarDados();
+          renderizarTudo();
+        }
+      } else if (event === 'SIGNED_OUT') {
+        currentUser = null;
+        if (canalRealtime && supabase) {
+          try { supabase.removeChannel(canalRealtime); } catch (e) {}
+          canalRealtime = null;
+        }
+        redefinirPadroes();
+        renderizarTudo();
+        alternarVisibilidadeApp(false);
+      }
+    });
   }
 
   // --- Exportação Global ---
@@ -612,7 +927,10 @@
     carregarDados,
     limparDados,
     supabase,
-    USUARIO_ID,
+    signIn,
+    signUp,
+    signOut,
+    obterUsuarioAtual,
     iniciarRealtime,
     renderizarTudo
   };
@@ -621,6 +939,10 @@
     window.renderizarTudo = renderizarTudo;
   }
 
-  document.addEventListener('DOMContentLoaded', inicializarBotaoLimpar);
+  document.addEventListener('DOMContentLoaded', () => {
+    inicializarAutenticacaoUI();
+    inicializarBotaoLimpar();
+    configurarMonitoramentoSessao();
+  });
 
 })();

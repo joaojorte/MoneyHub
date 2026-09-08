@@ -343,6 +343,57 @@
     salvarDados();
   }
 
+  // --- Renderização Completa (Sincronização em Tempo Real) ---
+  function renderizarTudo() {
+    const activeEl = document.activeElement;
+
+    if (aporteExtraInput && activeEl !== aporteExtraInput) {
+      aporteExtraInput.value = state.aporteExtra || '';
+    }
+    if (investimentoNum && activeEl !== investimentoNum && activeEl !== investimentoRange) {
+      investimentoNum.value   = state.percentualInvestimento;
+      investimentoRange.value = state.percentualInvestimento;
+    }
+    if (reservaNum && activeEl !== reservaNum && activeEl !== reservaRange) {
+      reservaNum.value   = state.percentualReserva;
+      reservaRange.value = state.percentualReserva;
+    }
+
+    renderizarHistoricoEntradas();
+    renderizarHistoricoSaidas();
+    renderizarHistoricoInvestimentos();
+
+    // Recalcula totais na interface sem disparar novo salvamento na nuvem
+    const somaTotalEntradas = somarLancamentos(state.entradas);
+    const totalSalario      = somarPorCategoria(state.entradas, 'Salário');
+    const totalDividendos   = somarPorCategoria(state.entradas, 'Dividendos');
+    const somaTotalSaidas   = somarLancamentos(state.saidas);
+
+    const percentualInvestimento = paraPercentual(investimentoNum.value);
+    const aporteExtra            = paraNumeroMonetario(aporteExtraInput.value);
+    const percentualReserva      = paraPercentual(reservaNum.value);
+
+    const somaEntradasComuns          = somaTotalEntradas - totalDividendos;
+    const valorInvestimentoPercentual = (totalSalario * percentualInvestimento) / 100;
+    const investimentoTotal           = valorInvestimentoPercentual + aporteExtra + totalDividendos;
+    const valorReserva                = (totalSalario * percentualReserva) / 100;
+
+    state.investimentoTotalAtual = investimentoTotal;
+
+    const livreParaGastar = evitarNegativoZero(
+      somaEntradasComuns - somaTotalSaidas - valorInvestimentoPercentual - aporteExtra - valorReserva
+    );
+
+    if (resultadoDigits)    resultadoDigits.textContent    = formatarBRL(livreParaGastar);
+    if (investimentoDigits) investimentoDigits.textContent = formatarBRL(investimentoTotal);
+    if (reservaDigits)      reservaDigits.textContent      = formatarBRL(valorReserva);
+  }
+
+  window.renderizarTudo = renderizarTudo;
+  if (window.MoneyHub && typeof window.MoneyHub.on === 'function') {
+    window.MoneyHub.on('dadosAtualizados', renderizarTudo);
+  }
+
   // --- Inicialização ao Carregar a Página ---
   document.addEventListener('DOMContentLoaded', async () => {
     inicializarDOM();

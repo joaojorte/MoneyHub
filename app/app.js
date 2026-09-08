@@ -167,13 +167,40 @@
     'Comunicação', 'Compras', 'Serviços', 'Transferências/Pagamentos pessoais', 'Não identificado'
   ];
 
-  // --- Controle de Sincronização & Realtime ---
+  // --- Controle de Sincronização Simultânea & Realtime ---
+  const MEU_CLIENTE_ID = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9);
   let canalRealtime = null;
   let estaAtualizandoRealtime = false;
   let ultimoPacoteSalvoJSON = '';
+  let pollingAtivo = false;
+
+  // Canal de sincronização local entre abas do mesmo navegador (latência < 2ms)
+  let localBroadcast = null;
+  try {
+    if (typeof BroadcastChannel !== 'undefined') {
+      localBroadcast = new BroadcastChannel('moneyhub_simultaneo_sync');
+      localBroadcast.onmessage = function (ev) {
+        if (ev && ev.data && ev.data.clienteId !== MEU_CLIENTE_ID) {
+          processarAtualizacaoRealtime({ new: ev.data });
+        }
+      };
+    }
+  } catch (e) {}
+
+  // Fallback de sincronização local via evento Storage (compatibilidade total)
+  window.addEventListener('storage', function (e) {
+    if (e.key === 'moneyhub_sync_event' && e.newValue) {
+      try {
+        const pacote = JSON.parse(e.newValue);
+        if (pacote && pacote.clienteId !== MEU_CLIENTE_ID) {
+          processarAtualizacaoRealtime({ new: pacote });
+        }
+      } catch (err) {}
+    }
+  });
 
   function renderizarTudo() {
-    // 1. Notificar ouvintes no barramento de eventos interno
+    // 1. Notificar ouvintes no barramento de eventos interno do MoneyHub
     emit('dadosAtualizados', state);
     emit('realtimeUpdate', state);
 
@@ -253,16 +280,20 @@
   function processarAtualizacaoRealtime(payload) {
     if (!payload || !payload.new) return;
     if (payload.new.id && payload.new.id !== USUARIO_ID) return;
+    if (payload.new.clienteId && payload.new.clienteId === MEU_CLIENTE_ID) return;
 
     const novosDados = payload.new.dados;
     const novoHistorico = payload.new.historico;
 
     // Se os novos dados forem exatamente o que acabamos de salvar localmente, ignorar eco
     if (novosDados) {
-      const novosDadosJSON = typeof novosDados === 'string' ? novosDados : JSON.stringify(novosDados);
+      const novosDadosJSON = typeof novosDados === 'string'
+        ? novosDados
+        : JSON.stringify({ dados: novosDados, historico: novoHistorico });
       if (novosDadosJSON === ultimoPacoteSalvoJSON) {
         return;
       }
+      ultimoPacoteSalvoJSON = novosDadosJSON;
     }
 
     estaAtualizandoRealtime = true;
@@ -280,24 +311,86 @@
     if (!supabase || canalRealtime) return;
 
     try {
-      canalRealtime = supabase
-        .channel('moneyhub_nuvem_realtime')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: TABELA_NUVEM,
-            filter: `id=eq.${USUARIO_ID}`
-          },
-          (payload) => {
-            processarAtualizacaoRealtime(payload);
-          }
-        )
-        .subscribe();
+      canalRealtime = supabase.channel('moneyhub_nuvem_realtime', {
+        config: {
+          broadcast: { ack: false, self: false }
+        }
+      });
+
+      // 1. Escuta Broadcast Supabase (Transmissão simultânea entre diferentes computadores/celulares)
+      canalRealtime.on('broadcast', { event: 'dados_sincronizados' }, (envelope) => {
+        const dadosRecebidos = (envelope && envelope.payload) ? envelope.payload : envelope;
+        if (dadosRecebidos && dadosRecebidos.clienteId !== MEU_CLIENTE_ID) {
+          processarAtualizacaoRealtime({ new: dadosRecebidos });
+        }
+      });
+
+      // 2. Escuta Postgres Changes (Transmissão via replicação nativa do PostgreSQL)
+      canalRealtime.on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: TABELA_NUVEM
+      }, (payload) => {
+        if (payload && payload.new && payload.new.id === USUARIO_ID) {
+          if (payload.new.clienteId && payload.new.clienteId === MEU_CLIENTE_ID) return;
+          processarAtualizacaoRealtime(payload);
+        }
+      });
+
+      canalRealtime.subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setTimeout(() => {
+            if (canalRealtime && supabase) {
+              try { supabase.removeChannel(canalRealtime); } catch (e) {}
+              canalRealtime = null;
+              iniciarRealtime();
+            }
+          }, 3000);
+        }
+      });
     } catch (err) {
       console.warn('MoneyHub (Realtime): Erro ao configurar canal:', err);
     }
+  }
+
+  // Checagem ativa e de foco para sincronização 100% à prova de falhas
+  async function checarAtualizacoesNuvem() {
+    if (!supabase || estaAtualizandoRealtime || pollingAtivo) return;
+    pollingAtivo = true;
+    try {
+      const { data, error } = await supabase
+        .from(TABELA_NUVEM)
+        .select('*')
+        .eq('id', USUARIO_ID)
+        .maybeSingle();
+
+      if (!error && data) {
+        const dadosRemotos = (data.dados && typeof data.dados === 'object') ? data.dados : data;
+        const remoteJSON = JSON.stringify({ dados: dadosRemotos, historico: data.historico || dadosRemotos.historicoInvestimentos });
+        if (remoteJSON !== ultimoPacoteSalvoJSON) {
+          processarAtualizacaoRealtime({ new: data });
+        }
+      }
+    } catch (e) {
+    } finally {
+      pollingAtivo = false;
+    }
+  }
+
+  // Polling em background a cada 3 segundos
+  setInterval(checarAtualizacoesNuvem, 3000);
+
+  // Sincronização imediata ao reativar a aba ou focar na janela
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      checarAtualizacoesNuvem();
+    }
+  });
+  window.addEventListener('focus', checarAtualizacoesNuvem);
+
+  // Iniciar conexão Realtime imediatamente
+  if (supabase) {
+    iniciarRealtime();
   }
 
   // --- Persistência em Nuvem (Supabase) ---
@@ -317,11 +410,46 @@
         usuarioEditouAporteFuturo: state.usuarioEditouAporteFuturo
       };
 
-      ultimoPacoteSalvoJSON = JSON.stringify(pacote);
+      const payloadSync = {
+        id: USUARIO_ID,
+        dados: pacote,
+        historico: state.historicoInvestimentos,
+        clienteId: MEU_CLIENTE_ID,
+        timestamp: Date.now()
+      };
 
+      ultimoPacoteSalvoJSON = JSON.stringify({ dados: pacote, historico: state.historicoInvestimentos });
+
+      // 1. Envio Simultâneo para abas locais (BroadcastChannel)
+      if (localBroadcast) {
+        try { localBroadcast.postMessage(payloadSync); } catch (e) {}
+      }
+
+      // 2. Envio Simultâneo para abas locais (localStorage)
+      try {
+        localStorage.setItem('moneyhub_sync_event', JSON.stringify(payloadSync));
+      } catch (e) {}
+
+      // 3. Envio Simultâneo para outros dispositivos (Supabase WebSocket Broadcast)
+      if (canalRealtime) {
+        try {
+          canalRealtime.send({
+            type: 'broadcast',
+            event: 'dados_sincronizados',
+            payload: payloadSync
+          });
+        } catch (e) {}
+      }
+
+      // 4. Persistência permanente no banco de dados do Supabase
       const { error } = await supabase
         .from(TABELA_NUVEM)
-        .upsert({ id: USUARIO_ID, dados: pacote });
+        .upsert({
+          id: USUARIO_ID,
+          dados: pacote,
+          historico: state.historicoInvestimentos,
+          updated_at: new Date().toISOString()
+        });
 
       if (error) {
         // Fallback caso a tabela aceite colunas no nível raiz

@@ -526,6 +526,11 @@
 
   // --- Renderização Completa do Dashboard (Sincronização em Tempo Real) ---
   function renderizarTudo() {
+    if (!seletorMesEl) {
+      inicializarDOM();
+    }
+    if (!seletorMesEl) return;
+
     const activeEl = document.activeElement;
 
     if (projecaoTaxaInput && activeEl !== projecaoTaxaInput) {

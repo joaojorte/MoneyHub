@@ -344,9 +344,9 @@
   }
 
   // --- Inicialização ao Carregar a Página ---
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     inicializarDOM();
-    carregarDados(CATEGORIAS_ENTRADA, CATEGORIA_ENTRADA_PADRAO, CATEGORIAS_SAIDA, CATEGORIA_SAIDA_PADRAO);
+    await carregarDados(CATEGORIAS_ENTRADA, CATEGORIA_ENTRADA_PADRAO, CATEGORIAS_SAIDA, CATEGORIA_SAIDA_PADRAO);
 
     aporteExtraInput.value  = state.aporteExtra || '';
     investimentoNum.value   = state.percentualInvestimento;

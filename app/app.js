@@ -6,9 +6,20 @@
 (function () {
   'use strict';
 
-  // --- Constantes de Armazenamento e Padrões ---
-  const CHAVE_ARMAZENAMENTO           = 'moneyhub-dados';
-  const CHAVE_HISTORICO_INVESTIMENTOS = 'historicoInvestimentos';
+  // --- Configuração Supabase & Nuvem ---
+  const SUPABASE_URL = window.SUPABASE_URL || 'https://sua-url-supabase.supabase.co';
+  const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'sua-chave-anon-publica';
+  const USUARIO_ID = 'meu-cofre-secreto';
+  const TABELA_NUVEM = 'moneyhub_nuvem';
+
+  // Inicialização do cliente Supabase no escopo global
+  const supabase = (typeof window.supabase !== 'undefined' && window.supabase.createClient)
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
+
+  window.supabaseClient = supabase;
+
+  // --- Padrões da Aplicação ---
   const PERCENTUAL_INVESTIMENTO_PADRAO= '20';
   const PERCENTUAL_RESERVA_PADRAO     = '10';
   const TAXA_MENSAL_PADRAO            = '0.8';
@@ -149,12 +160,14 @@
       }));
   }
 
-  // --- Persistência LocalStorage ---
-  function salvarDados() {
+  // --- Persistência em Nuvem (Supabase) ---
+  async function salvarDados() {
+    if (!supabase) return;
     try {
-      const dados = {
+      const pacote = {
         entradas: state.entradas,
         saidas: state.saidas,
+        historicoInvestimentos: state.historicoInvestimentos,
         percentualInvestimento: state.percentualInvestimento,
         percentualReserva: state.percentualReserva,
         aporteExtra: state.aporteExtra,
@@ -163,20 +176,67 @@
         aporteFuturoManual: state.aporteFuturoManual,
         usuarioEditouAporteFuturo: state.usuarioEditouAporteFuturo
       };
-      localStorage.setItem(CHAVE_ARMAZENAMENTO, JSON.stringify(dados));
-      localStorage.setItem(CHAVE_HISTORICO_INVESTIMENTOS, JSON.stringify(state.historicoInvestimentos));
+
+      const { error } = await supabase
+        .from(TABELA_NUVEM)
+        .upsert({ id: USUARIO_ID, dados: pacote });
+
+      if (error) {
+        // Fallback caso a tabela aceite colunas no nível raiz
+        if (error.message && (error.message.includes('dados') || error.code === 'PGRST204')) {
+          const { error: fallbackErr } = await supabase
+            .from(TABELA_NUVEM)
+            .upsert({ id: USUARIO_ID, ...pacote });
+          if (fallbackErr) {
+            console.warn('MoneyHub (Supabase): Erro ao salvar dados:', fallbackErr.message);
+          }
+        } else {
+          console.warn('MoneyHub (Supabase): Erro ao salvar dados:', error.message);
+        }
+      }
     } catch (err) {
-      console.warn('MoneyHub: Erro ao salvar dados no localStorage', err);
+      console.warn('MoneyHub: Erro de rede ao salvar na nuvem:', err);
     }
   }
 
-  function carregarDados(categoriasEntrada = [], categoriaEntradaPadrao = 'Outros', categoriasSaida = [], categoriaSaidaPadrao = 'Não identificado') {
+  async function carregarDados(categoriasEntrada = [], categoriaEntradaPadrao = 'Outros', categoriasSaida = [], categoriaSaidaPadrao = 'Não identificado') {
+    function redefinirPadroes() {
+      state.entradas = [];
+      state.saidas = [];
+      state.historicoInvestimentos = [];
+      state.percentualInvestimento = PERCENTUAL_INVESTIMENTO_PADRAO;
+      state.percentualReserva = PERCENTUAL_RESERVA_PADRAO;
+      state.aporteExtra = '';
+      state.taxaProjecao = TAXA_MENSAL_PADRAO;
+      state.anosProjecao = PRAZO_ANOS_PADRAO;
+      state.aporteFuturoManual = '';
+      state.usuarioEditouAporteFuturo = false;
+    }
+
+    if (!supabase) {
+      redefinirPadroes();
+      return state;
+    }
+
     try {
-      const dadosSerializados = localStorage.getItem(CHAVE_ARMAZENAMENTO);
-      if (dadosSerializados) {
-        const dados = JSON.parse(dadosSerializados);
+      const { data, error } = await supabase
+        .from(TABELA_NUVEM)
+        .select('*')
+        .eq('id', USUARIO_ID)
+        .maybeSingle();
+
+      if (error) {
+        console.warn('MoneyHub (Supabase): Erro ao carregar dados:', error.message);
+        redefinirPadroes();
+        return state;
+      }
+
+      if (data) {
+        const dados = (data.dados && typeof data.dados === 'object') ? data.dados : data;
+
         state.entradas = sanitizarLancamentos(dados.entradas, categoriasEntrada, categoriaEntradaPadrao);
         state.saidas   = sanitizarLancamentos(dados.saidas, categoriasSaida, categoriaSaidaPadrao);
+        state.historicoInvestimentos = sanitizarInvestimentos(dados.historicoInvestimentos);
         state.percentualInvestimento = String(dados.percentualInvestimento ?? PERCENTUAL_INVESTIMENTO_PADRAO);
         state.percentualReserva      = String(dados.percentualReserva ?? PERCENTUAL_RESERVA_PADRAO);
         state.aporteExtra            = String(dados.aporteExtra || '');
@@ -185,37 +245,55 @@
         state.aporteFuturoManual     = String(dados.aporteFuturoManual || '');
         state.usuarioEditouAporteFuturo = Boolean(dados.usuarioEditouAporteFuturo);
       } else {
-        state.entradas = [];
-        state.saidas = [];
-        state.percentualInvestimento = PERCENTUAL_INVESTIMENTO_PADRAO;
-        state.percentualReserva = PERCENTUAL_RESERVA_PADRAO;
-        state.aporteExtra = '';
-        state.taxaProjecao = TAXA_MENSAL_PADRAO;
-        state.anosProjecao = PRAZO_ANOS_PADRAO;
-        state.aporteFuturoManual = '';
-        state.usuarioEditouAporteFuturo = false;
-      }
-
-      const investSerializados = localStorage.getItem(CHAVE_HISTORICO_INVESTIMENTOS);
-      if (investSerializados) {
-        state.historicoInvestimentos = sanitizarInvestimentos(JSON.parse(investSerializados));
-      } else {
-        state.historicoInvestimentos = [];
+        redefinirPadroes();
       }
     } catch (err) {
-      console.warn('MoneyHub: Erro ao ler dados do localStorage', err);
+      console.warn('MoneyHub: Falha de rede ao carregar dados:', err);
+      redefinirPadroes();
     }
+
     return state;
   }
 
-  function limparDados() {
+  async function limparDados() {
     if (!confirm('Deseja realmente limpar todos os dados cadastrados?')) return;
-    try {
-      localStorage.removeItem(CHAVE_ARMAZENAMENTO);
-      localStorage.removeItem(CHAVE_HISTORICO_INVESTIMENTOS);
-    } catch (err) {
-      console.warn('MoneyHub: Erro ao limpar localStorage', err);
+
+    const pacoteVazio = {
+      entradas: [],
+      saidas: [],
+      historicoInvestimentos: [],
+      percentualInvestimento: PERCENTUAL_INVESTIMENTO_PADRAO,
+      percentualReserva: PERCENTUAL_RESERVA_PADRAO,
+      aporteExtra: '',
+      taxaProjecao: TAXA_MENSAL_PADRAO,
+      anosProjecao: PRAZO_ANOS_PADRAO,
+      aporteFuturoManual: '',
+      usuarioEditouAporteFuturo: false
+    };
+
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from(TABELA_NUVEM)
+          .upsert({ id: USUARIO_ID, dados: pacoteVazio });
+
+        if (error) {
+          if (error.message && (error.message.includes('dados') || error.code === 'PGRST204')) {
+            const { error: fallbackErr } = await supabase
+              .from(TABELA_NUVEM)
+              .upsert({ id: USUARIO_ID, ...pacoteVazio });
+            if (fallbackErr) {
+              console.warn('MoneyHub (Supabase): Erro ao limpar dados:', fallbackErr.message);
+            }
+          } else {
+            console.warn('MoneyHub (Supabase): Erro ao limpar dados:', error.message);
+          }
+        }
+      } catch (err) {
+        console.warn('MoneyHub: Falha de rede ao limpar dados:', err);
+      }
     }
+
     state.entradas = [];
     state.saidas = [];
     state.historicoInvestimentos = [];
@@ -256,7 +334,9 @@
     somarPorCategoria,
     salvarDados,
     carregarDados,
-    limparDados
+    limparDados,
+    supabase,
+    USUARIO_ID
   };
 
   document.addEventListener('DOMContentLoaded', inicializarBotaoLimpar);

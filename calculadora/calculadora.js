@@ -345,6 +345,11 @@
 
   // --- Renderização Completa (Sincronização em Tempo Real) ---
   function renderizarTudo() {
+    if (!formEntradaEl) {
+      inicializarDOM();
+    }
+    if (!formEntradaEl) return;
+
     const activeEl = document.activeElement;
 
     if (aporteExtraInput && activeEl !== aporteExtraInput) {
@@ -369,9 +374,9 @@
     const totalDividendos   = somarPorCategoria(state.entradas, 'Dividendos');
     const somaTotalSaidas   = somarLancamentos(state.saidas);
 
-    const percentualInvestimento = paraPercentual(investimentoNum.value);
-    const aporteExtra            = paraNumeroMonetario(aporteExtraInput.value);
-    const percentualReserva      = paraPercentual(reservaNum.value);
+    const percentualInvestimento = paraPercentual(investimentoNum ? investimentoNum.value : state.percentualInvestimento);
+    const aporteExtra            = paraNumeroMonetario(aporteExtraInput ? aporteExtraInput.value : state.aporteExtra);
+    const percentualReserva      = paraPercentual(reservaNum ? reservaNum.value : state.percentualReserva);
 
     const somaEntradasComuns          = somaTotalEntradas - totalDividendos;
     const valorInvestimentoPercentual = (totalSalario * percentualInvestimento) / 100;

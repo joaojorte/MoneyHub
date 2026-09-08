@@ -1,6 +1,6 @@
 # MoneyHub — Calculadora Financeira Pessoal & Dashboard Analítico
 
-**MoneyHub** é uma plataforma financeira pessoal completa e autônoma que roda inteiramente no navegador web. Não depende de servidor, login, banco de dados externo ou conexão com a internet: todo o processamento ocorre via JavaScript puro no próprio dispositivo do usuário, garantindo total privacidade e velocidade com persistência local via `localStorage`.
+**MoneyHub** é uma plataforma financeira pessoal completa e moderna que opera no navegador web conectada diretamente à nuvem via **Supabase**. Todo o processamento ocorre via JavaScript puro com persistência em tempo real na tabela remota `moneyhub_nuvem`, garantindo sincronização e fonte única da verdade para seus dados financeiros.
 
 A proposta do projeto une **gestão de fluxo de caixa em tempo real** (cálculo do saldo livre para gastar após investimentos e reserva), **visão analítica mensal** (gráficos interativos de receitas, despesas e categorias) e um **motor de projeção patrimonial** baseado em juros compostos reais e histórico de aportes.
 
@@ -18,7 +18,7 @@ MoneyHub/
 ├── app/                         → Núcleo compartilhado da aplicação
 │   ├── app.html                 → Página portal / visão geral dos módulos
 │   ├── app.css                  → Design System, variáveis CSS (:root), reset, tipografia e tema
-│   └── app.js                   → Estado global, persistência (localStorage), formatadores e utilitários
+│   └── app.js                   → Estado global, persistência em nuvem (Supabase), formatadores e utilitários
 │
 ├── calculadora/                 → Módulo da Calculadora Financeira
 │   ├── calculadora.html         → Interface da calculadora, painel hero e formulários
@@ -124,9 +124,7 @@ Onde:
 - **Normalização Decimal Brasileira:** Campos de moeda aceitam vírgula (`45,90`) e ponto de milhar (`1.500,00`) através de um parser que normaliza antes da conversão numérica.
 - **Tratamento de Artefatos de Ponto Flutuante:** Subtrações em ponto flutuante que resultariam em `-0.00000000000001` são filtradas para exibir `0,00`, mantendo valores negativos reais quando há déficit legítimo.
 - **Construção Segura do DOM:** Criação de nós HTML através de elementos nativos do DOM (`document.createElement`), protegendo contra injeção de scripts (XSS).
-- **Persistência Centralizada:** Chaves organizadas no `localStorage`:
-  - `moneyhub-dados`: Entradas, saídas, percentuais dos sliders, taxa e prazo da projeção.
-  - `historicoInvestimentos`: Lista auditável de aportes efetivados com ID único, data e valor.
+- **Persistência em Nuvem (Supabase):** Tabela remota `moneyhub_nuvem` indexada pelo ID seguro do usuário (`meu-cofre-secreto`), com sincronização assíncrona (`async/await`) e total substituição do armazenamento local.
 - **Design System Dark Mode:** Paleta construída com variáveis CSS baseada em tons profundos de ardósia (`#0E121A`, `#171C27`), tipografia sem serifa para interface e monoespaçada para numerais monetários tabulares.
 
 ---

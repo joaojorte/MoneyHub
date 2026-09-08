@@ -135,8 +135,10 @@ Onde:
 Para ativar a tabela multi-usuário com Row Level Security (RLS) no Supabase, execute o seguinte comando no **SQL Editor** do Supabase Dashboard:
 
 ```sql
--- 1. Criação da tabela multi-usuário vinculada a auth.users
-CREATE TABLE IF NOT EXISTS public.moneyhub_nuvem (
+-- 1. Remove a tabela antiga de cofre estático e recria com chave vinculada a auth.users
+DROP TABLE IF EXISTS public.moneyhub_nuvem CASCADE;
+
+CREATE TABLE public.moneyhub_nuvem (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   dados JSONB DEFAULT '{}'::jsonb,
   historico JSONB DEFAULT '[]'::jsonb,

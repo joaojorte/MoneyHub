@@ -1,0 +1,393 @@
+/* ==========================================================================
+   MoneyHub — Estilos do Dashboard
+   ========================================================================== */
+
+/* --- Container Principal do Dashboard --- */
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* --- Controles do Dashboard (Filtro de Mês) --- */
+
+.dash-controles {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.dash-filtro-mes {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-field);
+  padding: 6px 12px;
+  box-shadow: var(--shadow-card);
+}
+
+.dash-filtro-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.dash-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--surface-inset);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238B93A3' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-field);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 28px 6px 12px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dash-select:focus-visible {
+  border-color: var(--accent-highlight);
+  box-shadow: 0 0 0 3px var(--accent-highlight-dim);
+}
+
+/* --- Cards Estatísticos Mensais --- */
+
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.dash-stat {
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dash-stat-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+}
+
+.dash-stat-value {
+  font-family: var(--font-mono);
+  font-size: clamp(14px, 3vw, 21px);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.dash-stat-value.income    { color: var(--accent-income); }
+.dash-stat-value.expense   { color: var(--accent-expense); }
+.dash-stat-value.highlight { color: var(--accent-highlight); }
+
+/* --- Grid de Gráficos (Fluxo de Caixa & Despesas) --- */
+
+.dash-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.chart-card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-header {
+  margin-bottom: 14px;
+}
+
+.chart-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--text-primary);
+}
+
+.chart-subtitle {
+  display: block;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 260px;
+}
+
+.chart-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--surface-inset);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-field);
+  padding: 16px 14px;
+  margin: 6px 0 0;
+  line-height: 1.4;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.chart-empty::before {
+  content: 'ⓘ';
+  font-size: 13px;
+  color: var(--accent-highlight);
+  opacity: 0.85;
+}
+
+/* --- Card de Projeção de Patrimônio (Juros Compostos Reais) --- */
+
+.card-projection {
+  border-top: 2px solid var(--accent-dist);
+  gap: 18px;
+}
+
+.card-projection .card-icon {
+  background: var(--accent-dist-dim);
+  color: var(--accent-dist);
+}
+
+.projecao-header-text h2 {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--text-primary);
+}
+
+.projecao-patrimonio-display {
+  background: var(--surface-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-field);
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.45);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.projecao-patrimonio-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+}
+
+.projecao-patrimonio-valor {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--font-mono);
+  line-height: 1;
+}
+
+.projecao-patrimonio-valor .currency-symbol {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--accent-dist);
+  opacity: 0.85;
+}
+
+.projecao-patrimonio-valor .digits {
+  font-size: clamp(22px, 5vw, 32px);
+  font-weight: 700;
+  color: var(--accent-dist);
+  text-shadow: 0 0 20px rgba(140, 126, 224, 0.35);
+  font-variant-numeric: tabular-nums;
+}
+
+.projecao-patrimonio-sub {
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 3px;
+}
+
+.projecao-controles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.projecao-campo {
+  margin: 0;
+}
+
+.projecao-campo label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.projecao-resumo {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  background: var(--surface-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-field);
+  padding: 14px 18px;
+}
+
+.projecao-resumo-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.projecao-resumo-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-faint);
+}
+
+.projecao-resumo-valor {
+  font-family: var(--font-mono);
+  font-size: clamp(14px, 2.5vw, 19px);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.projecao-resumo-valor.highlight { color: var(--accent-highlight); }
+.projecao-resumo-valor.income    { color: var(--accent-income); }
+
+.projecao-chart-container {
+  position: relative;
+  height: 320px;
+  width: 100%;
+}
+
+.projecao-chart-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 320px;
+}
+
+/* --- Responsividade do Dashboard --- */
+
+@media (min-width: 992px) {
+  .dash-stats {
+    gap: 16px;
+  }
+
+  .dash-stat {
+    padding: 20px 24px;
+  }
+
+  .dash-charts-grid {
+    gap: 20px;
+  }
+
+  .chart-card {
+    padding: 24px;
+  }
+
+  .chart-container {
+    height: 280px;
+  }
+
+  .chart-container canvas {
+    max-height: 280px;
+  }
+
+  /* Grid fluido de 5 colunas no Card de Projeção (inputs + resumo na mesma linha) */
+  .card-projection {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 18px;
+    align-items: end;
+  }
+
+  .card-projection > .card-header,
+  .card-projection > .projecao-patrimonio-display,
+  .card-projection > .projecao-chart-container,
+  .card-projection > .chart-empty {
+    grid-column: 1 / -1;
+  }
+
+  .projecao-controles {
+    grid-column: 1 / 4;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+
+  .projecao-resumo {
+    grid-column: 4 / 6;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    align-items: center;
+    min-height: 68px;
+  }
+
+  .projecao-chart-container {
+    height: 360px;
+  }
+
+  .projecao-chart-container canvas {
+    max-height: 360px;
+  }
+}
+
+@media (max-width: 680px) {
+  .dash-charts-grid   { grid-template-columns: 1fr; }
+  .projecao-controles { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .dash-stats          { grid-template-columns: 1fr; }
+  .dash-controles      { justify-content: stretch; }
+  .dash-filtro-mes     { width: 100%; justify-content: space-between; }
+  .dash-select         { flex: 1; }
+  .projecao-resumo     { grid-template-columns: 1fr; gap: 10px; }
+}

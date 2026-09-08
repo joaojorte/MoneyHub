@@ -12,3 +12,6 @@ desktop.ini
 # Logs e Temporários
 *.log
 scratch/
+.github_sync/
+sync_github.ps1
+GEMINI.md

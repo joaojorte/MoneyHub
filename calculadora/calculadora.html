@@ -150,6 +150,33 @@
               </div>
             </div>
 
+            <!-- Seletor de Frequência & Campo de Parcelas (Fase 2) -->
+            <div class="form-lancamento-linha form-lancamento-frequencia-linha">
+              <div class="frequencia-group">
+                <label for="saida-frequencia" class="campo-frequencia-label">Frequência:</label>
+                <select id="saida-frequencia" name="saida-frequencia" class="form-lancamento-frequencia" aria-label="Frequência da despesa">
+                  <option value="unico" selected>Único</option>
+                  <option value="fixo">Assinatura (Fixo)</option>
+                  <option value="parcelado">Parcelado</option>
+                </select>
+              </div>
+
+              <div id="saida-parcelas-container" class="parcelas-group form-lancamento-condicional" style="display: none;">
+                <label for="saida-parcelas" class="campo-frequencia-label">Parcelas:</label>
+                <input
+                  type="number"
+                  id="saida-parcelas"
+                  name="saida-parcelas"
+                  class="form-lancamento-parcelas"
+                  min="2"
+                  max="72"
+                  step="1"
+                  placeholder="Nº (ex.: 3)"
+                  aria-label="Quantidade de parcelas"
+                >
+              </div>
+            </div>
+
             <div class="form-lancamento-acoes">
               <input type="date" id="saida-data" name="saida-data" class="form-lancamento-data" aria-label="Data da saída">
               <button type="submit" id="incluir-saida" class="btn-incluir">+ Incluir</button>

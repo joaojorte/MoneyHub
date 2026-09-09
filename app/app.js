@@ -136,15 +136,27 @@
     if (!Array.isArray(lista)) return [];
     return lista
       .filter(item => item && typeof item.descricao === 'string' && typeof item.valor === 'number')
-      .map(item => ({
-        id: item.id || gerarId(),
-        descricao: item.descricao.trim(),
-        valor: Math.max(0, item.valor),
-        categoria: categoriasValidas.includes(item.categoria) ? item.categoria : categoriaPadrao,
-        data: (item.data && typeof item.data === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.data))
-          ? item.data
-          : obterDataHojeISO()
-      }));
+      .map(item => {
+        const itemSanitizado = {
+          id: item.id || gerarId(),
+          descricao: item.descricao.trim(),
+          valor: Math.max(0, item.valor),
+          categoria: categoriasValidas.includes(item.categoria) ? item.categoria : categoriaPadrao,
+          data: (item.data && typeof item.data === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.data))
+            ? item.data
+            : obterDataHojeISO()
+        };
+
+        if (item.detalhamento && typeof item.detalhamento === 'string') {
+          itemSanitizado.detalhamento = item.detalhamento.trim();
+        }
+
+        if (typeof item.conveniencia === 'boolean') {
+          itemSanitizado.conveniencia = item.conveniencia;
+        }
+
+        return itemSanitizado;
+      });
   }
 
   function sanitizarInvestimentos(lista) {
@@ -164,7 +176,7 @@
   const CATEGORIAS_ENTRADA_PADRAO_LISTA = ['Salário', 'Dividendos', 'Rendimentos', 'Estorno/Devolução', 'Outros'];
   const CATEGORIAS_SAIDA_PADRAO_LISTA   = [
     'Alimentação', 'Mercado', 'Transporte', 'Saúde', 'Educação',
-    'Comunicação', 'Compras', 'Serviços', 'Transferências/Pagamentos pessoais', 'Não identificado'
+    'Comunicação', 'Compras', 'Serviços', 'Transferências/Pagamentos pessoais', 'Outros', 'Não identificado'
   ];
 
   // --- Controle de Sincronização Simultânea & Realtime ---
@@ -690,9 +702,27 @@
     if (!user) return;
 
     try {
+      // Normalização do payload de saídas para garantir preservação de detalhamento e conveniência
+      const saidasNormalizadas = (state.saidas || []).map(item => {
+        const saidaItem = {
+          id: item.id || gerarId(),
+          descricao: item.descricao ? String(item.descricao).trim() : '',
+          valor: Math.max(0, Number(item.valor) || 0),
+          categoria: item.categoria || 'Não identificado',
+          data: item.data || obterDataHojeISO()
+        };
+        if (item.detalhamento) {
+          saidaItem.detalhamento = String(item.detalhamento).trim();
+        }
+        if (typeof item.conveniencia === 'boolean') {
+          saidaItem.conveniencia = item.conveniencia;
+        }
+        return saidaItem;
+      });
+
       const pacote = {
         entradas: state.entradas,
-        saidas: state.saidas,
+        saidas: saidasNormalizadas,
         historicoInvestimentos: state.historicoInvestimentos,
         percentualInvestimento: state.percentualInvestimento,
         percentualReserva: state.percentualReserva,

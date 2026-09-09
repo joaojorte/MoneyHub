@@ -528,6 +528,84 @@ input[type="range"]::-moz-range-thumb {
   color: var(--text-primary);
 }
 
+/* --- Seletor de Frequência e Parcelas (Fase 2) --- */
+.form-lancamento-frequencia-linha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.frequencia-group,
+.parcelas-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-field);
+  padding: 5px 10px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.frequencia-group {
+  flex: 1;
+}
+
+.parcelas-group {
+  flex: 0 0 135px;
+}
+
+.campo-frequencia-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.form-lancamento-frequencia {
+  flex: 1;
+  min-width: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238B93A3' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 4px center;
+  border: none;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  padding: 3px 20px 3px 4px;
+  outline: none;
+  cursor: pointer;
+}
+
+.form-lancamento-parcelas {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  outline: none;
+  padding: 3px 0;
+}
+
+.form-lancamento-parcelas::placeholder {
+  color: var(--text-faint);
+  font-weight: 400;
+}
+
+.card-expense .frequencia-group:focus-within,
+.card-expense .parcelas-group:focus-within {
+  border-color: var(--accent-expense);
+  box-shadow: 0 0 0 3px var(--accent-expense-dim);
+}
+
 .form-lancamento-acoes {
   display: flex;
   align-items: center;
@@ -712,6 +790,31 @@ input[type="range"]::-moz-range-thumb {
   font-weight: 400;
   opacity: 0.85;
   margin-left: 3px;
+}
+
+.historico-tag-frequencia {
+  flex: none;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.historico-tag-frequencia.tag-recorrente {
+  color: #8C7EE0;
+  background: rgba(140, 126, 224, 0.14);
+  border: 1px solid rgba(140, 126, 224, 0.28);
+}
+
+.historico-tag-frequencia.tag-parcelado {
+  color: #F0B94A;
+  background: rgba(240, 185, 74, 0.14);
+  border: 1px solid rgba(240, 185, 74, 0.28);
 }
 
 .historico-valor {

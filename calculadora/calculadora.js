@@ -15,6 +15,7 @@
     formatarDataBR,
     obterDataHojeISO,
     gerarId,
+    gerarLancamentosParcelados,
     somarLancamentos,
     somarPorCategoria,
     salvarDados,
@@ -35,6 +36,7 @@
   let formEntradaEl, entradaDescricaoInput, entradaValorInput, entradaCategoriaSelect, entradaDataInput, historicoEntradasEl;
   let formSaidaEl, saidaDescricaoInput, saidaValorInput, saidaCategoriaSelect, saidaDataInput, historicoSaidasEl;
   let saidaDetalhamentoContainer, saidaDetalhamentoInput, saidaConvenienciaContainer;
+  let saidaFrequenciaSelect, saidaParcelasContainer, saidaParcelasInput;
   let investimentoRange, investimentoNum, aporteExtraInput, reservaRange, reservaNum;
   let resultadoDigits, investimentoDigits, reservaDigits;
   let investimentoDataInput, btnEfetivarInvestimento, feedbackInvestimentoEl, historicoInvestimentosListaEl, investimentoAcumuladoTag;
@@ -56,6 +58,9 @@
     saidaDetalhamentoContainer = document.getElementById('saida-detalhamento-container');
     saidaDetalhamentoInput     = document.getElementById('saida-detalhamento');
     saidaConvenienciaContainer = document.getElementById('saida-conveniencia-container');
+    saidaFrequenciaSelect      = document.getElementById('saida-frequencia');
+    saidaParcelasContainer     = document.getElementById('saida-parcelas-container');
+    saidaParcelasInput         = document.getElementById('saida-parcelas');
     saidaDataInput             = document.getElementById('saida-data');
     historicoSaidasEl          = document.getElementById('historico-saidas');
 
@@ -84,9 +89,31 @@
     formEntradaEl.addEventListener('submit', incluirEntrada);
     formSaidaEl.addEventListener('submit', incluirSaida);
     saidaCategoriaSelect.addEventListener('change', atualizarVisibilidadeCondicionalSaida);
+    if (saidaFrequenciaSelect) {
+      saidaFrequenciaSelect.addEventListener('change', atualizarVisibilidadeFrequenciaSaida);
+    }
     btnEfetivarInvestimento.addEventListener('click', efetivarInvestimento);
 
     atualizarVisibilidadeCondicionalSaida();
+    atualizarVisibilidadeFrequenciaSaida();
+  }
+
+  function atualizarVisibilidadeFrequenciaSaida() {
+    if (!saidaFrequenciaSelect) return;
+    const freq = saidaFrequenciaSelect.value;
+    if (freq === 'parcelado') {
+      if (saidaParcelasContainer) saidaParcelasContainer.style.display = 'flex';
+      if (saidaParcelasInput) {
+        saidaParcelasInput.required = true;
+        saidaParcelasInput.focus();
+      }
+    } else {
+      if (saidaParcelasContainer) saidaParcelasContainer.style.display = 'none';
+      if (saidaParcelasInput) {
+        saidaParcelasInput.required = false;
+        saidaParcelasInput.value = '';
+      }
+    }
   }
 
   function atualizarVisibilidadeCondicionalSaida() {
@@ -168,6 +195,21 @@
       tagConveniencia.title = isDelivery ? 'Modalidade: Pronto / Delivery' : 'Modalidade: Mercado';
     }
 
+    // Tag visual de Frequência (Fixo / Assinatura ou Parcelado)
+    let tagFrequencia = null;
+    if (item.recorrente === true) {
+      tagFrequencia = document.createElement('span');
+      tagFrequencia.className = 'historico-tag-frequencia tag-recorrente';
+      tagFrequencia.textContent = '🔁 Fixo';
+      tagFrequencia.title = 'Despesa Recorrente / Assinatura Fixa';
+    } else if (item.frequencia === 'parcelado' || (item.totalParcelas && item.totalParcelas > 1)) {
+      tagFrequencia = document.createElement('span');
+      tagFrequencia.className = 'historico-tag-frequencia tag-parcelado';
+      const ind = (item.parcelaAtual && item.totalParcelas) ? ` ${item.parcelaAtual}/${item.totalParcelas}` : '';
+      tagFrequencia.textContent = `💳 Parcela${ind}`;
+      tagFrequencia.title = `Despesa Parcelada (${item.parcelaAtual || 1}/${item.totalParcelas || ''})`;
+    }
+
     const val = document.createElement('span');
     val.className = 'historico-valor';
     val.textContent = 'R$ ' + formatarBRL(item.valor);
@@ -179,11 +221,12 @@
     btn.textContent = '×';
     btn.addEventListener('click', () => fnRemover(item.id));
 
-    if (tagConveniencia) {
-      li.append(desc, dataSpan, cat, tagConveniencia, val, btn);
-    } else {
-      li.append(desc, dataSpan, cat, val, btn);
-    }
+    const elementosLinha = [desc, dataSpan, cat];
+    if (tagConveniencia) elementosLinha.push(tagConveniencia);
+    if (tagFrequencia) elementosLinha.push(tagFrequencia);
+    elementosLinha.push(val, btn);
+
+    li.append(...elementosLinha);
     return li;
   }
 
@@ -280,23 +323,63 @@
       conveniencia = radioDelivery ? (radioDelivery.value === 'delivery') : false;
     }
 
-    const novoItem = {
-      id: gerarId(),
-      descricao,
-      valor,
-      categoria,
-      data
-    };
+    // Interceptação de Frequência (Fase 2: Único, Assinatura Fixo, Parcelado)
+    const frequencia = saidaFrequenciaSelect ? saidaFrequenciaSelect.value : 'unico';
 
-    if (categoria === 'Outros' && detalhamento) {
-      novoItem.detalhamento = detalhamento;
+    if (frequencia === 'parcelado') {
+      const qtdParcelas = parseInt(saidaParcelasInput ? saidaParcelasInput.value : '', 10);
+      if (isNaN(qtdParcelas) || qtdParcelas < 2) {
+        if (saidaParcelasInput) {
+          saidaParcelasInput.focus();
+          const grupoParcelas = saidaParcelasInput.closest('.parcelas-group');
+          if (grupoParcelas) {
+            grupoParcelas.style.borderColor = 'var(--accent-expense)';
+            setTimeout(() => {
+              if (grupoParcelas) grupoParcelas.style.borderColor = '';
+            }, 1800);
+          }
+        }
+        return;
+      }
+
+      // Gera N lançamentos individuais dividindo o valor total pelas parcelas
+      const parcelasGeradas = gerarLancamentosParcelados({
+        descricao,
+        valorTotal: valor,
+        categoria,
+        dataBase: data,
+        quantidadeParcelas: qtdParcelas,
+        detalhamento,
+        conveniencia
+      });
+
+      state.saidas.push(...parcelasGeradas);
+    } else {
+      const novoItem = {
+        id: gerarId(),
+        descricao,
+        valor,
+        categoria,
+        data
+      };
+
+      if (categoria === 'Outros' && detalhamento) {
+        novoItem.detalhamento = detalhamento;
+      }
+
+      if (categoria === 'Alimentação') {
+        novoItem.conveniencia = conveniencia;
+      }
+
+      if (frequencia === 'fixo') {
+        novoItem.recorrente = true;
+        novoItem.frequencia = 'fixo';
+      } else {
+        novoItem.frequencia = 'unico';
+      }
+
+      state.saidas.push(novoItem);
     }
-
-    if (categoria === 'Alimentação') {
-      novoItem.conveniencia = conveniencia;
-    }
-
-    state.saidas.push(novoItem);
 
     renderizarHistoricoSaidas();
 
@@ -307,6 +390,10 @@
     const radioMercadoPadrao = document.getElementById('conveniencia-mercado');
     if (radioMercadoPadrao) radioMercadoPadrao.checked = true;
     atualizarVisibilidadeCondicionalSaida();
+
+    if (saidaFrequenciaSelect) saidaFrequenciaSelect.value = 'unico';
+    if (saidaParcelasInput) saidaParcelasInput.value = '';
+    atualizarVisibilidadeFrequenciaSaida();
 
     saidaDataInput.value       = '';
     saidaDescricaoInput.focus();

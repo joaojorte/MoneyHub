@@ -27,13 +27,14 @@
 
   const CATEGORIAS_SAIDA = [
     'Alimentação', 'Mercado', 'Transporte', 'Saúde', 'Educação',
-    'Comunicação', 'Compras', 'Serviços', 'Transferências/Pagamentos pessoais', 'Não identificado'
+    'Comunicação', 'Compras', 'Serviços', 'Transferências/Pagamentos pessoais', 'Outros', 'Não identificado'
   ];
   const CATEGORIA_SAIDA_PADRAO = 'Não identificado';
 
   // --- Elementos do DOM da Calculadora ---
   let formEntradaEl, entradaDescricaoInput, entradaValorInput, entradaCategoriaSelect, entradaDataInput, historicoEntradasEl;
   let formSaidaEl, saidaDescricaoInput, saidaValorInput, saidaCategoriaSelect, saidaDataInput, historicoSaidasEl;
+  let saidaDetalhamentoContainer, saidaDetalhamentoInput, saidaConvenienciaContainer;
   let investimentoRange, investimentoNum, aporteExtraInput, reservaRange, reservaNum;
   let resultadoDigits, investimentoDigits, reservaDigits;
   let investimentoDataInput, btnEfetivarInvestimento, feedbackInvestimentoEl, historicoInvestimentosListaEl, investimentoAcumuladoTag;
@@ -48,12 +49,15 @@
     entradaDataInput       = document.getElementById('entrada-data');
     historicoEntradasEl    = document.getElementById('historico-entradas');
 
-    formSaidaEl            = document.getElementById('form-saida');
-    saidaDescricaoInput    = document.getElementById('saida-descricao');
-    saidaValorInput        = document.getElementById('saida-valor');
-    saidaCategoriaSelect   = document.getElementById('saida-categoria');
-    saidaDataInput         = document.getElementById('saida-data');
-    historicoSaidasEl      = document.getElementById('historico-saidas');
+    formSaidaEl                = document.getElementById('form-saida');
+    saidaDescricaoInput        = document.getElementById('saida-descricao');
+    saidaValorInput            = document.getElementById('saida-valor');
+    saidaCategoriaSelect       = document.getElementById('saida-categoria');
+    saidaDetalhamentoContainer = document.getElementById('saida-detalhamento-container');
+    saidaDetalhamentoInput     = document.getElementById('saida-detalhamento');
+    saidaConvenienciaContainer = document.getElementById('saida-conveniencia-container');
+    saidaDataInput             = document.getElementById('saida-data');
+    historicoSaidasEl          = document.getElementById('historico-saidas');
 
     investimentoRange      = document.getElementById('investimento-range');
     investimentoNum        = document.getElementById('investimento-num');
@@ -79,7 +83,38 @@
     aporteExtraInput.addEventListener('input', calcular);
     formEntradaEl.addEventListener('submit', incluirEntrada);
     formSaidaEl.addEventListener('submit', incluirSaida);
+    saidaCategoriaSelect.addEventListener('change', atualizarVisibilidadeCondicionalSaida);
     btnEfetivarInvestimento.addEventListener('click', efetivarInvestimento);
+
+    atualizarVisibilidadeCondicionalSaida();
+  }
+
+  function atualizarVisibilidadeCondicionalSaida() {
+    if (!saidaCategoriaSelect) return;
+    const cat = saidaCategoriaSelect.value;
+
+    if (cat === 'Outros') {
+      if (saidaDetalhamentoContainer) saidaDetalhamentoContainer.style.display = 'block';
+      if (saidaConvenienciaContainer) saidaConvenienciaContainer.style.display = 'none';
+      if (saidaDetalhamentoInput) {
+        saidaDetalhamentoInput.required = true;
+        saidaDetalhamentoInput.focus();
+      }
+    } else if (cat === 'Alimentação') {
+      if (saidaConvenienciaContainer) saidaConvenienciaContainer.style.display = 'flex';
+      if (saidaDetalhamentoContainer) saidaDetalhamentoContainer.style.display = 'none';
+      if (saidaDetalhamentoInput) {
+        saidaDetalhamentoInput.required = false;
+        saidaDetalhamentoInput.value = '';
+      }
+    } else {
+      if (saidaDetalhamentoContainer) saidaDetalhamentoContainer.style.display = 'none';
+      if (saidaConvenienciaContainer) saidaConvenienciaContainer.style.display = 'none';
+      if (saidaDetalhamentoInput) {
+        saidaDetalhamentoInput.required = false;
+        saidaDetalhamentoInput.value = '';
+      }
+    }
   }
 
   function sincronizarParPercentual(range, num) {
@@ -114,7 +149,24 @@
 
     const cat = document.createElement('span');
     cat.className = 'historico-categoria';
-    cat.textContent = item.categoria || categoriaPadrao;
+    const categoriaTexto = item.categoria || categoriaPadrao;
+    cat.textContent = categoriaTexto;
+
+    // Exibição do Detalhamento quando for categoria 'Outros'
+    if (item.categoria === 'Outros' && item.detalhamento) {
+      cat.textContent = `Outros · ${item.detalhamento}`;
+      cat.title = `Detalhamento: ${item.detalhamento}`;
+    }
+
+    // Tag visual de Conveniência quando for categoria 'Alimentação'
+    let tagConveniencia = null;
+    if (item.categoria === 'Alimentação') {
+      tagConveniencia = document.createElement('span');
+      const isDelivery = item.conveniencia === true;
+      tagConveniencia.className = 'historico-tag-conveniencia ' + (isDelivery ? 'tag-delivery' : 'tag-mercado');
+      tagConveniencia.textContent = isDelivery ? '🛵 Delivery' : '🛒 Mercado';
+      tagConveniencia.title = isDelivery ? 'Modalidade: Pronto / Delivery' : 'Modalidade: Mercado';
+    }
 
     const val = document.createElement('span');
     val.className = 'historico-valor';
@@ -127,7 +179,11 @@
     btn.textContent = '×';
     btn.addEventListener('click', () => fnRemover(item.id));
 
-    li.append(desc, dataSpan, cat, val, btn);
+    if (tagConveniencia) {
+      li.append(desc, dataSpan, cat, tagConveniencia, val, btn);
+    } else {
+      li.append(desc, dataSpan, cat, val, btn);
+    }
     return li;
   }
 
@@ -200,19 +256,58 @@
       return;
     }
 
-    state.saidas.push({
+    // Validação obrigatória de Detalhamento para categoria 'Outros'
+    let detalhamento = '';
+    if (categoria === 'Outros') {
+      detalhamento = saidaDetalhamentoInput ? saidaDetalhamentoInput.value.trim() : '';
+      if (!detalhamento) {
+        if (saidaDetalhamentoInput) {
+          saidaDetalhamentoInput.focus();
+          saidaDetalhamentoInput.style.borderColor = 'var(--accent-expense)';
+          setTimeout(() => {
+            if (saidaDetalhamentoInput) saidaDetalhamentoInput.style.borderColor = '';
+          }, 1800);
+        }
+        return;
+      }
+    }
+
+    // Mapeamento booleano para categoria 'Alimentação':
+    // Pronto/Delivery => conveniencia: true | Mercado => conveniencia: false
+    let conveniencia = false;
+    if (categoria === 'Alimentação') {
+      const radioDelivery = formSaidaEl ? formSaidaEl.querySelector('input[name="saida-conveniencia"]:checked') : null;
+      conveniencia = radioDelivery ? (radioDelivery.value === 'delivery') : false;
+    }
+
+    const novoItem = {
       id: gerarId(),
       descricao,
       valor,
       categoria,
       data
-    });
+    };
+
+    if (categoria === 'Outros' && detalhamento) {
+      novoItem.detalhamento = detalhamento;
+    }
+
+    if (categoria === 'Alimentação') {
+      novoItem.conveniencia = conveniencia;
+    }
+
+    state.saidas.push(novoItem);
 
     renderizarHistoricoSaidas();
 
     saidaDescricaoInput.value  = '';
     saidaValorInput.value      = '';
     saidaCategoriaSelect.value = CATEGORIA_SAIDA_PADRAO;
+    if (saidaDetalhamentoInput) saidaDetalhamentoInput.value = '';
+    const radioMercadoPadrao = document.getElementById('conveniencia-mercado');
+    if (radioMercadoPadrao) radioMercadoPadrao.checked = true;
+    atualizarVisibilidadeCondicionalSaida();
+
     saidaDataInput.value       = '';
     saidaDescricaoInput.focus();
 

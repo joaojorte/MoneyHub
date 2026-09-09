@@ -116,6 +116,123 @@
       .reduce((acc, item) => acc + item.valor, 0);
   }
 
+  // --- Motor de Repetições, Parcelamentos e Assinaturas (Fase 2) ---
+  function calcularDataCompetencia(dataBaseISO, mesesParaAdicionar) {
+    if (!dataBaseISO || typeof dataBaseISO !== 'string') {
+      dataBaseISO = obterDataHojeISO();
+    }
+    const partes = dataBaseISO.split('-');
+    if (partes.length !== 3) return dataBaseISO;
+
+    let ano = parseInt(partes[0], 10);
+    let mes = parseInt(partes[1], 10) - 1; // 0 a 11
+    const diaOriginal = parseInt(partes[2], 10);
+
+    mes += mesesParaAdicionar;
+    ano += Math.floor(mes / 12);
+    mes = ((mes % 12) + 12) % 12;
+
+    // Ajuste seguro para meses com menos dias (ex.: 31 de janeiro + 1 mês = 28 ou 29 de fevereiro)
+    const maxDiasNoMes = new Date(ano, mes + 1, 0).getDate();
+    const diaAjustado = Math.min(diaOriginal, maxDiasNoMes);
+
+    const anoStr = String(ano);
+    const mesStr = String(mes + 1).padStart(2, '0');
+    const diaStr = String(diaAjustado).padStart(2, '0');
+
+    return `${anoStr}-${mesStr}-${diaStr}`;
+  }
+
+  function gerarLancamentosParcelados({
+    descricao,
+    valorTotal,
+    categoria,
+    dataBase,
+    quantidadeParcelas,
+    detalhamento,
+    conveniencia
+  }) {
+    const qtd = Math.max(2, parseInt(quantidadeParcelas, 10) || 2);
+    const total = Math.max(0, Number(valorTotal) || 0);
+
+    // Divisão de valor com ajuste de centavos na primeira parcela para exatidão contábil
+    const valorParcelaBase = Math.floor((total / qtd) * 100) / 100;
+    const diferencaCentavos = Math.round((total - (valorParcelaBase * qtd)) * 100) / 100;
+
+    const idGrupo = 'parc_' + gerarId();
+    const parcelasGeradas = [];
+
+    for (let i = 1; i <= qtd; i++) {
+      const valorParcela = (i === 1)
+        ? Math.round((valorParcelaBase + diferencaCentavos) * 100) / 100
+        : valorParcelaBase;
+
+      const dataCompetencia = calcularDataCompetencia(dataBase, i - 1);
+
+      const item = {
+        id: gerarId(),
+        descricao: `${descricao.trim()} [${i}/${qtd}]`,
+        valor: valorParcela,
+        categoria: categoria || 'Não identificado',
+        data: dataCompetencia,
+        frequencia: 'parcelado',
+        parcelaAtual: i,
+        totalParcelas: qtd,
+        idGrupoParcelamento: idGrupo
+      };
+
+      if (detalhamento) item.detalhamento = String(detalhamento).trim();
+      if (typeof conveniencia === 'boolean') item.conveniencia = conveniencia;
+
+      parcelasGeradas.push(item);
+    }
+
+    return parcelasGeradas;
+  }
+
+  function obterLancamentosMesComRecorrencia(lista, anoMes) {
+    if (!Array.isArray(lista)) return [];
+    if (!anoMes || typeof anoMes !== 'string') return lista;
+
+    const resultado = [];
+    const recorrentesInseridosIds = new Set();
+
+    // 1. Lançamentos efetivos do mês
+    lista.forEach(item => {
+      if (item.data && item.data.startsWith(anoMes)) {
+        resultado.push(item);
+        if (item.recorrente) {
+          recorrentesInseridosIds.add(item.idRecorrenteOrigem || item.id);
+        }
+      }
+    });
+
+    // 2. Assinaturas e despesas fixas (recorrente: true) anteriores projetadas no mês atual
+    lista.forEach(item => {
+      if (item.recorrente === true && item.data) {
+        const mesItem = item.data.slice(0, 7);
+        const chaveId = item.idRecorrenteOrigem || item.id;
+        if (mesItem < anoMes && !recorrentesInseridosIds.has(chaveId)) {
+          recorrentesInseridosIds.add(chaveId);
+          const diaOriginal = item.data.slice(8, 10);
+          const [ano, mes] = anoMes.split('-');
+          const maxDias = new Date(parseInt(ano, 10), parseInt(mes, 10), 0).getDate();
+          const diaAjustado = Math.min(parseInt(diaOriginal, 10), maxDias);
+          const dataProjetada = `${anoMes}-${String(diaAjustado).padStart(2, '0')}`;
+
+          resultado.push({
+            ...item,
+            id: `proj_${item.id}_${anoMes}`,
+            data: dataProjetada,
+            isProjetadoRecorrente: true
+          });
+        }
+      }
+    });
+
+    return resultado;
+  }
+
   // --- Estado Global Compartilhado ---
   const state = {
     entradas: [],
@@ -153,6 +270,26 @@
 
         if (typeof item.conveniencia === 'boolean') {
           itemSanitizado.conveniencia = item.conveniencia;
+        }
+
+        if (item.recorrente === true) {
+          itemSanitizado.recorrente = true;
+        }
+
+        if (item.frequencia && typeof item.frequencia === 'string') {
+          itemSanitizado.frequencia = item.frequencia;
+        }
+
+        if (typeof item.parcelaAtual === 'number') {
+          itemSanitizado.parcelaAtual = item.parcelaAtual;
+        }
+
+        if (typeof item.totalParcelas === 'number') {
+          itemSanitizado.totalParcelas = item.totalParcelas;
+        }
+
+        if (item.idGrupoParcelamento && typeof item.idGrupoParcelamento === 'string') {
+          itemSanitizado.idGrupoParcelamento = item.idGrupoParcelamento;
         }
 
         return itemSanitizado;
@@ -702,7 +839,7 @@
     if (!user) return;
 
     try {
-      // Normalização do payload de saídas para garantir preservação de detalhamento e conveniência
+      // Normalização do payload de saídas para garantir preservação de detalhamento, conveniência, recorrência e parcelamento
       const saidasNormalizadas = (state.saidas || []).map(item => {
         const saidaItem = {
           id: item.id || gerarId(),
@@ -716,6 +853,21 @@
         }
         if (typeof item.conveniencia === 'boolean') {
           saidaItem.conveniencia = item.conveniencia;
+        }
+        if (item.recorrente === true) {
+          saidaItem.recorrente = true;
+        }
+        if (item.frequencia) {
+          saidaItem.frequencia = String(item.frequencia);
+        }
+        if (typeof item.parcelaAtual === 'number') {
+          saidaItem.parcelaAtual = item.parcelaAtual;
+        }
+        if (typeof item.totalParcelas === 'number') {
+          saidaItem.totalParcelas = item.totalParcelas;
+        }
+        if (item.idGrupoParcelamento) {
+          saidaItem.idGrupoParcelamento = String(item.idGrupoParcelamento);
         }
         return saidaItem;
       });
@@ -951,6 +1103,9 @@
     formatarDataBR,
     formatarMesAno,
     gerarId,
+    calcularDataCompetencia,
+    gerarLancamentosParcelados,
+    obterLancamentosMesComRecorrencia,
     somarLancamentos,
     somarPorCategoria,
     salvarDados,

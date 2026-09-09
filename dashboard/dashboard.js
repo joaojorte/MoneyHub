@@ -30,6 +30,7 @@
     'Compras':                            '#F43F5E',
     'Serviços':                           '#38BDF8',
     'Transferências/Pagamentos pessoais': '#6366F1',
+    'Outros':                             '#A78BFA',
     'Não identificado':                   '#64748B',
   };
 

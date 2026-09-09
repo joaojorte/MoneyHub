@@ -12,6 +12,8 @@
     paraNumeroMonetario,
     formatarBRL,
     formatarMesAno,
+    obterDataHojeISO,
+    obterLancamentosMesComRecorrencia,
     somarLancamentos,
     salvarDados,
     carregarDados
@@ -132,6 +134,13 @@
   // --- Seletor de Meses Disponíveis ---
   function obterMesesDisponiveis() {
     const mesesSet = new Set();
+    const mesAtual = (typeof obterDataHojeISO === 'function') ? obterDataHojeISO().slice(0, 7) : new Date().toISOString().slice(0, 7);
+
+    // Se houver qualquer lançamento recorrente, garante presença do mês atual no seletor
+    if (state.saidas.some(item => item.recorrente === true)) {
+      mesesSet.add(mesAtual);
+    }
+
     state.entradas.forEach(item => {
       if (item.data && item.data.length >= 7) mesesSet.add(item.data.slice(0, 7));
     });
@@ -173,8 +182,11 @@
     return seletorMesEl.value;
   }
 
-  // --- Métricas Mensais ---
+  // --- Métricas Mensais (com projeção de despesas recorrentes/fixas) ---
   function filtrarPorMes(lista, anoMes) {
+    if (typeof obterLancamentosMesComRecorrencia === 'function') {
+      return obterLancamentosMesComRecorrencia(lista, anoMes);
+    }
     return (lista || []).filter(item => item.data && item.data.startsWith(anoMes));
   }
 

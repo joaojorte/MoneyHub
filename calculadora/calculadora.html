@@ -117,8 +117,37 @@
                 <option value="Compras">Compras</option>
                 <option value="Serviços">Serviços</option>
                 <option value="Transferências/Pagamentos pessoais">Transferências/Pagamentos pessoais</option>
+                <option value="Outros">Outros</option>
                 <option value="Não identificado" selected>Não identificado</option>
               </select>
+            </div>
+
+            <!-- Campo Condicional: Detalhamento (Visível apenas para categoria 'Outros') -->
+            <div id="saida-detalhamento-container" class="form-lancamento-condicional" style="display: none;">
+              <input
+                type="text"
+                id="saida-detalhamento"
+                name="saida-detalhamento"
+                class="form-lancamento-detalhamento"
+                placeholder="Detalhamento do gasto (obrigatório)"
+                aria-label="Detalhamento da categoria Outros"
+                autocomplete="off"
+              >
+            </div>
+
+            <!-- Filtro de Conveniência: Alimentação (Visível apenas para categoria 'Alimentação') -->
+            <div id="saida-conveniencia-container" class="form-lancamento-condicional conveniencia-wrapper" style="display: none;">
+              <span class="conveniencia-titulo">Modalidade:</span>
+              <div class="conveniencia-opcoes" role="radiogroup" aria-label="Modalidade de alimentação">
+                <label class="conveniencia-opcao">
+                  <input type="radio" name="saida-conveniencia" id="conveniencia-mercado" value="mercado" checked>
+                  <span class="conveniencia-pill">🛒 Mercado</span>
+                </label>
+                <label class="conveniencia-opcao">
+                  <input type="radio" name="saida-conveniencia" id="conveniencia-delivery" value="delivery">
+                  <span class="conveniencia-pill">🛵 Pronto/Delivery</span>
+                </label>
+              </div>
             </div>
 
             <div class="form-lancamento-acoes">

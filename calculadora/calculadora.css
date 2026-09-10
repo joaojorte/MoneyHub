@@ -551,15 +551,18 @@ input[type="range"]::-moz-range-thumb {
 
 .segmented-control {
   display: flex;
-  gap: 8px;
+  align-items: stretch;
+  gap: 6px;
   background: var(--surface-inset);
-  padding: 3px;
+  padding: 4px;
   border-radius: var(--radius-pill);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .segmented-control-item {
   flex: 1;
+  display: flex;
+  align-items: stretch;
   cursor: pointer;
   position: relative;
   margin: 0;
@@ -575,19 +578,41 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .segmented-control-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 7px;
+  width: 100%;
+  min-height: 38px;
   padding: 8px 14px;
+  box-sizing: border-box;
   border-radius: var(--radius-pill);
+  font-family: var(--font-sans);
   font-size: 12.5px;
   font-weight: 600;
+  line-height: 1;
   color: #EDEFF3; /* Alto contraste: texto branco/claro */
   background: transparent;
   border: 1px solid transparent;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: center;
+  vertical-align: middle;
+}
+
+.segmented-control-btn .seg-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13.5px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.segmented-control-btn .seg-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .segmented-control-item:hover .segmented-control-btn {
@@ -797,12 +822,42 @@ input[type="range"]::-moz-range-thumb {
 .historico-lancamentos {
   list-style: none;
   margin: 14px 0 0;
-  padding: 0;
+  padding: 0 4px 0 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  max-height: 240px;
-  overflow-y: auto;
+  gap: 8px;
+  max-height: 260px;
+  overflow-x: hidden; /* Oculta completamente a barra de rolagem horizontal */
+  overflow-y: auto;   /* Barra de rolagem vertical ativada */
+  overscroll-behavior: contain;
+  scrollbar-width: thin; /* Firefox: barra fina minimalista */
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent; /* Polegar sutil e trilho transparente */
+}
+
+/* Scrollbar Customizada e Minimalista para Tema Escuro (WebKit / Chromium / Edge / Safari) */
+.historico-lancamentos::-webkit-scrollbar {
+  width: 5px;
+  height: 0px; /* Garante que o scroll horizontal seja totalmente ocultado */
+}
+
+.historico-lancamentos::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 9999px;
+}
+
+.historico-lancamentos::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+.historico-lancamentos::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.historico-lancamentos::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 .historico-lancamentos:empty {
@@ -835,43 +890,55 @@ input[type="range"]::-moz-range-thumb {
 
 .historico-item {
   display: flex;
+  flex-wrap: wrap; /* Permite que tags e valores desçam fluidamente sem vazar */
   align-items: center;
-  gap: 10px;
-  padding: 9px 10px;
+  column-gap: 8px; /* Espaçamento horizontal entre os elementos */
+  row-gap: 6px;    /* Espaçamento vertical entre linhas quando houver quebra */
+  padding: 10px 12px;
   background: var(--surface-inset);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-field);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden; /* Contenção rigorosa de elementos filhos */
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .historico-descricao {
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 120px;
+  min-width: 90px;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 12.5px;
+  font-weight: 500;
   color: var(--text-primary);
+  line-height: 1.3;
 }
 
 .historico-data {
-  flex: none;
+  flex: 0 0 auto;
   font-size: 11px;
   color: var(--text-faint);
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  line-height: 1.3;
 }
 
 .historico-categoria {
-  flex: none;
+  flex: 0 0 auto;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--accent-expense);
   background: var(--accent-expense-dim);
-  padding: 3px 8px;
+  padding: 2.5px 8px;
   border-radius: var(--radius-pill);
   white-space: nowrap;
+  line-height: 1.3;
 }
 
 .card-income .historico-categoria {
@@ -880,16 +947,17 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .historico-tag-conveniencia {
-  flex: none;
+  flex: 0 0 auto;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  padding: 3px 8px;
+  padding: 2.5px 8px;
   border-radius: var(--radius-pill);
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: 3px;
+  line-height: 1.3;
 }
 
 .historico-tag-conveniencia.tag-mercado {
@@ -912,16 +980,17 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .historico-tag-frequencia {
-  flex: none;
+  flex: 0 0 auto;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  padding: 3px 8px;
+  padding: 2.5px 8px;
   border-radius: var(--radius-pill);
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: 3px;
+  line-height: 1.3;
 }
 
 .historico-tag-frequencia.tag-recorrente {
@@ -943,16 +1012,17 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .historico-tag-pagamento {
-  flex: none;
+  flex: 0 0 auto;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  padding: 3px 8px;
+  padding: 2.5px 8px;
   border-radius: var(--radius-pill);
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: 3px;
+  line-height: 1.3;
 }
 
 .historico-tag-pagamento.tag-cartao {
@@ -967,20 +1037,37 @@ input[type="range"]::-moz-range-thumb {
   border: 1px solid rgba(53, 201, 138, 0.28);
 }
 
+/* Agrupador de Ações e Valor no Histórico */
+.historico-acoes-valor {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto; /* Alinha à extremidade direita */
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .historico-valor {
-  flex: none;
+  flex: 0 0 auto;
   font-family: var(--font-mono);
   font-size: 12.5px;
   font-weight: 600;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+/* Fallback: caso o valor seja filho direto sem wrapper, mantém alinhamento à direita */
+.historico-item > .historico-valor {
+  margin-left: auto;
 }
 
 .historico-remover {
   appearance: none;
   background: none;
   border: none;
-  flex: none;
+  flex: 0 0 auto;
   width: 22px;
   height: 22px;
   border-radius: var(--radius-pill);
@@ -992,6 +1079,8 @@ input[type="range"]::-moz-range-thumb {
   line-height: 1;
   cursor: pointer;
   transition: color 0.15s ease, background-color 0.15s ease;
+  padding: 0;
+  margin: 0;
 }
 
 .historico-remover:hover {

@@ -528,14 +528,17 @@ input[type="range"]::-moz-range-thumb {
   color: var(--text-primary);
 }
 
-/* --- Seletor de Frequência e Parcelas (Fase 2) --- */
+/* --- Seletor de Forma de Pagamento, Frequência e Parcelas (Fase 2) --- */
+.form-lancamento-pagamento-linha,
 .form-lancamento-frequencia-linha {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
+.forma-pagamento-group,
 .frequencia-group,
+.fatura-group,
 .parcelas-group {
   display: flex;
   align-items: center;
@@ -547,12 +550,14 @@ input[type="range"]::-moz-range-thumb {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+.forma-pagamento-group,
 .frequencia-group {
   flex: 1;
 }
 
+.fatura-group,
 .parcelas-group {
-  flex: 0 0 135px;
+  flex: 0 0 145px;
 }
 
 .campo-frequencia-label {
@@ -600,7 +605,32 @@ input[type="range"]::-moz-range-thumb {
   font-weight: 400;
 }
 
+.form-lancamento-fatura {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  outline: none;
+  padding: 3px 0;
+  cursor: pointer;
+}
+
+.form-lancamento-fatura::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.15s ease;
+}
+
+.form-lancamento-fatura::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+.card-expense .forma-pagamento-group:focus-within,
 .card-expense .frequencia-group:focus-within,
+.card-expense .fatura-group:focus-within,
 .card-expense .parcelas-group:focus-within {
   border-color: var(--accent-expense);
   box-shadow: 0 0 0 3px var(--accent-expense-dim);
@@ -811,10 +841,41 @@ input[type="range"]::-moz-range-thumb {
   border: 1px solid rgba(140, 126, 224, 0.28);
 }
 
+.historico-tag-frequencia.tag-projetado {
+  color: #38BDF8;
+  background: rgba(56, 189, 248, 0.14);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+}
+
 .historico-tag-frequencia.tag-parcelado {
   color: #F0B94A;
   background: rgba(240, 185, 74, 0.14);
   border: 1px solid rgba(240, 185, 74, 0.28);
+}
+
+.historico-tag-pagamento {
+  flex: none;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.historico-tag-pagamento.tag-cartao {
+  color: #F43F5E;
+  background: rgba(244, 63, 94, 0.14);
+  border: 1px solid rgba(244, 63, 94, 0.28);
+}
+
+.historico-tag-pagamento.tag-pix {
+  color: #35C98A;
+  background: rgba(53, 201, 138, 0.14);
+  border: 1px solid rgba(53, 201, 138, 0.28);
 }
 
 .historico-valor {

@@ -117,16 +117,27 @@
   }
 
   // --- Motor de Repetições, Parcelamentos e Assinaturas (Fase 2) ---
+  function obterDataComDiaAjustado(anoMes, diaDesejado) {
+    if (!anoMes || typeof anoMes !== 'string') return obterDataHojeISO();
+    const partes = anoMes.split('-');
+    if (partes.length < 2) return obterDataHojeISO();
+    const ano = parseInt(partes[0], 10);
+    const mes = parseInt(partes[1], 10);
+    const maxDias = new Date(ano, mes, 0).getDate();
+    const dia = Math.min(parseInt(diaDesejado, 10) || 1, maxDias);
+    return `${partes[0]}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+  }
+
   function calcularDataCompetencia(dataBaseISO, mesesParaAdicionar) {
     if (!dataBaseISO || typeof dataBaseISO !== 'string') {
       dataBaseISO = obterDataHojeISO();
     }
     const partes = dataBaseISO.split('-');
-    if (partes.length !== 3) return dataBaseISO;
+    if (partes.length < 2) return dataBaseISO;
 
     let ano = parseInt(partes[0], 10);
     let mes = parseInt(partes[1], 10) - 1; // 0 a 11
-    const diaOriginal = parseInt(partes[2], 10);
+    const diaOriginal = partes.length >= 3 ? parseInt(partes[2], 10) : 1;
 
     mes += mesesParaAdicionar;
     ano += Math.floor(mes / 12);
@@ -148,6 +159,8 @@
     valorTotal,
     categoria,
     dataBase,
+    formaPagamento = 'pix_debito_dinheiro',
+    mesFatura = '',
     quantidadeParcelas,
     detalhamento,
     conveniencia
@@ -162,12 +175,24 @@
     const idGrupo = 'parc_' + gerarId();
     const parcelasGeradas = [];
 
+    // Determina a data base de impacto financeiro no caixa:
+    // - Cartão de Crédito: alocado no mês da fatura selecionado pelo usuário
+    // - Débito/PIX: alocado no mês da transação
+    const diaOriginal = (dataBase && dataBase.length >= 10) ? dataBase.slice(8, 10) : '01';
+    let dataBasePagamento = dataBase || obterDataHojeISO();
+
+    if (formaPagamento === 'cartao_credito' && mesFatura && /^\d{4}-\d{2}$/.test(mesFatura)) {
+      dataBasePagamento = obterDataComDiaAjustado(mesFatura, diaOriginal);
+    }
+
     for (let i = 1; i <= qtd; i++) {
       const valorParcela = (i === 1)
         ? Math.round((valorParcelaBase + diferencaCentavos) * 100) / 100
         : valorParcelaBase;
 
+      // Incremento automático do mês de competência e impacto financeiro das parcelas seguintes
       const dataCompetencia = calcularDataCompetencia(dataBase, i - 1);
+      const dataPagamento   = calcularDataCompetencia(dataBasePagamento, i - 1);
 
       const item = {
         id: gerarId(),
@@ -175,11 +200,18 @@
         valor: valorParcela,
         categoria: categoria || 'Não identificado',
         data: dataCompetencia,
+        data_pagamento: dataPagamento,
+        forma_pagamento: formaPagamento,
         frequencia: 'parcelado',
+        recorrente: false,
         parcelaAtual: i,
         totalParcelas: qtd,
         idGrupoParcelamento: idGrupo
       };
+
+      if (formaPagamento === 'cartao_credito') {
+        item.mes_fatura = dataPagamento.slice(0, 7);
+      }
 
       if (detalhamento) item.detalhamento = String(detalhamento).trim();
       if (typeof conveniencia === 'boolean') item.conveniencia = conveniencia;
@@ -197,35 +229,39 @@
     const resultado = [];
     const recorrentesInseridosIds = new Set();
 
-    // 1. Lançamentos efetivos do mês
+    // 1. Lançamentos efetivos com impacto no caixa no mês consultado (data_pagamento || data)
     lista.forEach(item => {
-      if (item.data && item.data.startsWith(anoMes)) {
+      const dataImpacto = item.data_pagamento || item.data;
+      if (dataImpacto && dataImpacto.startsWith(anoMes)) {
         resultado.push(item);
-        if (item.recorrente) {
+        if (item.recorrente === true) {
           recorrentesInseridosIds.add(item.idRecorrenteOrigem || item.id);
         }
       }
     });
 
-    // 2. Assinaturas e despesas fixas (recorrente: true) anteriores projetadas no mês atual
+    // 2. Assinaturas e despesas fixas (recorrente: true) originadas em meses anteriores
+    // Projetadas visualmente e contabilisticamente no mês atual
     lista.forEach(item => {
-      if (item.recorrente === true && item.data) {
-        const mesItem = item.data.slice(0, 7);
-        const chaveId = item.idRecorrenteOrigem || item.id;
-        if (mesItem < anoMes && !recorrentesInseridosIds.has(chaveId)) {
-          recorrentesInseridosIds.add(chaveId);
-          const diaOriginal = item.data.slice(8, 10);
-          const [ano, mes] = anoMes.split('-');
-          const maxDias = new Date(parseInt(ano, 10), parseInt(mes, 10), 0).getDate();
-          const diaAjustado = Math.min(parseInt(diaOriginal, 10), maxDias);
-          const dataProjetada = `${anoMes}-${String(diaAjustado).padStart(2, '0')}`;
+      if (item.recorrente === true) {
+        const dataImpacto = item.data_pagamento || item.data;
+        if (dataImpacto) {
+          const mesItem = dataImpacto.slice(0, 7);
+          const chaveId = item.idRecorrenteOrigem || item.id;
+          if (mesItem < anoMes && !recorrentesInseridosIds.has(chaveId)) {
+            recorrentesInseridosIds.add(chaveId);
+            const diaOriginal = dataImpacto.slice(8, 10) || '01';
+            const dataProjetada = obterDataComDiaAjustado(anoMes, diaOriginal);
 
-          resultado.push({
-            ...item,
-            id: `proj_${item.id}_${anoMes}`,
-            data: dataProjetada,
-            isProjetadoRecorrente: true
-          });
+            resultado.push({
+              ...item,
+              id: `proj_${item.id}_${anoMes}`,
+              idRecorrenteOrigem: item.id,
+              data: dataProjetada,
+              data_pagamento: dataProjetada,
+              isProjetadoRecorrente: true
+            });
+          }
         }
       }
     });
@@ -261,8 +297,19 @@
           categoria: categoriasValidas.includes(item.categoria) ? item.categoria : categoriaPadrao,
           data: (item.data && typeof item.data === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.data))
             ? item.data
-            : obterDataHojeISO()
+            : obterDataHojeISO(),
+          data_pagamento: (item.data_pagamento && typeof item.data_pagamento === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.data_pagamento))
+            ? item.data_pagamento
+            : ((item.data && typeof item.data === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.data)) ? item.data : obterDataHojeISO()),
+          forma_pagamento: (item.forma_pagamento && typeof item.forma_pagamento === 'string')
+            ? item.forma_pagamento
+            : 'pix_debito_dinheiro',
+          recorrente: Boolean(item.recorrente)
         };
+
+        if (item.mes_fatura && typeof item.mes_fatura === 'string') {
+          itemSanitizado.mes_fatura = item.mes_fatura;
+        }
 
         if (item.detalhamento && typeof item.detalhamento === 'string') {
           itemSanitizado.detalhamento = item.detalhamento.trim();
@@ -270,10 +317,6 @@
 
         if (typeof item.conveniencia === 'boolean') {
           itemSanitizado.conveniencia = item.conveniencia;
-        }
-
-        if (item.recorrente === true) {
-          itemSanitizado.recorrente = true;
         }
 
         if (item.frequencia && typeof item.frequencia === 'string') {
@@ -839,23 +882,26 @@
     if (!user) return;
 
     try {
-      // Normalização do payload de saídas para garantir preservação de detalhamento, conveniência, recorrência e parcelamento
+      // Normalização do payload de saídas para garantir preservação de detalhamento, conveniência, forma de pagamento, impacto no caixa, recorrência e parcelamento
       const saidasNormalizadas = (state.saidas || []).map(item => {
         const saidaItem = {
           id: item.id || gerarId(),
           descricao: item.descricao ? String(item.descricao).trim() : '',
           valor: Math.max(0, Number(item.valor) || 0),
           categoria: item.categoria || 'Não identificado',
-          data: item.data || obterDataHojeISO()
+          data: item.data || obterDataHojeISO(),
+          data_pagamento: item.data_pagamento || item.data || obterDataHojeISO(),
+          forma_pagamento: item.forma_pagamento || 'pix_debito_dinheiro',
+          recorrente: Boolean(item.recorrente)
         };
+        if (item.mes_fatura) {
+          saidaItem.mes_fatura = String(item.mes_fatura);
+        }
         if (item.detalhamento) {
           saidaItem.detalhamento = String(item.detalhamento).trim();
         }
         if (typeof item.conveniencia === 'boolean') {
           saidaItem.conveniencia = item.conveniencia;
-        }
-        if (item.recorrente === true) {
-          saidaItem.recorrente = true;
         }
         if (item.frequencia) {
           saidaItem.frequencia = String(item.frequencia);
@@ -872,8 +918,18 @@
         return saidaItem;
       });
 
+      const entradasNormalizadas = (state.entradas || []).map(item => ({
+        id: item.id || gerarId(),
+        descricao: item.descricao ? String(item.descricao).trim() : '',
+        valor: Math.max(0, Number(item.valor) || 0),
+        categoria: item.categoria || 'Outros',
+        data: item.data || obterDataHojeISO(),
+        data_pagamento: item.data_pagamento || item.data || obterDataHojeISO(),
+        recorrente: Boolean(item.recorrente)
+      }));
+
       const pacote = {
-        entradas: state.entradas,
+        entradas: entradasNormalizadas,
         saidas: saidasNormalizadas,
         historicoInvestimentos: state.historicoInvestimentos,
         percentualInvestimento: state.percentualInvestimento,
@@ -1103,6 +1159,7 @@
     formatarDataBR,
     formatarMesAno,
     gerarId,
+    obterDataComDiaAjustado,
     calcularDataCompetencia,
     gerarLancamentosParcelados,
     obterLancamentosMesComRecorrencia,

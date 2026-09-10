@@ -150,19 +150,43 @@
               </div>
             </div>
 
+            <!-- Seletor de Forma de Pagamento & Mês da Fatura (Fase 2) -->
+            <div class="form-lancamento-linha form-lancamento-pagamento-linha">
+              <div class="forma-pagamento-group">
+                <label for="saida-forma-pagamento" class="campo-frequencia-label">Forma de Pagamento:</label>
+                <select id="saida-forma-pagamento" name="saida-forma-pagamento" class="form-lancamento-frequencia" aria-label="Forma de Pagamento da despesa">
+                  <option value="pix_debito_dinheiro" selected>PIX / Débito / Dinheiro</option>
+                  <option value="cartao_credito">Cartão de Crédito</option>
+                </select>
+              </div>
+
+              <!-- Regra de UX 1: Exibido apenas se Cartão de Crédito estiver selecionado -->
+              <div id="saida-fatura-container" class="fatura-group form-lancamento-condicional" style="display: none;">
+                <label for="saida-mes-fatura" class="campo-frequencia-label">Mês da Fatura:</label>
+                <input
+                  type="month"
+                  id="saida-mes-fatura"
+                  name="saida-mes-fatura"
+                  class="form-lancamento-fatura"
+                  aria-label="Mês da Fatura para alocação no fluxo de caixa"
+                >
+              </div>
+            </div>
+
             <!-- Seletor de Frequência & Campo de Parcelas (Fase 2) -->
             <div class="form-lancamento-linha form-lancamento-frequencia-linha">
               <div class="frequencia-group">
                 <label for="saida-frequencia" class="campo-frequencia-label">Frequência:</label>
                 <select id="saida-frequencia" name="saida-frequencia" class="form-lancamento-frequencia" aria-label="Frequência da despesa">
                   <option value="unico" selected>Único</option>
-                  <option value="fixo">Assinatura (Fixo)</option>
+                  <option value="fixo">Assinatura Fixa</option>
                   <option value="parcelado">Parcelado</option>
                 </select>
               </div>
 
+              <!-- Regra de UX 2: Exibido apenas se Parcelado estiver selecionado -->
               <div id="saida-parcelas-container" class="parcelas-group form-lancamento-condicional" style="display: none;">
-                <label for="saida-parcelas" class="campo-frequencia-label">Parcelas:</label>
+                <label for="saida-parcelas" class="campo-frequencia-label">Qtd. Parcelas:</label>
                 <input
                   type="number"
                   id="saida-parcelas"
@@ -171,7 +195,7 @@
                   min="2"
                   max="72"
                   step="1"
-                  placeholder="Nº (ex.: 3)"
+                  placeholder="Ex.: 3"
                   aria-label="Quantidade de parcelas"
                 >
               </div>

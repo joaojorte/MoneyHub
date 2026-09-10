@@ -136,16 +136,16 @@
     const mesesSet = new Set();
     const mesAtual = (typeof obterDataHojeISO === 'function') ? obterDataHojeISO().slice(0, 7) : new Date().toISOString().slice(0, 7);
 
-    // Se houver qualquer lançamento recorrente, garante presença do mês atual no seletor
-    if (state.saidas.some(item => item.recorrente === true)) {
-      mesesSet.add(mesAtual);
-    }
+    // Garante presença do mês atual no seletor
+    mesesSet.add(mesAtual);
 
     state.entradas.forEach(item => {
-      if (item.data && item.data.length >= 7) mesesSet.add(item.data.slice(0, 7));
+      const dataRef = item.data_pagamento || item.data;
+      if (dataRef && dataRef.length >= 7) mesesSet.add(dataRef.slice(0, 7));
     });
     state.saidas.forEach(item => {
-      if (item.data && item.data.length >= 7) mesesSet.add(item.data.slice(0, 7));
+      const dataRef = item.data_pagamento || item.data;
+      if (dataRef && dataRef.length >= 7) mesesSet.add(dataRef.slice(0, 7));
     });
     return Array.from(mesesSet).sort((a, b) => b.localeCompare(a));
   }

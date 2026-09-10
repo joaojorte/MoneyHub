@@ -14,8 +14,10 @@
     formatarBRL,
     formatarDataBR,
     obterDataHojeISO,
+    obterDataComDiaAjustado,
     gerarId,
     gerarLancamentosParcelados,
+    obterLancamentosMesComRecorrencia,
     somarLancamentos,
     somarPorCategoria,
     salvarDados,
@@ -36,6 +38,7 @@
   let formEntradaEl, entradaDescricaoInput, entradaValorInput, entradaCategoriaSelect, entradaDataInput, historicoEntradasEl;
   let formSaidaEl, saidaDescricaoInput, saidaValorInput, saidaCategoriaSelect, saidaDataInput, historicoSaidasEl;
   let saidaDetalhamentoContainer, saidaDetalhamentoInput, saidaConvenienciaContainer;
+  let saidaFormaPagamentoSelect, saidaFaturaContainer, saidaMesFaturaInput;
   let saidaFrequenciaSelect, saidaParcelasContainer, saidaParcelasInput;
   let investimentoRange, investimentoNum, aporteExtraInput, reservaRange, reservaNum;
   let resultadoDigits, investimentoDigits, reservaDigits;
@@ -58,6 +61,9 @@
     saidaDetalhamentoContainer = document.getElementById('saida-detalhamento-container');
     saidaDetalhamentoInput     = document.getElementById('saida-detalhamento');
     saidaConvenienciaContainer = document.getElementById('saida-conveniencia-container');
+    saidaFormaPagamentoSelect  = document.getElementById('saida-forma-pagamento');
+    saidaFaturaContainer       = document.getElementById('saida-fatura-container');
+    saidaMesFaturaInput        = document.getElementById('saida-mes-fatura');
     saidaFrequenciaSelect      = document.getElementById('saida-frequencia');
     saidaParcelasContainer     = document.getElementById('saida-parcelas-container');
     saidaParcelasInput         = document.getElementById('saida-parcelas');
@@ -89,15 +95,50 @@
     formEntradaEl.addEventListener('submit', incluirEntrada);
     formSaidaEl.addEventListener('submit', incluirSaida);
     saidaCategoriaSelect.addEventListener('change', atualizarVisibilidadeCondicionalSaida);
+
+    if (saidaFormaPagamentoSelect) {
+      saidaFormaPagamentoSelect.addEventListener('change', atualizarVisibilidadeFormaPagamento);
+    }
     if (saidaFrequenciaSelect) {
       saidaFrequenciaSelect.addEventListener('change', atualizarVisibilidadeFrequenciaSaida);
+    }
+    if (saidaDataInput) {
+      saidaDataInput.addEventListener('change', () => {
+        if (saidaFormaPagamentoSelect && saidaFormaPagamentoSelect.value === 'cartao_credito' && saidaMesFaturaInput && !saidaMesFaturaInput.value && saidaDataInput.value) {
+          saidaMesFaturaInput.value = saidaDataInput.value.slice(0, 7);
+        }
+      });
     }
     btnEfetivarInvestimento.addEventListener('click', efetivarInvestimento);
 
     atualizarVisibilidadeCondicionalSaida();
+    atualizarVisibilidadeFormaPagamento();
     atualizarVisibilidadeFrequenciaSaida();
   }
 
+  // Regra de UX 1: Se "Cartão de Crédito" for selecionado, exibe "Mês da Fatura"
+  function atualizarVisibilidadeFormaPagamento() {
+    if (!saidaFormaPagamentoSelect) return;
+    const forma = saidaFormaPagamentoSelect.value;
+    if (forma === 'cartao_credito') {
+      if (saidaFaturaContainer) saidaFaturaContainer.style.display = 'flex';
+      if (saidaMesFaturaInput) {
+        if (!saidaMesFaturaInput.value) {
+          const dataBase = (saidaDataInput && saidaDataInput.value) ? saidaDataInput.value : obterDataHojeISO();
+          saidaMesFaturaInput.value = dataBase.slice(0, 7);
+        }
+        saidaMesFaturaInput.required = true;
+      }
+    } else {
+      if (saidaFaturaContainer) saidaFaturaContainer.style.display = 'none';
+      if (saidaMesFaturaInput) {
+        saidaMesFaturaInput.required = false;
+        saidaMesFaturaInput.value = '';
+      }
+    }
+  }
+
+  // Regra de UX 2: Se "Parcelado" for selecionado, exibe "Quantidade de Parcelas"
   function atualizarVisibilidadeFrequenciaSaida() {
     if (!saidaFrequenciaSelect) return;
     const freq = saidaFrequenciaSelect.value;
@@ -172,7 +213,11 @@
 
     const dataSpan = document.createElement('span');
     dataSpan.className = 'historico-data';
-    dataSpan.textContent = formatarDataBR(item.data);
+    if (item.data_pagamento && item.data && item.data_pagamento !== item.data) {
+      dataSpan.textContent = `Compra: ${formatarDataBR(item.data)} · Fatura: ${formatarDataBR(item.data_pagamento)}`;
+    } else {
+      dataSpan.textContent = formatarDataBR(item.data_pagamento || item.data);
+    }
 
     const cat = document.createElement('span');
     cat.className = 'historico-categoria';
@@ -195,12 +240,32 @@
       tagConveniencia.title = isDelivery ? 'Modalidade: Pronto / Delivery' : 'Modalidade: Mercado';
     }
 
-    // Tag visual de Frequência (Fixo / Assinatura ou Parcelado)
+    // Tag visual de Forma de Pagamento
+    let tagPagamento = null;
+    if (item.forma_pagamento === 'cartao_credito') {
+      tagPagamento = document.createElement('span');
+      tagPagamento.className = 'historico-tag-pagamento tag-cartao';
+      const mesFat = item.mes_fatura || (item.data_pagamento ? item.data_pagamento.slice(0, 7) : '');
+      tagPagamento.textContent = mesFat ? `💳 Cartão (${mesFat.slice(5, 7)}/${mesFat.slice(2, 4)})` : '💳 Cartão';
+      tagPagamento.title = `Cartão de Crédito — Impacto no caixa: ${formatarDataBR(item.data_pagamento || item.data)}`;
+    } else if (item.forma_pagamento === 'pix_debito_dinheiro') {
+      tagPagamento = document.createElement('span');
+      tagPagamento.className = 'historico-tag-pagamento tag-pix';
+      tagPagamento.textContent = '⚡ PIX/Débito';
+      tagPagamento.title = 'Pagamento à vista (PIX / Débito / Dinheiro) — Impacto imediato no mês da transação';
+    }
+
+    // Tag visual de Frequência (Assinatura Fixa, Projetada ou Parcelada)
     let tagFrequencia = null;
-    if (item.recorrente === true) {
+    if (item.isProjetadoRecorrente === true) {
+      tagFrequencia = document.createElement('span');
+      tagFrequencia.className = 'historico-tag-frequencia tag-projetado';
+      tagFrequencia.textContent = '🔁 Assinatura (Projetada)';
+      tagFrequencia.title = 'Despesa fixa / assinatura originada em mês anterior, projetada automaticamente no mês vigente';
+    } else if (item.recorrente === true) {
       tagFrequencia = document.createElement('span');
       tagFrequencia.className = 'historico-tag-frequencia tag-recorrente';
-      tagFrequencia.textContent = '🔁 Fixo';
+      tagFrequencia.textContent = '🔁 Assinatura Fixa';
       tagFrequencia.title = 'Despesa Recorrente / Assinatura Fixa';
     } else if (item.frequencia === 'parcelado' || (item.totalParcelas && item.totalParcelas > 1)) {
       tagFrequencia = document.createElement('span');
@@ -222,6 +287,7 @@
     btn.addEventListener('click', () => fnRemover(item.id));
 
     const elementosLinha = [desc, dataSpan, cat];
+    if (tagPagamento) elementosLinha.push(tagPagamento);
     if (tagConveniencia) elementosLinha.push(tagConveniencia);
     if (tagFrequencia) elementosLinha.push(tagFrequencia);
     elementosLinha.push(val, btn);
@@ -278,9 +344,13 @@
   }
 
   // --- Saídas ---
+  // Regra de Leitura: renderiza o painel do mês atual puxando os gastos vigentes no caixa E projetando assinaturas anteriores (recorrente: true)
   function renderizarHistoricoSaidas() {
     historicoSaidasEl.innerHTML = '';
-    state.saidas.forEach((item) => {
+    const mesAtual = obterDataHojeISO().slice(0, 7);
+    const saidasMesAtual = obterLancamentosMesComRecorrencia(state.saidas, mesAtual);
+
+    saidasMesAtual.forEach((item) => {
       historicoSaidasEl.appendChild(
         criarItemHistorico(item, CATEGORIA_SAIDA_PADRAO, 'saída', removerSaida)
       );
@@ -323,7 +393,26 @@
       conveniencia = radioDelivery ? (radioDelivery.value === 'delivery') : false;
     }
 
-    // Interceptação de Frequência (Fase 2: Único, Assinatura Fixo, Parcelado)
+    // Forma de Pagamento e Mês da Fatura
+    const formaPagamento = saidaFormaPagamentoSelect ? saidaFormaPagamentoSelect.value : 'pix_debito_dinheiro';
+    let mesFatura = '';
+
+    if (formaPagamento === 'cartao_credito') {
+      mesFatura = saidaMesFaturaInput ? saidaMesFaturaInput.value.trim() : '';
+      if (!mesFatura) {
+        mesFatura = data.slice(0, 7);
+      }
+    }
+
+    // Determina a data de impacto financeiro no caixa para lançamentos únicos ou base:
+    // Débito/PIX: mesmo mês da transação (data)
+    // Cartão de Crédito: projetado para o mês da fatura selecionado
+    const diaOriginal = (data && data.length >= 10) ? data.slice(8, 10) : '01';
+    const dataPagamentoInicial = (formaPagamento === 'cartao_credito' && mesFatura)
+      ? obterDataComDiaAjustado(mesFatura, diaOriginal)
+      : data;
+
+    // Frequência (Fase 2: Único, Assinatura Fixa, Parcelado)
     const frequencia = saidaFrequenciaSelect ? saidaFrequenciaSelect.value : 'unico';
 
     if (frequencia === 'parcelado') {
@@ -342,12 +431,14 @@
         return;
       }
 
-      // Gera N lançamentos individuais dividindo o valor total pelas parcelas
+      // Gera N lançamentos individuais dividindo o valor total pelas parcelas com alocação no mês de fatura ou inicial
       const parcelasGeradas = gerarLancamentosParcelados({
         descricao,
         valorTotal: valor,
         categoria,
         dataBase: data,
+        formaPagamento,
+        mesFatura,
         quantidadeParcelas: qtdParcelas,
         detalhamento,
         conveniencia
@@ -360,8 +451,16 @@
         descricao,
         valor,
         categoria,
-        data
+        data,
+        data_pagamento: dataPagamentoInicial,
+        forma_pagamento: formaPagamento,
+        frequencia: frequencia === 'fixo' ? 'fixo' : 'unico',
+        recorrente: frequencia === 'fixo'
       };
+
+      if (formaPagamento === 'cartao_credito' && mesFatura) {
+        novoItem.mes_fatura = mesFatura;
+      }
 
       if (categoria === 'Outros' && detalhamento) {
         novoItem.detalhamento = detalhamento;
@@ -369,13 +468,6 @@
 
       if (categoria === 'Alimentação') {
         novoItem.conveniencia = conveniencia;
-      }
-
-      if (frequencia === 'fixo') {
-        novoItem.recorrente = true;
-        novoItem.frequencia = 'fixo';
-      } else {
-        novoItem.frequencia = 'unico';
       }
 
       state.saidas.push(novoItem);
@@ -391,6 +483,10 @@
     if (radioMercadoPadrao) radioMercadoPadrao.checked = true;
     atualizarVisibilidadeCondicionalSaida();
 
+    if (saidaFormaPagamentoSelect) saidaFormaPagamentoSelect.value = 'pix_debito_dinheiro';
+    if (saidaMesFaturaInput) saidaMesFaturaInput.value = '';
+    atualizarVisibilidadeFormaPagamento();
+
     if (saidaFrequenciaSelect) saidaFrequenciaSelect.value = 'unico';
     if (saidaParcelasInput) saidaParcelasInput.value = '';
     atualizarVisibilidadeFrequenciaSaida();
@@ -402,7 +498,14 @@
   }
 
   function removerSaida(id) {
-    state.saidas = state.saidas.filter((item) => item.id !== id);
+    // Se for um item projetado de assinatura recorrente anterior, remove a assinatura original
+    if (typeof id === 'string' && id.startsWith('proj_')) {
+      const partes = id.split('_');
+      const idOrigem = partes[1];
+      state.saidas = state.saidas.filter(item => item.id !== idOrigem);
+    } else {
+      state.saidas = state.saidas.filter(item => item.id !== id);
+    }
     renderizarHistoricoSaidas();
     calcular();
   }
@@ -493,11 +596,16 @@
   }
 
   // --- Cálculo Principal ---
+  // Regra de Leitura: cálculo financeiro do painel do mês atual puxa os gastos do mês vigente no caixa E projeta assinaturas anteriores
   function calcular() {
-    const somaTotalEntradas = somarLancamentos(state.entradas);
-    const totalSalario      = somarPorCategoria(state.entradas, 'Salário');
-    const totalDividendos   = somarPorCategoria(state.entradas, 'Dividendos');
-    const somaTotalSaidas   = somarLancamentos(state.saidas);
+    const mesAtual = obterDataHojeISO().slice(0, 7);
+    const entradasMes = obterLancamentosMesComRecorrencia(state.entradas, mesAtual);
+    const saidasMes   = obterLancamentosMesComRecorrencia(state.saidas, mesAtual);
+
+    const somaTotalEntradas = somarLancamentos(entradasMes);
+    const totalSalario      = somarPorCategoria(entradasMes, 'Salário');
+    const totalDividendos   = somarPorCategoria(entradasMes, 'Dividendos');
+    const somaTotalSaidas   = somarLancamentos(saidasMes);
 
     const percentualInvestimento = paraPercentual(investimentoNum.value);
     const aporteExtra            = paraNumeroMonetario(aporteExtraInput.value);
@@ -550,11 +658,15 @@
     renderizarHistoricoSaidas();
     renderizarHistoricoInvestimentos();
 
-    // Recalcula totais na interface sem disparar novo salvamento na nuvem
-    const somaTotalEntradas = somarLancamentos(state.entradas);
-    const totalSalario      = somarPorCategoria(state.entradas, 'Salário');
-    const totalDividendos   = somarPorCategoria(state.entradas, 'Dividendos');
-    const somaTotalSaidas   = somarLancamentos(state.saidas);
+    // Recalcula totais na interface com base no mês vigente sem disparar novo salvamento na nuvem
+    const mesAtual = obterDataHojeISO().slice(0, 7);
+    const entradasMes = obterLancamentosMesComRecorrencia(state.entradas, mesAtual);
+    const saidasMes   = obterLancamentosMesComRecorrencia(state.saidas, mesAtual);
+
+    const somaTotalEntradas = somarLancamentos(entradasMes);
+    const totalSalario      = somarPorCategoria(entradasMes, 'Salário');
+    const totalDividendos   = somarPorCategoria(entradasMes, 'Dividendos');
+    const somaTotalSaidas   = somarLancamentos(saidasMes);
 
     const percentualInvestimento = paraPercentual(investimentoNum ? investimentoNum.value : state.percentualInvestimento);
     const aporteExtra            = paraNumeroMonetario(aporteExtraInput ? aporteExtraInput.value : state.aporteExtra);

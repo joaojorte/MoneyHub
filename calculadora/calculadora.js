@@ -38,8 +38,16 @@
   let formEntradaEl, entradaDescricaoInput, entradaValorInput, entradaCategoriaSelect, entradaDataInput, historicoEntradasEl;
   let formSaidaEl, saidaDescricaoInput, saidaValorInput, saidaCategoriaSelect, saidaDataInput, historicoSaidasEl;
   let saidaDetalhamentoContainer, saidaDetalhamentoInput, saidaConvenienciaContainer;
-  let saidaFormaPagamentoSelect, saidaFaturaContainer, saidaMesFaturaInput;
-  let saidaFrequenciaSelect, saidaParcelasContainer, saidaParcelasInput;
+
+  // Segmented Control de Pagamento & Toggles (Fim do <select>)
+  let radioPagamentoPix, radioPagamentoCartao;
+  let btnToggleRecorrente, btnToggleParcelar;
+  let camposCondicionaisCartao, saidaFaturaContainer, saidaMesFaturaInput, saidaParcelasContainer, saidaParcelasInput;
+
+  // Estado Reativo Interno da Frequência
+  let estadoRecorrente = false;
+  let estadoParcelado  = false;
+
   let investimentoRange, investimentoNum, aporteExtraInput, reservaRange, reservaNum;
   let resultadoDigits, investimentoDigits, reservaDigits;
   let investimentoDataInput, btnEfetivarInvestimento, feedbackInvestimentoEl, historicoInvestimentosListaEl, investimentoAcumuladoTag;
@@ -61,14 +69,18 @@
     saidaDetalhamentoContainer = document.getElementById('saida-detalhamento-container');
     saidaDetalhamentoInput     = document.getElementById('saida-detalhamento');
     saidaConvenienciaContainer = document.getElementById('saida-conveniencia-container');
-    saidaFormaPagamentoSelect  = document.getElementById('saida-forma-pagamento');
-    saidaFaturaContainer       = document.getElementById('saida-fatura-container');
-    saidaMesFaturaInput        = document.getElementById('saida-mes-fatura');
-    saidaFrequenciaSelect      = document.getElementById('saida-frequencia');
-    saidaParcelasContainer     = document.getElementById('saida-parcelas-container');
-    saidaParcelasInput         = document.getElementById('saida-parcelas');
-    saidaDataInput             = document.getElementById('saida-data');
-    historicoSaidasEl          = document.getElementById('historico-saidas');
+
+    radioPagamentoPix       = document.getElementById('pagamento-pix');
+    radioPagamentoCartao    = document.getElementById('pagamento-cartao');
+    btnToggleRecorrente     = document.getElementById('btn-toggle-recorrente');
+    btnToggleParcelar       = document.getElementById('btn-toggle-parcelar');
+    camposCondicionaisCartao= document.getElementById('campos-condicionais-cartao');
+    saidaFaturaContainer    = document.getElementById('saida-fatura-container');
+    saidaMesFaturaInput     = document.getElementById('saida-mes-fatura');
+    saidaParcelasContainer  = document.getElementById('saida-parcelas-container');
+    saidaParcelasInput      = document.getElementById('saida-parcelas');
+    saidaDataInput          = document.getElementById('saida-data');
+    historicoSaidasEl       = document.getElementById('historico-saidas');
 
     investimentoRange      = document.getElementById('investimento-range');
     investimentoNum        = document.getElementById('investimento-num');
@@ -96,63 +108,132 @@
     formSaidaEl.addEventListener('submit', incluirSaida);
     saidaCategoriaSelect.addEventListener('change', atualizarVisibilidadeCondicionalSaida);
 
-    if (saidaFormaPagamentoSelect) {
-      saidaFormaPagamentoSelect.addEventListener('change', atualizarVisibilidadeFormaPagamento);
+    // Eventos de Pagamento e Frequência (Segmented Controls & Toggles)
+    if (radioPagamentoPix) {
+      radioPagamentoPix.addEventListener('change', atualizarEstadoUI);
     }
-    if (saidaFrequenciaSelect) {
-      saidaFrequenciaSelect.addEventListener('change', atualizarVisibilidadeFrequenciaSaida);
+    if (radioPagamentoCartao) {
+      radioPagamentoCartao.addEventListener('change', atualizarEstadoUI);
     }
+
+    if (btnToggleRecorrente) {
+      btnToggleRecorrente.addEventListener('click', () => {
+        estadoRecorrente = !estadoRecorrente;
+        // Ao marcar como recorrente, desmarca parcelamento internamente
+        if (estadoRecorrente && estadoParcelado) {
+          estadoParcelado = false;
+        }
+        atualizarEstadoUI();
+      });
+    }
+
+    if (btnToggleParcelar) {
+      btnToggleParcelar.addEventListener('click', () => {
+        estadoParcelado = !estadoParcelado;
+        // Ao marcar como parcelado: Desmarca "Único" ou "Assinatura" internamente
+        if (estadoParcelado && estadoRecorrente) {
+          estadoRecorrente = false;
+        }
+        atualizarEstadoUI();
+        if (estadoParcelado && saidaParcelasInput) {
+          saidaParcelasInput.focus();
+        }
+      });
+    }
+
     if (saidaDataInput) {
       saidaDataInput.addEventListener('change', () => {
-        if (saidaFormaPagamentoSelect && saidaFormaPagamentoSelect.value === 'cartao_credito' && saidaMesFaturaInput && !saidaMesFaturaInput.value && saidaDataInput.value) {
+        if (radioPagamentoCartao && radioPagamentoCartao.checked && saidaMesFaturaInput && !saidaMesFaturaInput.value && saidaDataInput.value) {
           saidaMesFaturaInput.value = saidaDataInput.value.slice(0, 7);
         }
       });
     }
+
     btnEfetivarInvestimento.addEventListener('click', efetivarInvestimento);
 
     atualizarVisibilidadeCondicionalSaida();
-    atualizarVisibilidadeFormaPagamento();
-    atualizarVisibilidadeFrequenciaSaida();
+    atualizarEstadoUI();
   }
 
-  // Regra de UX 1: Se "Cartão de Crédito" for selecionado, exibe "Mês da Fatura"
-  function atualizarVisibilidadeFormaPagamento() {
-    if (!saidaFormaPagamentoSelect) return;
-    const forma = saidaFormaPagamentoSelect.value;
-    if (forma === 'cartao_credito') {
-      if (saidaFaturaContainer) saidaFaturaContainer.style.display = 'flex';
+  // Lógica de Dependência e Ocultação Inteligente
+  function atualizarEstadoUI() {
+    const isCartao = radioPagamentoCartao && radioPagamentoCartao.checked;
+
+    // 1. Atualização visual do botão "Tornar Recorrente (Assinatura)"
+    if (btnToggleRecorrente) {
+      btnToggleRecorrente.classList.toggle('ativo', estadoRecorrente);
+      btnToggleRecorrente.setAttribute('aria-pressed', estadoRecorrente ? 'true' : 'false');
+    }
+
+    // 2. Se for Cartão de Crédito
+    if (isCartao) {
+      // Exibe o botão extra "Parcelar"
+      if (btnToggleParcelar) {
+        btnToggleParcelar.style.display = 'inline-flex';
+        btnToggleParcelar.classList.toggle('ativo', estadoParcelado);
+        btnToggleParcelar.setAttribute('aria-pressed', estadoParcelado ? 'true' : 'false');
+      }
+
+      // Exibe container de campos condicionais
+      if (camposCondicionaisCartao) {
+        camposCondicionaisCartao.style.display = 'flex';
+      }
+
+      // Exibe campo de "Mês da Fatura" (para alocar o impacto no caixa corretamente)
+      if (saidaFaturaContainer) {
+        saidaFaturaContainer.style.display = 'flex';
+      }
+      if (saidaMesFaturaInput && !saidaMesFaturaInput.value) {
+        const dataBase = (saidaDataInput && saidaDataInput.value) ? saidaDataInput.value : obterDataHojeISO();
+        saidaMesFaturaInput.value = dataBase.slice(0, 7);
+      }
       if (saidaMesFaturaInput) {
-        if (!saidaMesFaturaInput.value) {
-          const dataBase = (saidaDataInput && saidaDataInput.value) ? saidaDataInput.value : obterDataHojeISO();
-          saidaMesFaturaInput.value = dataBase.slice(0, 7);
-        }
         saidaMesFaturaInput.required = true;
       }
+
+      // Se "Parcelar" for clicado: exibe campo numérico "Quantidade de Parcelas"
+      if (estadoParcelado) {
+        if (saidaParcelasContainer) saidaParcelasContainer.style.display = 'flex';
+        if (saidaParcelasInput) saidaParcelasInput.required = true;
+      } else {
+        if (saidaParcelasContainer) saidaParcelasContainer.style.display = 'none';
+        if (saidaParcelasInput) {
+          saidaParcelasInput.required = false;
+          saidaParcelasInput.value = '';
+        }
+      }
     } else {
-      if (saidaFaturaContainer) saidaFaturaContainer.style.display = 'none';
+      // Se voltar para "PIX / Débito":
+      // Oculte o botão "Parcelar" e o "Mês da Fatura"
+      if (btnToggleParcelar) {
+        btnToggleParcelar.style.display = 'none';
+        btnToggleParcelar.classList.remove('ativo');
+        btnToggleParcelar.setAttribute('aria-pressed', 'false');
+      }
+
+      if (saidaFaturaContainer) {
+        saidaFaturaContainer.style.display = 'none';
+      }
       if (saidaMesFaturaInput) {
         saidaMesFaturaInput.required = false;
         saidaMesFaturaInput.value = '';
       }
-    }
-  }
 
-  // Regra de UX 2: Se "Parcelado" for selecionado, exibe "Quantidade de Parcelas"
-  function atualizarVisibilidadeFrequenciaSaida() {
-    if (!saidaFrequenciaSelect) return;
-    const freq = saidaFrequenciaSelect.value;
-    if (freq === 'parcelado') {
-      if (saidaParcelasContainer) saidaParcelasContainer.style.display = 'flex';
-      if (saidaParcelasInput) {
-        saidaParcelasInput.required = true;
-        saidaParcelasInput.focus();
+      // Se estava parcelado, resete o estado da frequência para "Único" silenciosamente
+      if (estadoParcelado) {
+        estadoParcelado = false;
       }
-    } else {
-      if (saidaParcelasContainer) saidaParcelasContainer.style.display = 'none';
+
+      if (saidaParcelasContainer) {
+        saidaParcelasContainer.style.display = 'none';
+      }
       if (saidaParcelasInput) {
         saidaParcelasInput.required = false;
         saidaParcelasInput.value = '';
+      }
+
+      if (camposCondicionaisCartao) {
+        camposCondicionaisCartao.style.display = 'none';
       }
     }
   }
@@ -393,45 +474,40 @@
       conveniencia = radioDelivery ? (radioDelivery.value === 'delivery') : false;
     }
 
-    // Forma de Pagamento e Mês da Fatura
-    const formaPagamento = saidaFormaPagamentoSelect ? saidaFormaPagamentoSelect.value : 'pix_debito_dinheiro';
+    // Leitura da Forma de Pagamento (Segmented Control) e Mês da Fatura
+    const isCartao = radioPagamentoCartao && radioPagamentoCartao.checked;
+    const formaPagamento = isCartao ? 'cartao_credito' : 'pix_debito_dinheiro';
     let mesFatura = '';
 
-    if (formaPagamento === 'cartao_credito') {
+    if (isCartao) {
       mesFatura = saidaMesFaturaInput ? saidaMesFaturaInput.value.trim() : '';
       if (!mesFatura) {
         mesFatura = data.slice(0, 7);
       }
     }
 
-    // Determina a data de impacto financeiro no caixa para lançamentos únicos ou base:
-    // Débito/PIX: mesmo mês da transação (data)
-    // Cartão de Crédito: projetado para o mês da fatura selecionado
+    // Impacto financeiro no caixa:
+    // - PIX/Débito: mesmo mês da transação (data)
+    // - Cartão de Crédito: projetado para o mês da fatura selecionado
     const diaOriginal = (data && data.length >= 10) ? data.slice(8, 10) : '01';
-    const dataPagamentoInicial = (formaPagamento === 'cartao_credito' && mesFatura)
+    const dataPagamentoInicial = (isCartao && mesFatura)
       ? obterDataComDiaAjustado(mesFatura, diaOriginal)
       : data;
 
-    // Frequência (Fase 2: Único, Assinatura Fixa, Parcelado)
-    const frequencia = saidaFrequenciaSelect ? saidaFrequenciaSelect.value : 'unico';
-
-    if (frequencia === 'parcelado') {
+    // Processamento por Frequência (Parcelado vs Assinatura Fixa vs Padrão Único)
+    if (isCartao && estadoParcelado) {
       const qtdParcelas = parseInt(saidaParcelasInput ? saidaParcelasInput.value : '', 10);
       if (isNaN(qtdParcelas) || qtdParcelas < 2) {
         if (saidaParcelasInput) {
           saidaParcelasInput.focus();
-          const grupoParcelas = saidaParcelasInput.closest('.parcelas-group');
-          if (grupoParcelas) {
-            grupoParcelas.style.borderColor = 'var(--accent-expense)';
-            setTimeout(() => {
-              if (grupoParcelas) grupoParcelas.style.borderColor = '';
-            }, 1800);
-          }
+          const grupoParcelas = saidaParcelasInput.closest('.parcelas-group') || saidaParcelasInput;
+          grupoParcelas.style.borderColor = 'var(--accent-expense)';
+          setTimeout(() => { grupoParcelas.style.borderColor = ''; }, 1800);
         }
         return;
       }
 
-      // Gera N lançamentos individuais dividindo o valor total pelas parcelas com alocação no mês de fatura ou inicial
+      // Gera N lançamentos individuais dividindo o valor total pelas parcelas com alocação no mês de fatura
       const parcelasGeradas = gerarLancamentosParcelados({
         descricao,
         valorTotal: valor,
@@ -445,7 +521,8 @@
       });
 
       state.saidas.push(...parcelasGeradas);
-    } else {
+    } else if (estadoRecorrente) {
+      // Assinatura Fixa (recorrente: true)
       const novoItem = {
         id: gerarId(),
         descricao,
@@ -454,11 +531,38 @@
         data,
         data_pagamento: dataPagamentoInicial,
         forma_pagamento: formaPagamento,
-        frequencia: frequencia === 'fixo' ? 'fixo' : 'unico',
-        recorrente: frequencia === 'fixo'
+        frequencia: 'fixo',
+        recorrente: true
       };
 
-      if (formaPagamento === 'cartao_credito' && mesFatura) {
+      if (isCartao && mesFatura) {
+        novoItem.mes_fatura = mesFatura;
+      }
+
+      if (categoria === 'Outros' && detalhamento) {
+        novoItem.detalhamento = detalhamento;
+      }
+
+      if (categoria === 'Alimentação') {
+        novoItem.conveniencia = conveniencia;
+      }
+
+      state.saidas.push(novoItem);
+    } else {
+      // Estado padrão: Único (sem exibir a palavra Único na tela)
+      const novoItem = {
+        id: gerarId(),
+        descricao,
+        valor,
+        categoria,
+        data,
+        data_pagamento: dataPagamentoInicial,
+        forma_pagamento: formaPagamento,
+        frequencia: 'unico',
+        recorrente: false
+      };
+
+      if (isCartao && mesFatura) {
         novoItem.mes_fatura = mesFatura;
       }
 
@@ -475,6 +579,7 @@
 
     renderizarHistoricoSaidas();
 
+    // Reset dos campos para o estado inicial padrão
     saidaDescricaoInput.value  = '';
     saidaValorInput.value      = '';
     saidaCategoriaSelect.value = CATEGORIA_SAIDA_PADRAO;
@@ -483,13 +588,13 @@
     if (radioMercadoPadrao) radioMercadoPadrao.checked = true;
     atualizarVisibilidadeCondicionalSaida();
 
-    if (saidaFormaPagamentoSelect) saidaFormaPagamentoSelect.value = 'pix_debito_dinheiro';
+    // Reseta para PIX/Débito e frequência Única
+    if (radioPagamentoPix) radioPagamentoPix.checked = true;
+    estadoRecorrente = false;
+    estadoParcelado  = false;
     if (saidaMesFaturaInput) saidaMesFaturaInput.value = '';
-    atualizarVisibilidadeFormaPagamento();
-
-    if (saidaFrequenciaSelect) saidaFrequenciaSelect.value = 'unico';
-    if (saidaParcelasInput) saidaParcelasInput.value = '';
-    atualizarVisibilidadeFrequenciaSaida();
+    if (saidaParcelasInput)  saidaParcelasInput.value  = '';
+    atualizarEstadoUI();
 
     saidaDataInput.value       = '';
     saidaDescricaoInput.focus();

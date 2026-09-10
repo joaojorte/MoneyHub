@@ -367,11 +367,15 @@
     btn.textContent = '×';
     btn.addEventListener('click', () => fnRemover(item.id));
 
+    const acoesContainer = document.createElement('div');
+    acoesContainer.className = 'historico-acoes-valor';
+    acoesContainer.append(val, btn);
+
     const elementosLinha = [desc, dataSpan, cat];
     if (tagPagamento) elementosLinha.push(tagPagamento);
     if (tagConveniencia) elementosLinha.push(tagConveniencia);
     if (tagFrequencia) elementosLinha.push(tagFrequencia);
-    elementosLinha.push(val, btn);
+    elementosLinha.push(acoesContainer);
 
     li.append(...elementosLinha);
     return li;
@@ -654,7 +658,11 @@
       btn.textContent = '×';
       btn.addEventListener('click', () => removerInvestimento(item.id));
 
-      li.append(desc, dataSpan, cat, val, btn);
+      const acoesContainer = document.createElement('div');
+      acoesContainer.className = 'historico-acoes-valor';
+      acoesContainer.append(val, btn);
+
+      li.append(desc, dataSpan, cat, acoesContainer);
       historicoInvestimentosListaEl.appendChild(li);
     });
   }

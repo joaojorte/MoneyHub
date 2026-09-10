@@ -150,52 +150,72 @@
               </div>
             </div>
 
-            <!-- Seletor de Forma de Pagamento & Mês da Fatura (Fase 2) -->
-            <div class="form-lancamento-linha form-lancamento-pagamento-linha">
-              <div class="forma-pagamento-group">
-                <label for="saida-forma-pagamento" class="campo-frequencia-label">Forma de Pagamento:</label>
-                <select id="saida-forma-pagamento" name="saida-forma-pagamento" class="form-lancamento-frequencia" aria-label="Forma de Pagamento da despesa">
-                  <option value="pix_debito_dinheiro" selected>PIX / Débito / Dinheiro</option>
-                  <option value="cartao_credito">Cartão de Crédito</option>
-                </select>
+            <!-- Segmented Control de Forma de Pagamento (Fim do <select>) -->
+            <div class="form-pagamento-segmented-container">
+              <span class="segmented-control-title">Forma de Pagamento:</span>
+              <div class="segmented-control" role="radiogroup" aria-label="Forma de Pagamento">
+                <label class="segmented-control-item">
+                  <input type="radio" name="saida-forma-pagamento" id="pagamento-pix" value="pix_debito_dinheiro" checked>
+                  <span class="segmented-control-btn">⚡ PIX / Débito</span>
+                </label>
+                <label class="segmented-control-item">
+                  <input type="radio" name="saida-forma-pagamento" id="pagamento-cartao" value="cartao_credito">
+                  <span class="segmented-control-btn">💳 Cartão de Crédito</span>
+                </label>
               </div>
+            </div>
 
-              <!-- Regra de UX 1: Exibido apenas se Cartão de Crédito estiver selecionado -->
-              <div id="saida-fatura-container" class="fatura-group form-lancamento-condicional" style="display: none;">
-                <label for="saida-mes-fatura" class="campo-frequencia-label">Mês da Fatura:</label>
+            <!-- Ações Discretas: Tornar Recorrente e Parcelar -->
+            <div class="form-toggles-linha">
+              <button
+                type="button"
+                id="btn-toggle-recorrente"
+                class="btn-toggle-discreto"
+                aria-pressed="false"
+                title="Tornar esta despesa uma assinatura fixa mensal recorrente"
+              >
+                🔁 Tornar Recorrente (Assinatura)
+              </button>
+
+              <!-- Botão Parcelar: visível apenas quando Cartão de Crédito está selecionado -->
+              <button
+                type="button"
+                id="btn-toggle-parcelar"
+                class="btn-toggle-discreto btn-toggle-parcelar"
+                style="display: none;"
+                aria-pressed="false"
+                title="Dividir o valor total em parcelas mensais"
+              >
+                💳 Parcelar
+              </button>
+            </div>
+
+            <!-- Campos Condicionais: Mês da Fatura e Quantidade de Parcelas -->
+            <div id="campos-condicionais-cartao" class="form-lancamento-linha form-condicionais-linha" style="display: none;">
+              <!-- Campo: Mês da Fatura (Visível apenas para Cartão de Crédito) -->
+              <div id="saida-fatura-container" class="fatura-group form-condicional-card" style="display: none;">
+                <label for="saida-mes-fatura" class="campo-condicional-label">Mês da Fatura:</label>
                 <input
                   type="month"
                   id="saida-mes-fatura"
                   name="saida-mes-fatura"
-                  class="form-lancamento-fatura"
-                  aria-label="Mês da Fatura para alocação no fluxo de caixa"
+                  class="form-condicional-input"
+                  aria-label="Mês da Fatura para impacto financeiro no fluxo de caixa"
                 >
               </div>
-            </div>
 
-            <!-- Seletor de Frequência & Campo de Parcelas (Fase 2) -->
-            <div class="form-lancamento-linha form-lancamento-frequencia-linha">
-              <div class="frequencia-group">
-                <label for="saida-frequencia" class="campo-frequencia-label">Frequência:</label>
-                <select id="saida-frequencia" name="saida-frequencia" class="form-lancamento-frequencia" aria-label="Frequência da despesa">
-                  <option value="unico" selected>Único</option>
-                  <option value="fixo">Assinatura Fixa</option>
-                  <option value="parcelado">Parcelado</option>
-                </select>
-              </div>
-
-              <!-- Regra de UX 2: Exibido apenas se Parcelado estiver selecionado -->
-              <div id="saida-parcelas-container" class="parcelas-group form-lancamento-condicional" style="display: none;">
-                <label for="saida-parcelas" class="campo-frequencia-label">Qtd. Parcelas:</label>
+              <!-- Campo: Quantidade de Parcelas (Visível apenas quando Parcelar estiver ativo) -->
+              <div id="saida-parcelas-container" class="parcelas-group form-condicional-card" style="display: none;">
+                <label for="saida-parcelas" class="campo-condicional-label">Nº de Parcelas:</label>
                 <input
                   type="number"
                   id="saida-parcelas"
                   name="saida-parcelas"
-                  class="form-lancamento-parcelas"
+                  class="form-condicional-input"
                   min="2"
                   max="72"
                   step="1"
-                  placeholder="Ex.: 3"
+                  placeholder="Ex: 3"
                   aria-label="Quantidade de parcelas"
                 >
               </div>

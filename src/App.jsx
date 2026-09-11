@@ -17,7 +17,9 @@ export function App() {
     removeEntrada,
     addSaida,
     removeSaida,
-    usuario
+    usuario,
+    statusSincronizacao,
+    metricasConsumo
   } = useTransactions();
 
   const calc = useFinancialCalculator(entradas, saidas);
@@ -27,20 +29,29 @@ export function App() {
       {/* Top Header */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border-subtle">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <h1 className="text-base sm:text-lg font-bold tracking-tight">
               Money<span className="text-amber-400">Hub</span>
             </h1>
             <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
               React + Tailwind
             </span>
+            <span className="hidden sm:inline-flex items-center text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">
+              ⚡ DB Otimizado (~80B/input)
+            </span>
           </div>
 
           <div className="flex items-center gap-3 text-xs text-slate-400 font-mono">
             {usuario ? (
               <span className="flex items-center gap-1.5 text-emerald-400">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className={`w-2 h-2 rounded-full ${statusSincronizacao === 'salvando' ? 'bg-amber-400 animate-ping' : 'bg-emerald-400 animate-pulse'}`} />
                 <span className="truncate max-w-[120px]">{usuario.email}</span>
+                {statusSincronizacao === 'salvando' && (
+                  <span className="text-[10px] text-amber-400 animate-pulse hidden sm:inline">(salvando...)</span>
+                )}
+                {statusSincronizacao === 'salvo' && (
+                  <span className="text-[10px] text-emerald-400 hidden sm:inline">✓</span>
+                )}
               </span>
             ) : (
               <span className="flex items-center gap-1.5 text-slate-400">

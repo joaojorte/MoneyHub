@@ -14,6 +14,7 @@
     formatarBRL,
     formatarDataBR,
     obterDataHojeISO,
+    obterDataOntemISO: mhObterDataOntemISO,
     obterDataComDiaAjustado,
     projetarDataVencimentoCartao,
     gerarId,
@@ -24,6 +25,18 @@
     salvarDados,
     carregarDados
   } = window.MoneyHub;
+
+  function obterDataOntemISO() {
+    if (typeof mhObterDataOntemISO === 'function') {
+      return mhObterDataOntemISO();
+    }
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    const ano = d.getFullYear();
+    const mes = String(d.getMonth() + 1).padStart(2, '0');
+    const dia = String(d.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+  }
 
   // --- Categorias ---
   const CATEGORIAS_ENTRADA       = ['Salário', 'Dividendos', 'Rendimentos', 'Estorno/Devolução', 'Outros'];
@@ -45,19 +58,21 @@
   let btnToggleRecorrente, btnToggleParcelar;
   let camposCondicionaisCartao, saidaVencimentoContainer, saidaDiaVencimentoInput, saidaParcelasContainer, saidaParcelasInput;
 
-  // Controles de Ocultação Inteligente da Data de Lançamento
-  let btnToggleDataSaida, campoDataSaidaContainer, labelDataSaida, btnLimparDataSaida;
-  let btnToggleDataEntrada, campoDataEntradaContainer, labelDataEntrada, btnLimparDataEntrada;
-  let toggleDataSaidaControl, toggleDataEntradaControl;
+  // Filtros Rápidos de Data (Chips / Pílulas: Hoje | Ontem | Outra Data)
+  let chipsDataSaidaControl, chipsDataEntradaControl;
+
+  // Bloco de Vencimento do Cartão (Memória Silenciosa e Edição)
+  let vencimentoMemoriaBloco, vencimentoEdicaoBloco, vencimentoDiaDisplay;
+  let btnEditarVencimento, btnConfirmarVencimento;
+  let modoEdicaoVencimentoForcado = false;
 
   // Persistência do Dia de Vencimento do Cartão de Crédito
   const STORAGE_KEY_VENCIMENTO_CARTAO = 'moneyhub_cartao_dia_vencimento';
-  const DIA_VENCIMENTO_PADRAO = 10;
 
   function obterDiaVencimentoMemorizado() {
     try {
       const salvo = localStorage.getItem(STORAGE_KEY_VENCIMENTO_CARTAO);
-      if (salvo !== null) {
+      if (salvo !== null && salvo.trim() !== '') {
         const diaNum = parseInt(salvo, 10);
         if (!isNaN(diaNum) && diaNum >= 1 && diaNum <= 31) {
           return diaNum;
@@ -66,7 +81,7 @@
     } catch (e) {
       /* localStorage indisponível/bloqueado */
     }
-    return DIA_VENCIMENTO_PADRAO;
+    return null; // Retorna null indicando primeiro uso (sem dia salvo)
   }
 
   function salvarDiaVencimento(dia) {
@@ -80,61 +95,82 @@
     }
   }
 
-  // Helper para o controle de revelação condicional da data
-  function configurarToggleData(btnToggle, containerData, inputData, labelTexto, btnLimpar) {
-    if (!btnToggle || !containerData || !inputData) return null;
+  // Helper para os Filtros Rápidos de Data (Chips / Pílulas)
+  function configurarChipsData(wrapperEl, dataInputEl) {
+    if (!wrapperEl) return null;
 
-    function fecharCampoData() {
-      containerData.style.display = 'none';
-      btnToggle.classList.remove('ativo');
-      btnToggle.setAttribute('aria-expanded', 'false');
-      inputData.value = '';
-      if (labelTexto) labelTexto.textContent = 'Hoje';
-    }
+    let opcaoAtual = 'hoje';
+    const chips = wrapperEl.querySelectorAll('.data-chip');
+    const containerManual = wrapperEl.querySelector('.campo-data-manual-container');
 
-    function abrirCampoData() {
-      containerData.style.display = 'inline-flex';
-      btnToggle.classList.add('ativo');
-      btnToggle.setAttribute('aria-expanded', 'true');
-      if (!inputData.value) {
-        inputData.value = obterDataHojeISO();
-      }
-      inputData.focus();
-      atualizarLabel();
-    }
+    function atualizarVisual() {
+      chips.forEach((btn) => {
+        const opcao = btn.dataset.opcao;
+        const ativo = (opcao === opcaoAtual);
+        btn.classList.toggle('chip-ativo', ativo);
+        btn.setAttribute('aria-pressed', ativo ? 'true' : 'false');
+      });
 
-    function atualizarLabel() {
-      if (inputData.value && inputData.value !== obterDataHojeISO()) {
-        if (labelTexto) labelTexto.textContent = formatarDataBR(inputData.value);
-        btnToggle.classList.add('ativo');
+      if (opcaoAtual === 'outro') {
+        if (containerManual) containerManual.style.display = 'inline-flex';
+        if (dataInputEl) {
+          if (!dataInputEl.value) {
+            dataInputEl.value = obterDataHojeISO();
+          }
+          dataInputEl.focus();
+        }
       } else {
-        if (labelTexto) labelTexto.textContent = 'Hoje';
+        if (containerManual) containerManual.style.display = 'none';
+        if (dataInputEl) {
+          dataInputEl.value = '';
+        }
       }
     }
 
-    btnToggle.addEventListener('click', (e) => {
-      e.preventDefault();
-      const estaAberto = containerData.style.display !== 'none';
-      if (estaAberto) {
-        fecharCampoData();
-      } else {
-        abrirCampoData();
-      }
-    });
-
-    inputData.addEventListener('change', () => {
-      atualizarLabel();
-    });
-
-    if (btnLimpar) {
-      btnLimpar.addEventListener('click', (e) => {
+    chips.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
         e.preventDefault();
-        e.stopPropagation();
-        fecharCampoData();
+        opcaoAtual = btn.dataset.opcao || 'hoje';
+        atualizarVisual();
+      });
+    });
+
+    if (dataInputEl) {
+      dataInputEl.addEventListener('change', () => {
+        if (opcaoAtual !== 'outro') {
+          opcaoAtual = 'outro';
+          atualizarVisual();
+        }
       });
     }
 
-    return { fechar: fecharCampoData, atualizar: atualizarLabel };
+    function obterData() {
+      if (opcaoAtual === 'hoje') {
+        return obterDataHojeISO();
+      }
+      if (opcaoAtual === 'ontem') {
+        return obterDataOntemISO();
+      }
+      if (opcaoAtual === 'outro') {
+        return (dataInputEl && dataInputEl.value) ? dataInputEl.value : obterDataHojeISO();
+      }
+      return obterDataHojeISO();
+    }
+
+    function resetar() {
+      opcaoAtual = 'hoje';
+      if (dataInputEl) dataInputEl.value = '';
+      atualizarVisual();
+    }
+
+    return {
+      obterData,
+      resetar,
+      definirOpcao: (op) => {
+        opcaoAtual = op;
+        atualizarVisual();
+      }
+    };
   }
 
   // Estado Reativo Interno da Frequência
@@ -175,31 +211,75 @@
     saidaDataInput          = document.getElementById('saida-data');
     historicoSaidasEl       = document.getElementById('historico-saidas');
 
-    btnToggleDataSaida        = document.getElementById('btn-toggle-data-saida');
-    campoDataSaidaContainer   = document.getElementById('campo-data-saida-container');
-    labelDataSaida            = document.getElementById('label-data-saida');
-    btnLimparDataSaida        = document.getElementById('btn-limpar-data-saida');
+    // Inicialização dos Filtros Rápidos de Data (Chips)
+    const wrapperSaidaData = document.querySelector('#form-saida .data-chips-wrapper');
+    chipsDataSaidaControl = configurarChipsData(wrapperSaidaData, saidaDataInput);
 
-    btnToggleDataEntrada      = document.getElementById('btn-toggle-data-entrada');
-    campoDataEntradaContainer = document.getElementById('campo-data-entrada-container');
-    labelDataEntrada          = document.getElementById('label-data-entrada');
-    btnLimparDataEntrada      = document.getElementById('btn-limpar-data-entrada');
+    const wrapperEntradaData = document.querySelector('#form-entrada .data-chips-wrapper');
+    chipsDataEntradaControl = configurarChipsData(wrapperEntradaData, entradaDataInput);
 
-    toggleDataSaidaControl = configurarToggleData(
-      btnToggleDataSaida,
-      campoDataSaidaContainer,
-      saidaDataInput,
-      labelDataSaida,
-      btnLimparDataSaida
-    );
+    // Elementos de Vencimento do Cartão (Memória Silenciosa e Edição)
+    vencimentoMemoriaBloco = document.getElementById('vencimento-memoria-bloco');
+    vencimentoEdicaoBloco  = document.getElementById('vencimento-edicao-bloco');
+    vencimentoDiaDisplay   = document.getElementById('vencimento-dia-display');
+    btnEditarVencimento    = document.getElementById('btn-editar-vencimento');
+    btnConfirmarVencimento = document.getElementById('btn-confirmar-vencimento');
 
-    toggleDataEntradaControl = configurarToggleData(
-      btnToggleDataEntrada,
-      campoDataEntradaContainer,
-      entradaDataInput,
-      labelDataEntrada,
-      btnLimparDataEntrada
-    );
+    if (btnEditarVencimento) {
+      btnEditarVencimento.addEventListener('click', (e) => {
+        e.preventDefault();
+        modoEdicaoVencimentoForcado = true;
+        atualizarEstadoVencimentoUI();
+        if (saidaDiaVencimentoInput) {
+          saidaDiaVencimentoInput.focus();
+          saidaDiaVencimentoInput.select();
+        }
+      });
+    }
+
+    function confirmarEdicaoVencimento() {
+      if (!saidaDiaVencimentoInput) return;
+      let val = parseInt(saidaDiaVencimentoInput.value, 10);
+      if (!isNaN(val) && val >= 1 && val <= 31) {
+        val = Math.max(1, Math.min(31, val));
+        saidaDiaVencimentoInput.value = val;
+        salvarDiaVencimento(val);
+        modoEdicaoVencimentoForcado = false;
+        atualizarEstadoVencimentoUI();
+      }
+    }
+
+    if (btnConfirmarVencimento) {
+      btnConfirmarVencimento.addEventListener('click', (e) => {
+        e.preventDefault();
+        confirmarEdicaoVencimento();
+      });
+    }
+
+    if (saidaDiaVencimentoInput) {
+      saidaDiaVencimentoInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          confirmarEdicaoVencimento();
+        }
+      });
+
+      saidaDiaVencimentoInput.addEventListener('input', () => {
+        const val = parseInt(saidaDiaVencimentoInput.value, 10);
+        if (!isNaN(val) && val >= 1 && val <= 31) {
+          if (btnConfirmarVencimento) btnConfirmarVencimento.style.display = 'inline-flex';
+        }
+      });
+
+      saidaDiaVencimentoInput.addEventListener('change', () => {
+        let val = parseInt(saidaDiaVencimentoInput.value, 10);
+        if (!isNaN(val)) {
+          val = Math.max(1, Math.min(31, val));
+          saidaDiaVencimentoInput.value = val;
+          salvarDiaVencimento(val);
+        }
+      });
+    }
 
     investimentoRange      = document.getElementById('investimento-range');
     investimentoNum        = document.getElementById('investimento-num');
@@ -260,27 +340,51 @@
       });
     }
 
-    if (saidaDiaVencimentoInput) {
-      saidaDiaVencimentoInput.addEventListener('input', () => {
-        const val = parseInt(saidaDiaVencimentoInput.value, 10);
-        if (!isNaN(val) && val >= 1 && val <= 31) {
-          salvarDiaVencimento(val);
-        }
-      });
-      saidaDiaVencimentoInput.addEventListener('change', () => {
-        let val = parseInt(saidaDiaVencimentoInput.value, 10);
-        if (!isNaN(val)) {
-          val = Math.max(1, Math.min(31, val));
-          saidaDiaVencimentoInput.value = val;
-          salvarDiaVencimento(val);
-        }
-      });
-    }
-
     btnEfetivarInvestimento.addEventListener('click', efetivarInvestimento);
 
     atualizarVisibilidadeCondicionalSaida();
     atualizarEstadoUI();
+  }
+
+  // Lógica de Vencimento do Cartão: Memória Silenciosa vs Primeiro Uso / Edição
+  function atualizarEstadoVencimentoUI() {
+    const isCartao = radioPagamentoCartao && radioPagamentoCartao.checked;
+    if (!isCartao) {
+      if (saidaVencimentoContainer) saidaVencimentoContainer.style.display = 'none';
+      modoEdicaoVencimentoForcado = false;
+      return;
+    }
+
+    if (saidaVencimentoContainer) {
+      saidaVencimentoContainer.style.display = 'flex';
+    }
+
+    const diaSalvo = obterDiaVencimentoMemorizado();
+    const temDiaSalvo = (diaSalvo !== null);
+
+    if (temDiaSalvo && !modoEdicaoVencimentoForcado) {
+      // Uso Contínuo (Com dia salvo): exibe texto minimalista "Vencimento: dia X" + [✎ Editar]
+      if (vencimentoMemoriaBloco) vencimentoMemoriaBloco.style.display = 'inline-flex';
+      if (vencimentoEdicaoBloco)  vencimentoEdicaoBloco.style.display = 'none';
+      if (vencimentoDiaDisplay)   vencimentoDiaDisplay.textContent = diaSalvo;
+      if (saidaDiaVencimentoInput) {
+        saidaDiaVencimentoInput.value = diaSalvo;
+        saidaDiaVencimentoInput.required = false;
+      }
+    } else {
+      // Primeiro Uso (Sem dia salvo) OU Modo Edição Ativo
+      if (vencimentoMemoriaBloco) vencimentoMemoriaBloco.style.display = 'none';
+      if (vencimentoEdicaoBloco)  vencimentoEdicaoBloco.style.display = 'inline-flex';
+      if (saidaDiaVencimentoInput) {
+        if (diaSalvo !== null && !saidaDiaVencimentoInput.value) {
+          saidaDiaVencimentoInput.value = diaSalvo;
+        }
+        saidaDiaVencimentoInput.required = true;
+      }
+      if (btnConfirmarVencimento) {
+        btnConfirmarVencimento.style.display = temDiaSalvo ? 'inline-flex' : 'none';
+      }
+    }
   }
 
   // Lógica de Dependência e Ocultação Inteligente
@@ -307,16 +411,8 @@
         camposCondicionaisCartao.style.display = 'flex';
       }
 
-      // Exibe campo de "Dia do Vencimento" (com preenchimento automático memorizado)
-      if (saidaVencimentoContainer) {
-        saidaVencimentoContainer.style.display = 'flex';
-      }
-      if (saidaDiaVencimentoInput) {
-        if (!saidaDiaVencimentoInput.value) {
-          saidaDiaVencimentoInput.value = obterDiaVencimentoMemorizado();
-        }
-        saidaDiaVencimentoInput.required = true;
-      }
+      // Atualiza o estado do vencimento (Memória Discreta vs Primeiro Uso / Edição)
+      atualizarEstadoVencimentoUI();
 
       // Se "Parcelar" for clicado: exibe campo numérico "Quantidade de Parcelas"
       if (estadoParcelado) {
@@ -344,6 +440,8 @@
       if (saidaDiaVencimentoInput) {
         saidaDiaVencimentoInput.required = false;
       }
+
+      modoEdicaoVencimentoForcado = false;
 
       // Se estava parcelado, resete o estado da frequência para "Único" silenciosamente
       if (estadoParcelado) {
@@ -523,7 +621,9 @@
     const descricao = entradaDescricaoInput.value.trim();
     const valor = paraNumeroMonetario(entradaValorInput.value);
     const categoria = entradaCategoriaSelect.value || CATEGORIA_ENTRADA_PADRAO;
-    const data = entradaDataInput.value ? entradaDataInput.value : obterDataHojeISO();
+    const data = chipsDataEntradaControl
+      ? chipsDataEntradaControl.obterData()
+      : (entradaDataInput && entradaDataInput.value ? entradaDataInput.value : obterDataHojeISO());
 
     if (valor <= 0) {
       entradaValorInput.focus();
@@ -543,8 +643,8 @@
     entradaDescricaoInput.value = '';
     entradaValorInput.value     = '';
     entradaCategoriaSelect.value= CATEGORIA_ENTRADA_PADRAO;
-    entradaDataInput.value      = '';
-    if (toggleDataEntradaControl) toggleDataEntradaControl.fechar();
+    if (entradaDataInput) entradaDataInput.value = '';
+    if (chipsDataEntradaControl) chipsDataEntradaControl.resetar();
     entradaDescricaoInput.focus();
 
     calcular();
@@ -575,7 +675,9 @@
     const descricao = saidaDescricaoInput.value.trim();
     const valor = paraNumeroMonetario(saidaValorInput.value);
     const categoria = saidaCategoriaSelect.value || CATEGORIA_SAIDA_PADRAO;
-    const data = saidaDataInput.value ? saidaDataInput.value : obterDataHojeISO();
+    const data = chipsDataSaidaControl
+      ? chipsDataSaidaControl.obterData()
+      : (saidaDataInput && saidaDataInput.value ? saidaDataInput.value : obterDataHojeISO());
 
     if (valor <= 0) {
       saidaValorInput.focus();
@@ -612,12 +714,26 @@
     let diaVencimento = 10;
 
     if (isCartao) {
+      const diaSalvo = obterDiaVencimentoMemorizado();
       const diaDigitado = parseInt(saidaDiaVencimentoInput ? saidaDiaVencimentoInput.value : '', 10);
-      diaVencimento = (!isNaN(diaDigitado) && diaDigitado >= 1 && diaDigitado <= 31)
-        ? diaDigitado
-        : obterDiaVencimentoMemorizado();
-      salvarDiaVencimento(diaVencimento);
-      if (saidaDiaVencimentoInput) saidaDiaVencimentoInput.value = diaVencimento;
+
+      if (!isNaN(diaDigitado) && diaDigitado >= 1 && diaDigitado <= 31) {
+        diaVencimento = diaDigitado;
+        salvarDiaVencimento(diaVencimento);
+      } else if (diaSalvo !== null) {
+        diaVencimento = diaSalvo;
+      } else {
+        // Primeiro uso sem dia salvo: exige preenchimento
+        if (saidaDiaVencimentoInput) {
+          saidaDiaVencimentoInput.focus();
+          const card = saidaDiaVencimentoInput.closest('.form-condicional-card') || saidaDiaVencimentoInput;
+          card.style.borderColor = 'var(--accent-expense)';
+          setTimeout(() => { card.style.borderColor = ''; }, 1800);
+        }
+        return;
+      }
+
+      modoEdicaoVencimentoForcado = false;
     }
 
     // Impacto financeiro no caixa:
@@ -727,12 +843,12 @@
     if (radioPagamentoPix) radioPagamentoPix.checked = true;
     estadoRecorrente = false;
     estadoParcelado  = false;
-    if (saidaDiaVencimentoInput) saidaDiaVencimentoInput.value = '';
-    if (saidaParcelasInput)      saidaParcelasInput.value      = '';
+    if (saidaParcelasInput) saidaParcelasInput.value = '';
+    modoEdicaoVencimentoForcado = false;
     atualizarEstadoUI();
 
-    saidaDataInput.value       = '';
-    if (toggleDataSaidaControl) toggleDataSaidaControl.fechar();
+    if (saidaDataInput) saidaDataInput.value = '';
+    if (chipsDataSaidaControl) chipsDataSaidaControl.resetar();
     saidaDescricaoInput.focus();
 
     calcular();

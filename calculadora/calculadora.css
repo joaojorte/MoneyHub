@@ -813,10 +813,100 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 0 0 3px rgba(240, 185, 74, 0.18);
 }
 
-/* --- Botão Discreto de Data Retroativa & Ocultação Inteligente --- */
+/* --- Vencimento do Cartão: Memória Silenciosa e Edição Ativa --- */
+.vencimento-memoria-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.vencimento-memoria-texto {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.vencimento-memoria-icone {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.vencimento-memoria-texto strong {
+  color: #FF6B8B;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
+}
+
+.btn-link-editar-vencimento {
+  appearance: none;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.btn-link-editar-vencimento:hover {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.vencimento-edicao-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.btn-confirmar-vencimento {
+  appearance: none;
+  background: rgba(53, 201, 138, 0.16);
+  border: 1px solid rgba(53, 201, 138, 0.4);
+  color: #35C98A;
+  border-radius: var(--radius-pill);
+  padding: 3px 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  height: 28px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-confirmar-vencimento:hover {
+  background: rgba(53, 201, 138, 0.3);
+  color: #FFFFFF;
+  border-color: #35C98A;
+}
+
+/* --- Filtros Rápidos de Data (Chips / Pílulas) --- */
 .form-lancamento-acoes {
   display: flex;
-  flex-wrap: wrap; /* Quebra caso botão e campo de data precisem de espaço adicional */
+  flex-wrap: wrap; /* Quebra caso botões e calendário precisem de espaço adicional */
   align-items: center;
   justify-content: space-between;
   gap: 10px;
@@ -824,7 +914,7 @@ input[type="range"]::-moz-range-thumb {
   box-sizing: border-box;
 }
 
-.data-retroativa-wrapper {
+.data-chips-wrapper {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -833,56 +923,74 @@ input[type="range"]::-moz-range-thumb {
   flex-wrap: wrap;
 }
 
-.btn-toggle-data {
+.data-chips {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  background: var(--surface-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-field);
-  padding: 7px 12px;
-  font-family: var(--font-sans);
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  user-select: none;
-  height: 38px;
+  align-items: stretch;
+  gap: 4px;
+  background: var(--surface-inset);
+  padding: 3px 4px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-sizing: border-box;
 }
 
-.btn-toggle-data:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-primary);
-  border-color: rgba(255, 255, 255, 0.18);
+.data-chip {
+  appearance: none;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 6px 12px;
+  min-height: 30px;
+  box-sizing: border-box;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  line-height: 1;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.btn-toggle-data.ativo,
-.btn-toggle-data[aria-expanded="true"] {
-  background: rgba(56, 189, 248, 0.12);
-  border-color: rgba(56, 189, 248, 0.4);
+.data-chip:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #FFFFFF;
+}
+
+/* Chip Ativo Padrão */
+.data-chip.chip-ativo {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: rgba(56, 189, 248, 0.45);
   color: #38BDF8;
   font-weight: 600;
+  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.18);
 }
 
-.btn-toggle-data-icon {
-  font-size: 13.5px;
-  line-height: 1;
+/* Chip Ativo em Saídas (Accent Rosa/Coral) */
+.card-expense .data-chip.chip-ativo {
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.24) 0%, rgba(244, 63, 94, 0.12) 100%);
+  border-color: #F43F5E;
+  color: #FF6B8B;
+  box-shadow: 0 2px 8px rgba(244, 63, 94, 0.2);
 }
 
-.btn-toggle-data-texto {
-  line-height: 1;
+/* Chip Ativo em Entradas (Accent Verde) */
+.card-income .data-chip.chip-ativo {
+  background: linear-gradient(135deg, rgba(53, 201, 138, 0.24) 0%, rgba(53, 201, 138, 0.12) 100%);
+  border-color: #35C98A;
+  color: #35C98A;
+  box-shadow: 0 2px 8px rgba(53, 201, 138, 0.2);
 }
 
-.campo-data-revelado {
+/* Container do Calendário Nativo (Revelado com Outra Data) */
+.campo-data-manual-container {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  flex: 1 1 140px;
-  min-width: 135px;
-  max-width: 100%;
   animation: fadeInData 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -891,73 +999,42 @@ input[type="range"]::-moz-range-thumb {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.form-lancamento-data {
-  flex: 1;
-  min-width: 105px;
-  max-width: 100%;
+.form-lancamento-data-picker {
   box-sizing: border-box;
   color-scheme: dark;
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-field);
+  border-radius: var(--radius-pill);
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: 12.5px;
-  padding: 7px 10px;
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 4px 10px;
+  height: 32px;
   outline: none;
   cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
-  height: 38px;
 }
 
-.form-lancamento-data::-webkit-calendar-picker-indicator {
+.card-expense .form-lancamento-data-picker:focus {
+  border-color: #F43F5E;
+  box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.2);
+}
+
+.card-income .form-lancamento-data-picker:focus {
+  border-color: #35C98A;
+  box-shadow: 0 0 0 2px rgba(53, 201, 138, 0.2);
+}
+
+.form-lancamento-data-picker::-webkit-calendar-picker-indicator {
   cursor: pointer;
-  filter: invert(0.8);
-  opacity: 0.7;
+  filter: invert(0.85);
+  opacity: 0.8;
   transition: opacity 0.15s ease;
 }
 
-.form-lancamento-data::-webkit-calendar-picker-indicator:hover {
+.form-lancamento-data-picker::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
-}
-
-.btn-fechar-data {
-  appearance: none;
-  background: transparent;
-  border: none;
-  color: var(--text-faint);
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 4px 6px;
-  border-radius: var(--radius-pill);
-  transition: color 0.15s ease, background 0.15s ease;
-}
-
-.btn-fechar-data:hover {
-  color: var(--accent-expense);
-  background: rgba(226, 105, 78, 0.15);
-}
-
-.form-lancamento-data::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  filter: invert(0.8);
-  opacity: 0.7;
-  transition: opacity 0.15s ease;
-}
-
-.form-lancamento-data::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
-}
-
-.card-income .form-lancamento-data:focus-visible {
-  border-color: var(--accent-income);
-  box-shadow: 0 0 0 3px var(--accent-income-dim);
-}
-
-.card-expense .form-lancamento-data:focus-visible {
-  border-color: var(--accent-expense);
-  box-shadow: 0 0 0 3px var(--accent-expense-dim);
 }
 
 .btn-incluir {

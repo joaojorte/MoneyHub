@@ -76,20 +76,21 @@
             </div>
 
             <div class="form-lancamento-acoes">
-              <div class="data-retroativa-wrapper">
-                <button
-                  type="button"
-                  id="btn-toggle-data-entrada"
-                  class="btn-toggle-data"
-                  aria-expanded="false"
-                  title="Data do lançamento (padrão: hoje). Clique para registrar uma data retroativa."
-                >
-                  <span class="btn-toggle-data-icon">📅</span>
-                  <span class="btn-toggle-data-texto" id="label-data-entrada">Hoje</span>
-                </button>
-                <div id="campo-data-entrada-container" class="campo-data-revelado" style="display: none;">
-                  <input type="date" id="entrada-data" name="entrada-data" class="form-lancamento-data" aria-label="Data da entrada">
-                  <button type="button" id="btn-limpar-data-entrada" class="btn-fechar-data" title="Voltar para a data de hoje" aria-label="Voltar para hoje">×</button>
+              <!-- Filtros Rápidos de Data (Chips / Pílulas) -->
+              <div class="data-chips-wrapper">
+                <div class="data-chips" role="group" aria-label="Data da entrada">
+                  <button type="button" class="data-chip chip-ativo" data-opcao="hoje" id="chip-entrada-hoje">Hoje</button>
+                  <button type="button" class="data-chip" data-opcao="ontem" id="chip-entrada-ontem">Ontem</button>
+                  <button type="button" class="data-chip" data-opcao="outro" id="chip-entrada-outro">📅 Outra Data</button>
+                </div>
+                <div id="campo-data-entrada-container" class="campo-data-manual-container" style="display: none;">
+                  <input
+                    type="date"
+                    id="entrada-data"
+                    name="entrada-data"
+                    class="form-lancamento-data-picker"
+                    aria-label="Data personalizada da entrada"
+                  >
                 </div>
               </div>
               <button type="submit" id="incluir-entrada" class="btn-incluir">+ Incluir</button>
@@ -213,26 +214,56 @@
 
             <!-- Campos Condicionais: Dia do Vencimento e Quantidade de Parcelas -->
             <div id="campos-condicionais-cartao" class="form-lancamento-linha form-condicionais-linha" style="display: none;">
-              <!-- Campo: Dia do Vencimento (1 a 31) com Design Customizado Dark Mode -->
+              <!-- Campo: Vencimento do Cartão (Memória Silenciosa ou Primeiro Uso/Edição) -->
               <div id="saida-vencimento-container" class="vencimento-group form-condicional-card" style="display: none;">
-                <div class="condicional-rotulo-grupo">
-                  <span class="condicional-icon">📅</span>
-                  <label for="saida-dia-vencimento" class="campo-condicional-label">Vencimento:</label>
-                </div>
-                <div class="condicional-input-box">
-                  <span class="condicional-prefix">Dia</span>
-                  <input
-                    type="number"
-                    id="saida-dia-vencimento"
-                    name="saida-dia-vencimento"
-                    class="form-condicional-num-input form-condicional-input"
-                    min="1"
-                    max="31"
-                    step="1"
-                    placeholder="10"
-                    aria-label="Dia de vencimento da fatura do cartão (1 a 31)"
-                    autocomplete="off"
+                <!-- Modo Uso Contínuo: Memória Discreta com Dia Salvo -->
+                <div id="vencimento-memoria-bloco" class="vencimento-memoria-box" style="display: none;">
+                  <span class="vencimento-memoria-texto">
+                    <span class="vencimento-memoria-icone">💳</span>
+                    Vencimento: <strong>dia <span id="vencimento-dia-display">10</span></strong>
+                  </span>
+                  <button
+                    type="button"
+                    id="btn-editar-vencimento"
+                    class="btn-link-editar-vencimento"
+                    title="Alterar dia fixo de vencimento do cartão"
+                    aria-label="Editar dia de vencimento"
                   >
+                    ✎ Editar
+                  </button>
+                </div>
+
+                <!-- Modo Primeiro Uso / Edição Manual do Dia -->
+                <div id="vencimento-edicao-bloco" class="vencimento-edicao-box" style="display: none;">
+                  <div class="condicional-rotulo-grupo">
+                    <span class="condicional-icon">📅</span>
+                    <label for="saida-dia-vencimento" class="campo-condicional-label">Dia do Vencimento:</label>
+                  </div>
+                  <div class="condicional-input-box">
+                    <span class="condicional-prefix">Dia</span>
+                    <input
+                      type="number"
+                      id="saida-dia-vencimento"
+                      name="saida-dia-vencimento"
+                      class="form-condicional-num-input form-condicional-input"
+                      min="1"
+                      max="31"
+                      step="1"
+                      placeholder="10"
+                      aria-label="Dia de vencimento da fatura do cartão (1 a 31)"
+                      autocomplete="off"
+                    >
+                  </div>
+                  <button
+                    type="button"
+                    id="btn-confirmar-vencimento"
+                    class="btn-confirmar-vencimento"
+                    title="Salvar dia de vencimento"
+                    aria-label="Salvar dia de vencimento"
+                    style="display: none;"
+                  >
+                    ✓
+                  </button>
                 </div>
               </div>
 
@@ -261,26 +292,21 @@
             </div>
 
             <div class="form-lancamento-acoes">
-              <div class="data-retroativa-wrapper">
-                <button
-                  type="button"
-                  id="btn-toggle-data-saida"
-                  class="btn-toggle-data"
-                  aria-expanded="false"
-                  title="Data do lançamento (padrão: hoje). Clique para registrar uma data retroativa."
-                >
-                  <span class="btn-toggle-data-icon">📅</span>
-                  <span class="btn-toggle-data-texto" id="label-data-saida">Hoje</span>
-                </button>
-                <div id="campo-data-saida-container" class="campo-data-revelado" style="display: none;">
+              <!-- Filtros Rápidos de Data da Compra (Chips / Pílulas) -->
+              <div class="data-chips-wrapper">
+                <div class="data-chips" role="group" aria-label="Data da compra">
+                  <button type="button" class="data-chip chip-ativo" data-opcao="hoje" id="chip-saida-hoje">Hoje</button>
+                  <button type="button" class="data-chip" data-opcao="ontem" id="chip-saida-ontem">Ontem</button>
+                  <button type="button" class="data-chip" data-opcao="outro" id="chip-saida-outro">📅 Outra Data</button>
+                </div>
+                <div id="campo-data-saida-container" class="campo-data-manual-container" style="display: none;">
                   <input
                     type="date"
                     id="saida-data"
                     name="saida-data"
-                    class="form-lancamento-data"
-                    aria-label="Data da saída"
+                    class="form-lancamento-data-picker"
+                    aria-label="Data personalizada da compra"
                   >
-                  <button type="button" id="btn-limpar-data-saida" class="btn-fechar-data" title="Voltar para a data de hoje" aria-label="Voltar para hoje">×</button>
                 </div>
               </div>
               <button type="submit" id="incluir-saida" class="btn-incluir">+ Incluir</button>

@@ -709,79 +709,191 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .form-condicional-card {
-  flex: 1 1 135px; /* Base de 135px com flex-grow e flex-shrink ativos */
-  min-width: 120px;
+  flex: 1 1 140px; /* Base de 140px com flex-grow e flex-shrink ativos */
+  min-width: 130px;
   max-width: 100%;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-field);
-  padding: 7px 10px;
+  padding: 6px 10px;
   box-sizing: border-box;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.condicional-rotulo-grupo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.condicional-icon {
+  font-size: 13px;
+  line-height: 1;
 }
 
 .campo-condicional-label {
-  flex-shrink: 0;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
   white-space: nowrap;
   user-select: none;
 }
 
-.form-condicional-input {
-  flex: 1;
-  min-width: 36px;
-  width: 100%;
-  border: none;
-  background: transparent;
-  color: #EDEFF3;
-  font-family: var(--font-sans);
-  font-size: 12.5px;
-  outline: none;
-  padding: 2px 0;
-  cursor: pointer;
+/* Box de Input Customizado no Tema Escuro (sem bordas de navegador) */
+.condicional-input-box {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface-inset);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-pill);
+  padding: 2px 8px;
+  gap: 4px;
   box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.form-condicional-input[type="number"] {
-  font-family: var(--font-mono);
+.condicional-input-box:focus-within {
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
+}
+
+.condicional-prefix,
+.condicional-suffix {
+  font-size: 11px;
   font-weight: 600;
+  color: var(--text-faint);
+  user-select: none;
+  font-family: var(--font-sans);
 }
 
-.form-condicional-input::-webkit-calendar-picker-indicator {
-  filter: invert(0.85);
-  cursor: pointer;
-  opacity: 0.85;
-  transition: opacity 0.15s ease;
+/* Input numérico 100% livre de bordas padrão e sem spinbuttons nativos */
+.form-condicional-num-input {
+  width: 38px;
+  border: none !important;
+  background: transparent !important;
+  color: #FFFFFF !important;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  outline: none !important;
+  box-shadow: none !important;
+  padding: 2px 0;
+  margin: 0;
+  box-sizing: border-box;
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
-.form-condicional-input::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
+.form-condicional-num-input::-webkit-outer-spin-button,
+.form-condicional-num-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
-.card-expense .form-condicional-card:focus-within {
-  border-color: var(--accent-expense);
-  box-shadow: 0 0 0 3px var(--accent-expense-dim);
+.form-condicional-num-input::placeholder {
+  color: var(--text-faint);
+  font-weight: 400;
+  opacity: 0.6;
 }
 
+.card-expense .vencimento-group:focus-within {
+  border-color: #F43F5E;
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.18);
+}
+
+.card-expense .parcelas-group:focus-within {
+  border-color: #F0B94A;
+  box-shadow: 0 0 0 3px rgba(240, 185, 74, 0.18);
+}
+
+/* --- Botão Discreto de Data Retroativa & Ocultação Inteligente --- */
 .form-lancamento-acoes {
   display: flex;
   flex-wrap: wrap; /* Quebra caso botão e campo de data precisem de espaço adicional */
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
   width: 100%;
   box-sizing: border-box;
 }
 
+.data-retroativa-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.btn-toggle-data {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-field);
+  padding: 7px 12px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  height: 38px;
+  box-sizing: border-box;
+}
+
+.btn-toggle-data:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.btn-toggle-data.ativo,
+.btn-toggle-data[aria-expanded="true"] {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: #38BDF8;
+  font-weight: 600;
+}
+
+.btn-toggle-data-icon {
+  font-size: 13.5px;
+  line-height: 1;
+}
+
+.btn-toggle-data-texto {
+  line-height: 1;
+}
+
+.campo-data-revelado {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 140px;
+  min-width: 135px;
+  max-width: 100%;
+  animation: fadeInData 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeInData {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .form-lancamento-data {
-  flex: 1 1 130px;
-  min-width: 120px;
+  flex: 1;
+  min-width: 105px;
   max-width: 100%;
   box-sizing: border-box;
   color-scheme: dark;
@@ -790,11 +902,41 @@ input[type="range"]::-moz-range-thumb {
   border-radius: var(--radius-field);
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: 13px;
-  padding: 7px 12px;
+  font-size: 12.5px;
+  padding: 7px 10px;
   outline: none;
   cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  height: 38px;
+}
+
+.form-lancamento-data::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(0.8);
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+
+.form-lancamento-data::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+.btn-fechar-data {
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: var(--text-faint);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--radius-pill);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.btn-fechar-data:hover {
+  color: var(--accent-expense);
+  background: rgba(226, 105, 78, 0.15);
 }
 
 .form-lancamento-data::-webkit-calendar-picker-indicator {

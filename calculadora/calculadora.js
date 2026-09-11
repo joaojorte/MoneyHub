@@ -15,6 +15,7 @@
     formatarDataBR,
     obterDataHojeISO,
     obterDataComDiaAjustado,
+    projetarDataVencimentoCartao,
     gerarId,
     gerarLancamentosParcelados,
     obterLancamentosMesComRecorrencia,
@@ -42,7 +43,37 @@
   // Segmented Control de Pagamento & Toggles (Fim do <select>)
   let radioPagamentoPix, radioPagamentoCartao;
   let btnToggleRecorrente, btnToggleParcelar;
-  let camposCondicionaisCartao, saidaFaturaContainer, saidaMesFaturaInput, saidaParcelasContainer, saidaParcelasInput;
+  let camposCondicionaisCartao, saidaVencimentoContainer, saidaDiaVencimentoInput, saidaParcelasContainer, saidaParcelasInput;
+
+  // Persistência do Dia de Vencimento do Cartão de Crédito
+  const STORAGE_KEY_VENCIMENTO_CARTAO = 'moneyhub_cartao_dia_vencimento';
+  const DIA_VENCIMENTO_PADRAO = 10;
+
+  function obterDiaVencimentoMemorizado() {
+    try {
+      const salvo = localStorage.getItem(STORAGE_KEY_VENCIMENTO_CARTAO);
+      if (salvo !== null) {
+        const diaNum = parseInt(salvo, 10);
+        if (!isNaN(diaNum) && diaNum >= 1 && diaNum <= 31) {
+          return diaNum;
+        }
+      }
+    } catch (e) {
+      /* localStorage indisponível/bloqueado */
+    }
+    return DIA_VENCIMENTO_PADRAO;
+  }
+
+  function salvarDiaVencimento(dia) {
+    const diaNum = parseInt(dia, 10);
+    if (!isNaN(diaNum) && diaNum >= 1 && diaNum <= 31) {
+      try {
+        localStorage.setItem(STORAGE_KEY_VENCIMENTO_CARTAO, String(diaNum));
+      } catch (e) {
+        /* localStorage indisponível */
+      }
+    }
+  }
 
   // Estado Reativo Interno da Frequência
   let estadoRecorrente = false;
@@ -75,8 +106,8 @@
     btnToggleRecorrente     = document.getElementById('btn-toggle-recorrente');
     btnToggleParcelar       = document.getElementById('btn-toggle-parcelar');
     camposCondicionaisCartao= document.getElementById('campos-condicionais-cartao');
-    saidaFaturaContainer    = document.getElementById('saida-fatura-container');
-    saidaMesFaturaInput     = document.getElementById('saida-mes-fatura');
+    saidaVencimentoContainer= document.getElementById('saida-vencimento-container') || document.getElementById('saida-fatura-container');
+    saidaDiaVencimentoInput = document.getElementById('saida-dia-vencimento') || document.getElementById('saida-mes-fatura');
     saidaParcelasContainer  = document.getElementById('saida-parcelas-container');
     saidaParcelasInput      = document.getElementById('saida-parcelas');
     saidaDataInput          = document.getElementById('saida-data');
@@ -141,10 +172,19 @@
       });
     }
 
-    if (saidaDataInput) {
-      saidaDataInput.addEventListener('change', () => {
-        if (radioPagamentoCartao && radioPagamentoCartao.checked && saidaMesFaturaInput && !saidaMesFaturaInput.value && saidaDataInput.value) {
-          saidaMesFaturaInput.value = saidaDataInput.value.slice(0, 7);
+    if (saidaDiaVencimentoInput) {
+      saidaDiaVencimentoInput.addEventListener('input', () => {
+        const val = parseInt(saidaDiaVencimentoInput.value, 10);
+        if (!isNaN(val) && val >= 1 && val <= 31) {
+          salvarDiaVencimento(val);
+        }
+      });
+      saidaDiaVencimentoInput.addEventListener('change', () => {
+        let val = parseInt(saidaDiaVencimentoInput.value, 10);
+        if (!isNaN(val)) {
+          val = Math.max(1, Math.min(31, val));
+          saidaDiaVencimentoInput.value = val;
+          salvarDiaVencimento(val);
         }
       });
     }
@@ -179,16 +219,15 @@
         camposCondicionaisCartao.style.display = 'flex';
       }
 
-      // Exibe campo de "Mês da Fatura" (para alocar o impacto no caixa corretamente)
-      if (saidaFaturaContainer) {
-        saidaFaturaContainer.style.display = 'flex';
+      // Exibe campo de "Dia do Vencimento" (com preenchimento automático memorizado)
+      if (saidaVencimentoContainer) {
+        saidaVencimentoContainer.style.display = 'flex';
       }
-      if (saidaMesFaturaInput && !saidaMesFaturaInput.value) {
-        const dataBase = (saidaDataInput && saidaDataInput.value) ? saidaDataInput.value : obterDataHojeISO();
-        saidaMesFaturaInput.value = dataBase.slice(0, 7);
-      }
-      if (saidaMesFaturaInput) {
-        saidaMesFaturaInput.required = true;
+      if (saidaDiaVencimentoInput) {
+        if (!saidaDiaVencimentoInput.value) {
+          saidaDiaVencimentoInput.value = obterDiaVencimentoMemorizado();
+        }
+        saidaDiaVencimentoInput.required = true;
       }
 
       // Se "Parcelar" for clicado: exibe campo numérico "Quantidade de Parcelas"
@@ -204,19 +243,18 @@
       }
     } else {
       // Se voltar para "PIX / Débito":
-      // Oculte o botão "Parcelar" e o "Mês da Fatura"
+      // Oculte o botão "Parcelar" e o campo de Vencimento
       if (btnToggleParcelar) {
         btnToggleParcelar.style.display = 'none';
         btnToggleParcelar.classList.remove('ativo');
         btnToggleParcelar.setAttribute('aria-pressed', 'false');
       }
 
-      if (saidaFaturaContainer) {
-        saidaFaturaContainer.style.display = 'none';
+      if (saidaVencimentoContainer) {
+        saidaVencimentoContainer.style.display = 'none';
       }
-      if (saidaMesFaturaInput) {
-        saidaMesFaturaInput.required = false;
-        saidaMesFaturaInput.value = '';
+      if (saidaDiaVencimentoInput) {
+        saidaDiaVencimentoInput.required = false;
       }
 
       // Se estava parcelado, resete o estado da frequência para "Único" silenciosamente
@@ -295,7 +333,7 @@
     const dataSpan = document.createElement('span');
     dataSpan.className = 'historico-data';
     if (item.data_pagamento && item.data && item.data_pagamento !== item.data) {
-      dataSpan.textContent = `Compra: ${formatarDataBR(item.data)} · Fatura: ${formatarDataBR(item.data_pagamento)}`;
+      dataSpan.textContent = `Compra: ${formatarDataBR(item.data)} · Venc.: ${formatarDataBR(item.data_pagamento)}`;
     } else {
       dataSpan.textContent = formatarDataBR(item.data_pagamento || item.data);
     }
@@ -326,9 +364,10 @@
     if (item.forma_pagamento === 'cartao_credito') {
       tagPagamento = document.createElement('span');
       tagPagamento.className = 'historico-tag-pagamento tag-cartao';
-      const mesFat = item.mes_fatura || (item.data_pagamento ? item.data_pagamento.slice(0, 7) : '');
-      tagPagamento.textContent = mesFat ? `💳 Cartão (${mesFat.slice(5, 7)}/${mesFat.slice(2, 4)})` : '💳 Cartão';
-      tagPagamento.title = `Cartão de Crédito — Impacto no caixa: ${formatarDataBR(item.data_pagamento || item.data)}`;
+      const diaVenc = item.dia_vencimento || (item.data_pagamento ? item.data_pagamento.slice(8, 10) : '');
+      const labelVenc = diaVenc ? `dia ${parseInt(diaVenc, 10)}` : '';
+      tagPagamento.textContent = labelVenc ? `💳 Cartão (${labelVenc})` : '💳 Cartão';
+      tagPagamento.title = `Cartão de Crédito — Vencimento da fatura: ${formatarDataBR(item.data_pagamento || item.data)}`;
     } else if (item.forma_pagamento === 'pix_debito_dinheiro') {
       tagPagamento = document.createElement('span');
       tagPagamento.className = 'historico-tag-pagamento tag-pix';
@@ -478,24 +517,25 @@
       conveniencia = radioDelivery ? (radioDelivery.value === 'delivery') : false;
     }
 
-    // Leitura da Forma de Pagamento (Segmented Control) e Mês da Fatura
+    // Leitura da Forma de Pagamento (Segmented Control) e Dia do Vencimento
     const isCartao = radioPagamentoCartao && radioPagamentoCartao.checked;
     const formaPagamento = isCartao ? 'cartao_credito' : 'pix_debito_dinheiro';
-    let mesFatura = '';
+    let diaVencimento = 10;
 
     if (isCartao) {
-      mesFatura = saidaMesFaturaInput ? saidaMesFaturaInput.value.trim() : '';
-      if (!mesFatura) {
-        mesFatura = data.slice(0, 7);
-      }
+      const diaDigitado = parseInt(saidaDiaVencimentoInput ? saidaDiaVencimentoInput.value : '', 10);
+      diaVencimento = (!isNaN(diaDigitado) && diaDigitado >= 1 && diaDigitado <= 31)
+        ? diaDigitado
+        : obterDiaVencimentoMemorizado();
+      salvarDiaVencimento(diaVencimento);
+      if (saidaDiaVencimentoInput) saidaDiaVencimentoInput.value = diaVencimento;
     }
 
     // Impacto financeiro no caixa:
     // - PIX/Débito: mesmo mês da transação (data)
-    // - Cartão de Crédito: projetado para o mês da fatura selecionado
-    const diaOriginal = (data && data.length >= 10) ? data.slice(8, 10) : '01';
-    const dataPagamentoInicial = (isCartao && mesFatura)
-      ? obterDataComDiaAjustado(mesFatura, diaOriginal)
+    // - Cartão de Crédito: projetado combinando o dia fixo memorizado com o mês correspondente da compra
+    const dataPagamentoInicial = isCartao
+      ? projetarDataVencimentoCartao(data, diaVencimento, 0)
       : data;
 
     // Processamento por Frequência (Parcelado vs Assinatura Fixa vs Padrão Único)
@@ -518,7 +558,7 @@
         categoria,
         dataBase: data,
         formaPagamento,
-        mesFatura,
+        diaVencimento,
         quantidadeParcelas: qtdParcelas,
         detalhamento,
         conveniencia
@@ -539,8 +579,9 @@
         recorrente: true
       };
 
-      if (isCartao && mesFatura) {
-        novoItem.mes_fatura = mesFatura;
+      if (isCartao) {
+        novoItem.dia_vencimento = diaVencimento;
+        novoItem.mes_fatura = dataPagamentoInicial.slice(0, 7);
       }
 
       if (categoria === 'Outros' && detalhamento) {
@@ -566,8 +607,9 @@
         recorrente: false
       };
 
-      if (isCartao && mesFatura) {
-        novoItem.mes_fatura = mesFatura;
+      if (isCartao) {
+        novoItem.dia_vencimento = diaVencimento;
+        novoItem.mes_fatura = dataPagamentoInicial.slice(0, 7);
       }
 
       if (categoria === 'Outros' && detalhamento) {
@@ -596,8 +638,8 @@
     if (radioPagamentoPix) radioPagamentoPix.checked = true;
     estadoRecorrente = false;
     estadoParcelado  = false;
-    if (saidaMesFaturaInput) saidaMesFaturaInput.value = '';
-    if (saidaParcelasInput)  saidaParcelasInput.value  = '';
+    if (saidaDiaVencimentoInput) saidaDiaVencimentoInput.value = '';
+    if (saidaParcelasInput)      saidaParcelasInput.value      = '';
     atualizarEstadoUI();
 
     saidaDataInput.value       = '';

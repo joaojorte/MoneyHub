@@ -359,10 +359,15 @@ input[type="range"]::-moz-range-thumb {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .form-lancamento-descricao {
   width: 100%;
+  box-sizing: border-box;
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-field);
@@ -388,16 +393,21 @@ input[type="range"]::-moz-range-thumb {
 
 .form-lancamento-linha {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .form-lancamento-valor-group {
-  flex: 0 0 155px;
+  flex: 1 1 130px;
+  min-width: 110px;
   background: var(--surface-card);
+  box-sizing: border-box;
 }
 
 .form-lancamento-categoria {
-  flex: 1;
+  flex: 1 1 150px;
   min-width: 0;
   appearance: none;
   -webkit-appearance: none;
@@ -688,36 +698,45 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 2px 8px rgba(240, 185, 74, 0.25);
 }
 
-/* --- Linha de Campos Condicionais (Fatura e Parcelas) --- */
+/* --- Linha de Campos Condicionais (Vencimento e Parcelas) --- */
 .form-condicionais-linha {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-wrap: wrap; /* Quebra fluidamente para a linha de baixo caso não caiba lado a lado */
+  align-items: stretch;
+  gap: 8px 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .form-condicional-card {
-  flex: 1;
+  flex: 1 1 135px; /* Base de 135px com flex-grow e flex-shrink ativos */
+  min-width: 120px;
+  max-width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-field);
-  padding: 6px 10px;
+  padding: 7px 10px;
+  box-sizing: border-box;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .campo-condicional-label {
+  flex-shrink: 0;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   color: var(--text-muted);
   white-space: nowrap;
   user-select: none;
 }
 
 .form-condicional-input {
+  flex: 1;
+  min-width: 36px;
   width: 100%;
   border: none;
   background: transparent;
@@ -727,6 +746,7 @@ input[type="range"]::-moz-range-thumb {
   outline: none;
   padding: 2px 0;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 .form-condicional-input[type="number"] {
@@ -752,13 +772,18 @@ input[type="range"]::-moz-range-thumb {
 
 .form-lancamento-acoes {
   display: flex;
+  flex-wrap: wrap; /* Quebra caso botão e campo de data precisem de espaço adicional */
   align-items: center;
   gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .form-lancamento-data {
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 130px;
+  min-width: 120px;
+  max-width: 100%;
+  box-sizing: border-box;
   color-scheme: dark;
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);

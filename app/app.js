@@ -86,6 +86,15 @@
     return `${ano}-${mes}-${dia}`;
   }
 
+  function obterDataOntemISO() {
+    const ontem = new Date();
+    ontem.setDate(ontem.getDate() - 1);
+    const ano = ontem.getFullYear();
+    const mes = String(ontem.getMonth() + 1).padStart(2, '0');
+    const dia = String(ontem.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+  }
+
   function formatarDataBR(dataISO) {
     if (!dataISO || typeof dataISO !== 'string') return '';
     const partes = dataISO.split('-');
@@ -1185,6 +1194,7 @@
     evitarNegativoZero,
     formatarBRL,
     obterDataHojeISO,
+    obterDataOntemISO,
     formatarDataBR,
     formatarMesAno,
     gerarId,

@@ -45,6 +45,11 @@
   let btnToggleRecorrente, btnToggleParcelar;
   let camposCondicionaisCartao, saidaVencimentoContainer, saidaDiaVencimentoInput, saidaParcelasContainer, saidaParcelasInput;
 
+  // Controles de Ocultação Inteligente da Data de Lançamento
+  let btnToggleDataSaida, campoDataSaidaContainer, labelDataSaida, btnLimparDataSaida;
+  let btnToggleDataEntrada, campoDataEntradaContainer, labelDataEntrada, btnLimparDataEntrada;
+  let toggleDataSaidaControl, toggleDataEntradaControl;
+
   // Persistência do Dia de Vencimento do Cartão de Crédito
   const STORAGE_KEY_VENCIMENTO_CARTAO = 'moneyhub_cartao_dia_vencimento';
   const DIA_VENCIMENTO_PADRAO = 10;
@@ -73,6 +78,63 @@
         /* localStorage indisponível */
       }
     }
+  }
+
+  // Helper para o controle de revelação condicional da data
+  function configurarToggleData(btnToggle, containerData, inputData, labelTexto, btnLimpar) {
+    if (!btnToggle || !containerData || !inputData) return null;
+
+    function fecharCampoData() {
+      containerData.style.display = 'none';
+      btnToggle.classList.remove('ativo');
+      btnToggle.setAttribute('aria-expanded', 'false');
+      inputData.value = '';
+      if (labelTexto) labelTexto.textContent = 'Hoje';
+    }
+
+    function abrirCampoData() {
+      containerData.style.display = 'inline-flex';
+      btnToggle.classList.add('ativo');
+      btnToggle.setAttribute('aria-expanded', 'true');
+      if (!inputData.value) {
+        inputData.value = obterDataHojeISO();
+      }
+      inputData.focus();
+      atualizarLabel();
+    }
+
+    function atualizarLabel() {
+      if (inputData.value && inputData.value !== obterDataHojeISO()) {
+        if (labelTexto) labelTexto.textContent = formatarDataBR(inputData.value);
+        btnToggle.classList.add('ativo');
+      } else {
+        if (labelTexto) labelTexto.textContent = 'Hoje';
+      }
+    }
+
+    btnToggle.addEventListener('click', (e) => {
+      e.preventDefault();
+      const estaAberto = containerData.style.display !== 'none';
+      if (estaAberto) {
+        fecharCampoData();
+      } else {
+        abrirCampoData();
+      }
+    });
+
+    inputData.addEventListener('change', () => {
+      atualizarLabel();
+    });
+
+    if (btnLimpar) {
+      btnLimpar.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        fecharCampoData();
+      });
+    }
+
+    return { fechar: fecharCampoData, atualizar: atualizarLabel };
   }
 
   // Estado Reativo Interno da Frequência
@@ -112,6 +174,32 @@
     saidaParcelasInput      = document.getElementById('saida-parcelas');
     saidaDataInput          = document.getElementById('saida-data');
     historicoSaidasEl       = document.getElementById('historico-saidas');
+
+    btnToggleDataSaida        = document.getElementById('btn-toggle-data-saida');
+    campoDataSaidaContainer   = document.getElementById('campo-data-saida-container');
+    labelDataSaida            = document.getElementById('label-data-saida');
+    btnLimparDataSaida        = document.getElementById('btn-limpar-data-saida');
+
+    btnToggleDataEntrada      = document.getElementById('btn-toggle-data-entrada');
+    campoDataEntradaContainer = document.getElementById('campo-data-entrada-container');
+    labelDataEntrada          = document.getElementById('label-data-entrada');
+    btnLimparDataEntrada      = document.getElementById('btn-limpar-data-entrada');
+
+    toggleDataSaidaControl = configurarToggleData(
+      btnToggleDataSaida,
+      campoDataSaidaContainer,
+      saidaDataInput,
+      labelDataSaida,
+      btnLimparDataSaida
+    );
+
+    toggleDataEntradaControl = configurarToggleData(
+      btnToggleDataEntrada,
+      campoDataEntradaContainer,
+      entradaDataInput,
+      labelDataEntrada,
+      btnLimparDataEntrada
+    );
 
     investimentoRange      = document.getElementById('investimento-range');
     investimentoNum        = document.getElementById('investimento-num');
@@ -456,6 +544,7 @@
     entradaValorInput.value     = '';
     entradaCategoriaSelect.value= CATEGORIA_ENTRADA_PADRAO;
     entradaDataInput.value      = '';
+    if (toggleDataEntradaControl) toggleDataEntradaControl.fechar();
     entradaDescricaoInput.focus();
 
     calcular();
@@ -643,6 +732,7 @@
     atualizarEstadoUI();
 
     saidaDataInput.value       = '';
+    if (toggleDataSaidaControl) toggleDataSaidaControl.fechar();
     saidaDescricaoInput.focus();
 
     calcular();

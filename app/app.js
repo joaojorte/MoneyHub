@@ -154,12 +154,38 @@
     return `${anoStr}-${mesStr}-${diaStr}`;
   }
 
+  function projetarDataVencimentoCartao(dataBaseISO, diaVencimento, mesesParaAdicionar = 0) {
+    if (!dataBaseISO || typeof dataBaseISO !== 'string') {
+      dataBaseISO = obterDataHojeISO();
+    }
+    const partes = dataBaseISO.split('-');
+    if (partes.length < 2) return dataBaseISO;
+
+    let ano = parseInt(partes[0], 10);
+    let mes = parseInt(partes[1], 10) - 1; // 0 a 11 (mês da compra)
+
+    mes += mesesParaAdicionar;
+    ano += Math.floor(mes / 12);
+    mes = ((mes % 12) + 12) % 12;
+
+    const diaAlvo = Math.max(1, Math.min(31, parseInt(diaVencimento, 10) || 10));
+    const maxDiasNoMes = new Date(ano, mes + 1, 0).getDate();
+    const diaAjustado = Math.min(diaAlvo, maxDiasNoMes);
+
+    const anoStr = String(ano);
+    const mesStr = String(mes + 1).padStart(2, '0');
+    const diaStr = String(diaAjustado).padStart(2, '0');
+
+    return `${anoStr}-${mesStr}-${diaStr}`;
+  }
+
   function gerarLancamentosParcelados({
     descricao,
     valorTotal,
     categoria,
     dataBase,
     formaPagamento = 'pix_debito_dinheiro',
+    diaVencimento,
     mesFatura = '',
     quantidadeParcelas,
     detalhamento,
@@ -175,24 +201,26 @@
     const idGrupo = 'parc_' + gerarId();
     const parcelasGeradas = [];
 
-    // Determina a data base de impacto financeiro no caixa:
-    // - Cartão de Crédito: alocado no mês da fatura selecionado pelo usuário
-    // - Débito/PIX: alocado no mês da transação
     const diaOriginal = (dataBase && dataBase.length >= 10) ? dataBase.slice(8, 10) : '01';
     let dataBasePagamento = dataBase || obterDataHojeISO();
-
-    if (formaPagamento === 'cartao_credito' && mesFatura && /^\d{4}-\d{2}$/.test(mesFatura)) {
-      dataBasePagamento = obterDataComDiaAjustado(mesFatura, diaOriginal);
-    }
 
     for (let i = 1; i <= qtd; i++) {
       const valorParcela = (i === 1)
         ? Math.round((valorParcelaBase + diferencaCentavos) * 100) / 100
         : valorParcelaBase;
 
-      // Incremento automático do mês de competência e impacto financeiro das parcelas seguintes
+      // Incremento automático do mês de competência da compra
       const dataCompetencia = calcularDataCompetencia(dataBase, i - 1);
-      const dataPagamento   = calcularDataCompetencia(dataBasePagamento, i - 1);
+
+      // Impacto financeiro no caixa:
+      // Se Cartão de Crédito: projeta combinando o dia fixo memorizado com o mês da compra (i=1) e meses subsequentes (i>1)
+      let dataPagamento;
+      if (formaPagamento === 'cartao_credito') {
+        const diaVenc = parseInt(diaVencimento, 10) || parseInt(diaOriginal, 10) || 10;
+        dataPagamento = projetarDataVencimentoCartao(dataBase, diaVenc, i - 1);
+      } else {
+        dataPagamento = calcularDataCompetencia(dataBasePagamento, i - 1);
+      }
 
       const item = {
         id: gerarId(),
@@ -210,6 +238,7 @@
       };
 
       if (formaPagamento === 'cartao_credito') {
+        item.dia_vencimento = parseInt(diaVencimento, 10) || 10;
         item.mes_fatura = dataPagamento.slice(0, 7);
       }
 
@@ -1161,6 +1190,7 @@
     gerarId,
     obterDataComDiaAjustado,
     calcularDataCompetencia,
+    projetarDataVencimentoCartao,
     gerarLancamentosParcelados,
     obterLancamentosMesComRecorrencia,
     somarLancamentos,

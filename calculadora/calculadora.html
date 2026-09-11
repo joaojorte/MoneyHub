@@ -198,15 +198,19 @@
 
             <!-- Campos Condicionais: Mês da Fatura e Quantidade de Parcelas -->
             <div id="campos-condicionais-cartao" class="form-lancamento-linha form-condicionais-linha" style="display: none;">
-              <!-- Campo: Mês da Fatura (Visível apenas para Cartão de Crédito) -->
-              <div id="saida-fatura-container" class="fatura-group form-condicional-card" style="display: none;">
-                <label for="saida-mes-fatura" class="campo-condicional-label">Mês da Fatura:</label>
+              <!-- Campo: Dia do Vencimento (Visível apenas para Cartão de Crédito) -->
+              <div id="saida-vencimento-container" class="vencimento-group form-condicional-card" style="display: none;">
+                <label for="saida-dia-vencimento" class="campo-condicional-label">Dia Vencimento:</label>
                 <input
-                  type="month"
-                  id="saida-mes-fatura"
-                  name="saida-mes-fatura"
+                  type="number"
+                  id="saida-dia-vencimento"
+                  name="saida-dia-vencimento"
                   class="form-condicional-input"
-                  aria-label="Mês da Fatura para impacto financeiro no fluxo de caixa"
+                  min="1"
+                  max="31"
+                  step="1"
+                  placeholder="Ex: 10"
+                  aria-label="Dia de vencimento da fatura do cartão (1 a 31)"
                 >
               </div>
 

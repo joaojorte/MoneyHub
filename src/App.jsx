@@ -25,38 +25,44 @@ export function App() {
   const calc = useFinancialCalculator(entradas, saidas);
 
   return (
-    <div className="min-h-screen bg-background text-slate-100 selection:bg-rose-500/20">
-      {/* Top Header */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border-subtle">
-        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-base sm:text-lg font-bold tracking-tight">
-              Money<span className="text-amber-400">Hub</span>
+    <div className="min-h-screen text-slate-100 selection:bg-rose-500/20 relative overflow-x-hidden">
+      {/* Luzes ambiente de fundo (Glow Orbs) */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="absolute top-40 right-10 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="absolute top-[600px] left-10 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
+
+      {/* Top Header com Glassmorphism Ultra-Refinado */}
+      <header className="sticky top-0 z-50 bg-[#060911]/80 backdrop-blur-2xl border-b border-white/[0.08] shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className="text-base sm:text-lg font-extrabold tracking-tight flex items-center gap-1.5">
+              <span>Money</span>
+              <span className="text-amber-400 drop-shadow-[0_0_14px_rgba(245,158,11,0.5)]">Hub</span>
             </h1>
-            <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+            <span className="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 shadow-[0_0_12px_rgba(16,185,129,0.25)]">
               React + Tailwind
             </span>
-            <span className="hidden sm:inline-flex items-center text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">
+            <span className="hidden sm:inline-flex items-center text-[10px] font-mono font-medium px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-300 border border-sky-400/20 shadow-[0_0_10px_rgba(56,189,248,0.15)]">
               ⚡ DB Otimizado (~80B/input)
             </span>
           </div>
 
-          <div className="flex items-center gap-3 text-xs text-slate-400 font-mono">
+          <div className="flex items-center gap-2.5 text-xs text-slate-400 font-mono">
             {usuario ? (
-              <span className="flex items-center gap-1.5 text-emerald-400">
-                <span className={`w-2 h-2 rounded-full ${statusSincronizacao === 'salvando' ? 'bg-amber-400 animate-ping' : 'bg-emerald-400 animate-pulse'}`} />
-                <span className="truncate max-w-[120px]">{usuario.email}</span>
+              <span className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08] text-emerald-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                <span className={`w-2 h-2 rounded-full ${statusSincronizacao === 'salvando' ? 'bg-amber-400 animate-ping' : 'bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]'}`} />
+                <span className="truncate max-w-[130px] text-slate-300 font-semibold">{usuario.email}</span>
                 {statusSincronizacao === 'salvando' && (
-                  <span className="text-[10px] text-amber-400 animate-pulse hidden sm:inline">(salvando...)</span>
+                  <span className="text-[10px] text-amber-300 font-bold animate-pulse hidden sm:inline">(salvando...)</span>
                 )}
                 {statusSincronizacao === 'salvo' && (
-                  <span className="text-[10px] text-emerald-400 hidden sm:inline">✓</span>
+                  <span className="text-[10px] text-emerald-400 font-bold hidden sm:inline">✓</span>
                 )}
               </span>
             ) : (
-              <span className="flex items-center gap-1.5 text-slate-400">
-                <span className="w-2 h-2 rounded-full bg-amber-400" />
-                <span>Modo Local / Offline</span>
+              <span className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08] text-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
+                <span className="font-semibold text-slate-300">Modo Local</span>
               </span>
             )}
           </div>

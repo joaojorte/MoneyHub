@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.48.0",
@@ -25,6 +25,7 @@
     "vite": "^6.1.0"
   },
   "allowScripts": {
+    "esbuild": true,
     "esbuild@0.25.12": true
   }
 }

@@ -33,6 +33,21 @@ export function obterDataOntemISO() {
   return `${ano}-${mes}-${dia}`;
 }
 
+export function formatarMesAno(anoMes) {
+  if (!anoMes || typeof anoMes !== 'string') return '';
+  const [ano, mes] = anoMes.split('-');
+  const nomesMeses = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ];
+  const idx = parseInt(mes, 10) - 1;
+  if (idx >= 0 && idx < 12) {
+    return `${nomesMeses[idx]} de ${ano}`;
+  }
+  return anoMes;
+}
+
 export function gerarId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
+

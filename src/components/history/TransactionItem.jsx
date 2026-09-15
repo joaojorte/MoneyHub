@@ -11,11 +11,11 @@ export function TransactionItem({ item, tipo = 'saida', onRemove }) {
   const dataVenc = item.data_pagamento ? formatarDataBR(item.data_pagamento) : '';
 
   return (
-    <li className="flex items-center justify-between p-3.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200/90 shadow-sm dark:bg-gradient-to-r dark:from-white/[0.04] dark:via-white/[0.02] dark:to-transparent dark:hover:from-white/[0.07] dark:hover:via-white/[0.03] backdrop-blur-xl rounded-2xl dark:border-white/[0.08] dark:hover:border-white/[0.16] transition-all duration-200 group">
+    <li className="flex items-center justify-between p-3.5 bg-slate-50 hover:bg-slate-100/90 border border-slate-200/90 shadow-sm dark:bg-black/40 dark:hover:bg-white/[0.05] backdrop-blur-xl rounded-2xl dark:border-white/[0.08] dark:shadow-none transition-all duration-200 group">
       <div className="flex flex-col gap-1.5 min-w-0 pr-2">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 truncate max-w-[180px] sm:max-w-[260px]">
-            {item.descricao || '(sem descrição)'}
+            {item.descricao ? item.descricao : <span className="text-slate-400 dark:text-slate-500 italic font-normal">(sem descrição)</span>}
           </span>
 
           {/* Tag de Categoria */}

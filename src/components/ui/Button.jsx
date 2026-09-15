@@ -7,15 +7,15 @@ export function Button({
   className = '',
   ...props
 }) {
-  const baseStyles = 'inline-flex items-center justify-center font-bold tracking-tight rounded-full transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none select-none';
+  const baseStyles = 'inline-flex items-center justify-center tracking-tight rounded-full transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none select-none';
 
   const variants = {
-    primary: 'bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-extrabold shadow-[0_0_24px_rgba(16,185,129,0.45)] hover:shadow-[0_0_30px_rgba(16,185,129,0.6)] border border-emerald-300/30',
-    expense: 'bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-400 hover:to-pink-400 text-white font-extrabold shadow-[0_0_24px_rgba(244,63,94,0.45)] hover:shadow-[0_0_30px_rgba(244,63,94,0.6)] border border-rose-300/30',
-    brand: 'bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-yellow-200 text-slate-950 font-extrabold shadow-[0_0_24px_rgba(245,158,11,0.45)] hover:shadow-[0_0_30px_rgba(245,158,11,0.6)] border border-amber-200/40',
-    secondary: 'bg-white/[0.04] hover:bg-white/[0.08] text-slate-200 border border-white/[0.08] hover:border-white/[0.16] backdrop-blur-md',
-    ghost: 'bg-transparent hover:bg-white/[0.06] text-slate-400 hover:text-white border border-transparent hover:border-white/[0.08]',
-    link: 'bg-transparent text-slate-400 hover:text-white underline underline-offset-2 p-0'
+    primary: 'bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-sm dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-slate-950 dark:font-extrabold dark:shadow-[0_0_20px_rgba(16,185,129,0.35)] border border-emerald-600 dark:border-emerald-300/30',
+    expense: 'bg-rose-600 hover:bg-rose-700 text-white font-bold shadow-sm dark:bg-rose-500 dark:hover:bg-rose-400 dark:text-white dark:font-extrabold dark:shadow-[0_0_20px_rgba(244,63,94,0.35)] border border-rose-600 dark:border-rose-300/30',
+    brand: 'bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-sm dark:bg-amber-400 dark:hover:bg-amber-300 dark:text-slate-950 dark:font-extrabold dark:shadow-[0_0_20px_rgba(245,158,11,0.35)] border border-amber-500 dark:border-amber-200/40',
+    secondary: 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] dark:text-slate-200 dark:border-white/[0.08] backdrop-blur-md',
+    ghost: 'bg-transparent hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-transparent dark:hover:bg-white/[0.06] dark:text-slate-400 dark:hover:text-white',
+    link: 'bg-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white underline underline-offset-2 p-0'
   };
 
   const sizes = {

@@ -102,10 +102,10 @@ export function ExpenseForm({ onAddExpense }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="glass-panel p-4 sm:p-5 space-y-4 border-rose-500/20 shadow-[inset_0_1px_0_0_rgba(251,113,133,0.15),0_16px_36px_-6px_rgba(0,0,0,0.55)]">
-      <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
-        <h2 className="text-sm font-semibold tracking-wide text-rose-400 flex items-center gap-2 drop-shadow-[0_0_10px_rgba(244,63,94,0.4)]">
-          <span className="w-5 h-5 rounded-full bg-rose-500/20 border border-rose-400/40 flex items-center justify-center text-xs font-bold leading-none">−</span>
+    <form onSubmit={handleSubmit} className="glass-panel p-4 sm:p-5 space-y-4 border-rose-200 dark:border-rose-500/20 shadow-sm dark:shadow-[inset_0_1px_0_0_rgba(251,113,133,0.15),0_16px_36px_-6px_rgba(0,0,0,0.55)]">
+      <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
+        <h2 className="text-sm font-semibold tracking-wide text-rose-700 dark:text-rose-400 flex items-center gap-2">
+          <span className="w-5 h-5 rounded-full bg-rose-100 dark:bg-rose-500/20 border border-rose-300 dark:border-rose-400/40 flex items-center justify-center text-xs font-bold leading-none text-rose-700 dark:text-rose-300">−</span>
           <span>Nova Saída</span>
         </h2>
       </div>
@@ -124,7 +124,7 @@ export function ExpenseForm({ onAddExpense }) {
           placeholder="R$ 0,00"
           value={valor}
           onChange={(e) => setValor(e.target.value)}
-          className="glass-input px-3.5 py-2.5 text-sm font-mono font-bold tabular-nums tracking-tight text-rose-300 placeholder:text-slate-600"
+          className="glass-input px-3.5 py-2.5 text-sm font-mono font-bold tabular-nums tracking-tight text-rose-600 dark:text-rose-300 placeholder:text-slate-400 dark:placeholder:text-slate-600"
           required
         />
       </div>
@@ -138,8 +138,8 @@ export function ExpenseForm({ onAddExpense }) {
             onClick={() => setCategoria(cat)}
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 select-none border ${
               categoria === cat 
-                ? 'bg-rose-500/20 text-rose-300 border-rose-400/40 shadow-[0_0_18px_rgba(244,63,94,0.3)] font-bold'
-                : 'text-slate-400 hover:text-slate-200 bg-white/[0.02] border-white/[0.05] hover:bg-white/[0.06] hover:border-white/[0.1]'
+                ? 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-400/40 font-bold shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 bg-slate-100 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.05] hover:bg-slate-200/60 dark:hover:bg-white/[0.06]'
             }`}
           >
             {cat}
@@ -154,7 +154,7 @@ export function ExpenseForm({ onAddExpense }) {
           placeholder="Especifique a saída (obrigatório)"
           value={detalhamento}
           onChange={(e) => setDetalhamento(e.target.value)}
-          className="glass-input w-full px-3.5 py-2 text-xs border-amber-500/30"
+          className="glass-input w-full px-3.5 py-2 text-xs border-amber-300 dark:border-amber-500/30"
           required
           autoFocus
         />
@@ -199,8 +199,8 @@ export function ExpenseForm({ onAddExpense }) {
           }}
           className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all select-none ${
             isRecorrente 
-              ? 'bg-purple-500/20 text-purple-300 border-purple-400/40 shadow-[0_0_16px_rgba(168,85,247,0.3)] font-bold'
-              : 'text-slate-400 border-white/[0.06] hover:text-slate-200 bg-white/[0.02] hover:bg-white/[0.05]'
+              ? 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-400/40 font-bold shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 border-slate-200 dark:border-white/[0.06] hover:text-slate-900 dark:hover:text-slate-200 bg-slate-100 dark:bg-white/[0.02] hover:bg-slate-200/60 dark:hover:bg-white/[0.05]'
           }`}
         >
           🔁 Tornar Recorrente (Assinatura)
@@ -215,8 +215,8 @@ export function ExpenseForm({ onAddExpense }) {
             }}
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all select-none ${
               isParcelado 
-                ? 'bg-amber-500/20 text-amber-300 border-amber-400/40 shadow-[0_0_16px_rgba(245,158,11,0.3)] font-bold'
-                : 'text-slate-400 border-white/[0.06] hover:text-slate-200 bg-white/[0.02] hover:bg-white/[0.05]'
+                ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-400/40 font-bold shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 border-slate-200 dark:border-white/[0.06] hover:text-slate-900 dark:hover:text-slate-200 bg-slate-100 dark:bg-white/[0.02] hover:bg-slate-200/60 dark:hover:bg-white/[0.05]'
             }`}
           >
             💳 Parcelar
@@ -237,8 +237,8 @@ export function ExpenseForm({ onAddExpense }) {
           />
 
           {isParcelado && (
-            <div className="flex items-center justify-between gap-2 px-4 py-2 bg-[#04070F]/70 backdrop-blur-md border border-amber-400/30 shadow-[0_0_16px_rgba(245,158,11,0.15)] rounded-full">
-              <span className="text-xs font-semibold text-slate-300">Parcelamento:</span>
+            <div className="flex items-center justify-between gap-2 px-4 py-2 bg-slate-50 dark:bg-[#04070F]/70 backdrop-blur-md border border-amber-200 dark:border-amber-400/30 rounded-full">
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Parcelamento:</span>
               <div className="flex items-center gap-1.5">
                 <input
                   type="number"
@@ -246,9 +246,9 @@ export function ExpenseForm({ onAddExpense }) {
                   max="72"
                   value={qtdParcelas}
                   onChange={(e) => setQtdParcelas(Math.max(2, parseInt(e.target.value, 10) || 2))}
-                  className="w-12 text-center font-mono font-bold text-sm bg-black/60 border border-white/20 rounded-full py-0.5 text-amber-300 focus:outline-none focus:border-amber-400"
+                  className="w-12 text-center font-mono font-bold text-sm bg-white dark:bg-black/60 border border-slate-300 dark:border-white/20 rounded-full py-0.5 text-amber-700 dark:text-amber-300 focus:outline-none focus:border-amber-500 dark:focus:border-amber-400"
                 />
-                <span className="text-xs font-bold text-amber-400/80">x</span>
+                <span className="text-xs font-bold text-amber-600 dark:text-amber-400/80">x</span>
               </div>
             </div>
           )}
@@ -256,7 +256,7 @@ export function ExpenseForm({ onAddExpense }) {
       )}
 
       {/* Barra de Ações Inferior */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-white/[0.06]">
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-white/[0.06]">
         <DateChips
           opcao={dateChips.opcao}
           onSelectOpcao={dateChips.setOpcao}

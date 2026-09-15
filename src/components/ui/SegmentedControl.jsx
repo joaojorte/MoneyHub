@@ -9,20 +9,20 @@ export function SegmentedControl({
   className = ''
 }) {
   const accentStyles = {
-    default: 'bg-white/[0.10] text-white border-white/20 shadow-[0_0_14px_rgba(255,255,255,0.15)]',
-    income: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40 shadow-[0_0_18px_rgba(16,185,129,0.3)]',
-    expense: 'bg-rose-500/20 text-rose-300 border-rose-400/40 shadow-[0_0_18px_rgba(244,63,94,0.3)]',
-    brand: 'bg-amber-500/20 text-amber-300 border-amber-400/40 shadow-[0_0_18px_rgba(245,158,11,0.3)]'
+    default: 'bg-white text-slate-900 border-slate-300 shadow-sm dark:bg-white/[0.10] dark:text-white dark:border-white/20',
+    income: 'bg-white text-emerald-700 border-emerald-300 shadow-sm dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-400/40',
+    expense: 'bg-white text-rose-700 border-rose-300 shadow-sm dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-400/40',
+    brand: 'bg-white text-amber-700 border-amber-300 shadow-sm dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-400/40'
   };
 
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       {label && (
-        <span className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase select-none">
+        <span className="text-[11px] font-semibold tracking-wider text-slate-500 dark:text-slate-400 uppercase select-none">
           {label}
         </span>
       )}
-      <div className="flex items-center gap-1 p-1 bg-[#04070F]/70 backdrop-blur-md rounded-full border border-white/[0.08] shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)]">
+      <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-[#04070F]/70 backdrop-blur-md rounded-full border border-slate-200 dark:border-white/[0.08]">
         {options.map((opt) => {
           const isSelected = value === opt.value;
           return (
@@ -34,7 +34,7 @@ export function SegmentedControl({
                 flex items-center justify-center gap-1.5 select-none border
                 ${isSelected 
                   ? `${accentStyles[accent] || accentStyles.default} font-bold`
-                  : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'}`}
+                  : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-white/[0.04]'}`}
             >
               {opt.icon && <span className="text-sm leading-none">{opt.icon}</span>}
               <span>{opt.label}</span>

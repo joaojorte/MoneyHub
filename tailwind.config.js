@@ -8,41 +8,33 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#060911',       // Deep Space Navy puro
-        space: {
-          950: '#050811',
-          900: '#080D1B',
-          850: '#0C1326',
-          800: '#111A33',
+        background: {
+          light: '#F8FAFC',       // Cinza gelo / Slate 50
+          dark: '#080D1A',        // Azul-noite profundo
         },
         surface: {
-          base: 'rgba(255, 255, 255, 0.02)',
-          card: 'rgba(12, 19, 38, 0.55)',
-          inset: 'rgba(4, 7, 15, 0.65)',
-          active: 'rgba(255, 255, 255, 0.06)',
-        },
-        border: {
-          subtle: 'rgba(255, 255, 255, 0.07)',
-          light: 'rgba(255, 255, 255, 0.12)',
-          hover: 'rgba(255, 255, 255, 0.18)',
-          focus: 'rgba(255, 255, 255, 0.30)',
+          light: '#FFFFFF',
+          'light-subtle': '#F1F5F9',
+          dark: '#0C1326',
+          'dark-subtle': '#111A33',
         },
         income: {
-          DEFAULT: '#10B981',         // Verde-menta vibrante
-          bright: '#34D399',          // Menta luminescente
-          dim: 'rgba(16, 185, 129, 0.15)',
+          light: '#059669',       // Esmeralda 600 sóbrio
+          DEFAULT: '#10B981',
+          dark: '#34D399',        // Esmeralda 400
         },
         expense: {
-          DEFAULT: '#F43F5E',         // Coral / Rose Neon
-          bright: '#FB7185',          // Coral luminescente
-          dim: 'rgba(244, 63, 94, 0.15)',
+          light: '#E11D48',       // Rose 600 sóbrio
+          DEFAULT: '#F43F5E',
+          dark: '#FB7185',        // Rose 400
         },
         brand: {
-          gold: '#F59E0B',
-          goldBright: '#FBBF24',
-          cyan: '#38BDF8',
-          cyanBright: '#7DD3FC',
-          purple: '#A855F7',
+          gold: '#D97706',        // Âmbar 600 sóbrio
+          goldDark: '#FBBF24',
+          cyan: '#0284C7',
+          cyanDark: '#38BDF8',
+          purple: '#9333EA',
+          purpleDark: '#C084FC',
         }
       },
       fontFamily: {
@@ -52,10 +44,6 @@ export default {
       boxShadow: {
         'glass-panel': 'inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 12px 32px -4px rgba(0, 0, 0, 0.5)',
         'glass-input': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.4), 0 1px 0 0 rgba(255, 255, 255, 0.04)',
-        'glow-income': '0 0 24px -4px rgba(16, 185, 129, 0.35)',
-        'glow-expense': '0 0 24px -4px rgba(244, 63, 94, 0.35)',
-        'glow-brand': '0 0 24px -4px rgba(245, 158, 11, 0.35)',
-        'glow-cyan': '0 0 24px -4px rgba(56, 189, 248, 0.35)',
       }
     },
   },

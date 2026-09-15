@@ -12,12 +12,12 @@ export function TransactionList({
 
   return (
     <div className="glass-panel p-4 sm:p-5 space-y-3.5">
-      <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full ${isSaida ? 'bg-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.6)]' : 'bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`} />
+      <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
+          <span className={`w-2 h-2 rounded-full ${isSaida ? 'bg-rose-500 shadow-sm' : 'bg-emerald-500 shadow-sm'}`} />
           <span>{titulo}</span>
         </h3>
-        <span className="text-[11px] font-mono font-bold text-slate-400 bg-white/[0.04] border border-white/[0.06] px-2.5 py-0.5 rounded-full tabular-nums">
+        <span className="text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06] px-2.5 py-0.5 rounded-full tabular-nums">
           {items.length} {items.length === 1 ? 'item' : 'itens'}
         </span>
       </div>
@@ -25,7 +25,7 @@ export function TransactionList({
       {items.length === 0 ? (
         <div className="py-8 text-center flex flex-col items-center justify-center gap-1.5">
           <span className="text-xl opacity-40">📭</span>
-          <p className="text-xs text-slate-500 italic">
+          <p className="text-xs text-slate-400 dark:text-slate-500 italic">
             {emptyMessage}
           </p>
         </div>

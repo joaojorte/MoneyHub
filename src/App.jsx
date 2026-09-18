@@ -40,14 +40,13 @@ export function App() {
 
       {/* Top Header */}
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-[#060911]/80 backdrop-blur-2xl border-b border-slate-200/80 dark:border-white/[0.08] shadow-sm dark:shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 sm:gap-4">
             <h1
               onClick={() => setActiveTab('calculadora')}
-              className="text-base sm:text-lg font-extrabold tracking-tight flex items-center gap-1.5 cursor-pointer select-none"
+              className="text-lg sm:text-xl font-black tracking-tight flex items-center cursor-pointer select-none"
             >
-              <span className="text-slate-900 dark:text-white">Money</span>
-              <span className="text-amber-500 dark:text-amber-400">Hub</span>
+              <span className="text-slate-900 dark:text-white">Money</span><span className="text-amber-500 dark:text-amber-400">Hub</span>
             </h1>
 
             {/* Navegação entre Módulos */}
@@ -117,7 +116,7 @@ export function App() {
       </header>
 
       {/* Main Container */}
-      <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+      <main className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {activeTab === 'calculadora' && (
           <>
             {/* Métricas Principais */}

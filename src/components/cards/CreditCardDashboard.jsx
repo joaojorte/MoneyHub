@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { CreditCard, Calendar, Wallet, AlertCircle, CheckCircle2, ChevronRight, Filter } from 'lucide-react';
+import { CreditCard, Calendar, Wallet, AlertCircle, CheckCircle2, ChevronRight, Filter, Plus, Check, Trash2, Sparkles } from 'lucide-react';
 import { formatarBRL, formatarDataBR, formatarMesAno, obterDataHojeISO } from '../../utils/formatters';
 import { STORAGE_KEYS } from '../../utils/constants';
+import { mockCardsCatalog } from '../../data/cardsCatalog';
 
 export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
   // Limite total configurável pelo usuário
@@ -32,6 +33,113 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
   const [filtroStatus, setFiltroStatus] = useState('todas');
 
   const mesAtual = useMemo(() => obterDataHojeISO().slice(0, 7), []);
+
+  // Estado do Filtro em Cascata (Banco emissor -> Cartão)
+  const [bancoSelecionado, setBancoSelecionado] = useState('');
+  const [cartaoSelecionadoId, setCartaoSelecionadoId] = useState('');
+  const [feedbackAdicionado, setFeedbackAdicionado] = useState(false);
+
+  // Cartões cadastrados pelo usuário e cartão ativo na carteira
+  const [cartoesCadastrados, setCartoesCadastrados] = useState(() => {
+    try {
+      const salvo = localStorage.getItem('moneyhub_cartoes_cadastrados');
+      if (salvo) return JSON.parse(salvo);
+    } catch (e) {}
+    // Padrão inicial com Nubank Ultravioleta para demonstração rica
+    return [
+      {
+        uid: 'default-1',
+        bancoId: 'nubank',
+        bancoNome: 'Nubank',
+        cartaoId: 'nubank-ultravioleta',
+        cartaoNome: 'Ultravioleta',
+        imagePath: '/cards/nubank-ultravioleta.webp',
+        dataCadastro: new Date().toISOString()
+      }
+    ];
+  });
+
+  const [cartaoAtivoUid, setCartaoAtivoUid] = useState(() => {
+    try {
+      return localStorage.getItem('moneyhub_cartao_ativo_uid') || 'default-1';
+    } catch (e) {}
+    return 'default-1';
+  });
+
+  // Lista de cartões disponíveis para o banco selecionado
+  const cartoesDisponiveis = useMemo(() => {
+    if (!bancoSelecionado || !mockCardsCatalog[bancoSelecionado]) {
+      return [];
+    }
+    return mockCardsCatalog[bancoSelecionado].cartoes;
+  }, [bancoSelecionado]);
+
+  // Objeto do cartão selecionado no preview do formulário
+  const cartaoPreview = useMemo(() => {
+    if (!cartaoSelecionadoId) return null;
+    return cartoesDisponiveis.find((c) => c.id === cartaoSelecionadoId) || null;
+  }, [cartoesDisponiveis, cartaoSelecionadoId]);
+
+  // Cartão ativo na carteira (Apple Wallet Showcase)
+  const cartaoAtivo = useMemo(() => {
+    return cartoesCadastrados.find((c) => c.uid === cartaoAtivoUid) || cartoesCadastrados[0] || null;
+  }, [cartoesCadastrados, cartaoAtivoUid]);
+
+  // Manipulador da troca de banco (reseta seleção do cartão)
+  const handleBancoChange = (e) => {
+    const novoBanco = e.target.value;
+    setBancoSelecionado(novoBanco);
+    setCartaoSelecionadoId(''); // Reseta o segundo select
+  };
+
+  // Manipulador da troca de cartão
+  const handleCartaoChange = (e) => {
+    setCartaoSelecionadoId(e.target.value);
+  };
+
+  // Adicionar cartão à carteira do usuário
+  const handleAdicionarCartao = (e) => {
+    e.preventDefault();
+    if (!cartaoPreview || !bancoSelecionado) return;
+
+    const novoUid = `card_${Date.now()}`;
+    const novoCartao = {
+      uid: novoUid,
+      bancoId: bancoSelecionado,
+      bancoNome: mockCardsCatalog[bancoSelecionado]?.nome || bancoSelecionado,
+      cartaoId: cartaoPreview.id,
+      cartaoNome: cartaoPreview.nome,
+      imagePath: cartaoPreview.imagePath,
+      dataCadastro: new Date().toISOString()
+    };
+
+    const novaLista = [novoCartao, ...cartoesCadastrados.filter(c => c.cartaoId !== cartaoPreview.id)];
+    setCartoesCadastrados(novaLista);
+    setCartaoAtivoUid(novoUid);
+
+    try {
+      localStorage.setItem('moneyhub_cartoes_cadastrados', JSON.stringify(novaLista));
+      localStorage.setItem('moneyhub_cartao_ativo_uid', novoUid);
+    } catch (err) {}
+
+    setFeedbackAdicionado(true);
+    setTimeout(() => setFeedbackAdicionado(false), 3000);
+  };
+
+  // Remover cartão da carteira
+  const handleRemoverCartao = (uidParaRemover) => {
+    const novaLista = cartoesCadastrados.filter(c => c.uid !== uidParaRemover);
+    setCartoesCadastrados(novaLista);
+    if (cartaoAtivoUid === uidParaRemover && novaLista.length > 0) {
+      setCartaoAtivoUid(novaLista[0].uid);
+    }
+    try {
+      localStorage.setItem('moneyhub_cartoes_cadastrados', JSON.stringify(novaLista));
+      if (cartaoAtivoUid === uidParaRemover && novaLista.length > 0) {
+        localStorage.setItem('moneyhub_cartao_ativo_uid', novaLista[0].uid);
+      }
+    } catch (err) {}
+  };
 
   const handleSalvarLimite = (e) => {
     const val = parseFloat(e.target.value);
@@ -139,15 +247,31 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
       <section className="glass-panel p-5 sm:p-6 space-y-6 border-slate-200/90 dark:border-white/[0.08]">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-500/15 border border-rose-200 dark:border-rose-400/30 flex items-center justify-center text-rose-600 dark:text-rose-400 shadow-sm">
-              <CreditCard className="w-5 h-5" />
-            </div>
+            {cartaoAtivo ? (
+              <div className="w-14 h-9 rounded-lg overflow-hidden shadow-sm flex-shrink-0 border border-slate-200 dark:border-white/10 group cursor-pointer" title={cartaoAtivo.cartaoNome}>
+                <img
+                  src={cartaoAtivo.imagePath}
+                  alt={cartaoAtivo.cartaoNome}
+                  className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-110"
+                />
+              </div>
+            ) : (
+              <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-500/15 border border-rose-200 dark:border-rose-400/30 flex items-center justify-center text-rose-600 dark:text-rose-400 shadow-sm">
+                <CreditCard className="w-5 h-5" />
+              </div>
+            )}
             <div>
               <h2 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
                 <span>Gestão de Cartões</span>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/20 font-mono font-medium">
-                  Exclusivo
-                </span>
+                {cartaoAtivo ? (
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/20 font-mono font-medium">
+                    {cartaoAtivo.cartaoNome}
+                  </span>
+                ) : (
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/20 font-mono font-medium">
+                    Exclusivo
+                  </span>
+                )}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 Controle de limites, faturas abertas e parcelas futuras em timeline limpa
@@ -263,7 +387,229 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
         </div>
       </section>
 
-      {/* 2. Timeline de Faturas (Feed Limpo) */}
+      {/* 2. Adicionar Cartão com Filtro em Cascata e Preview Visual (Apple Wallet) */}
+      <section className="glass-panel p-5 sm:p-6 space-y-6 border-slate-200/90 dark:border-white/[0.08]">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 dark:border-white/[0.06] pb-4">
+          <div>
+            <h3 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+              <span>Adicionar Cartão</span>
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/20 font-mono font-medium">
+                Apple Wallet Style
+              </span>
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Selecione o emissor e o modelo para visualizar o cartão em tempo real com renderização 3D
+            </p>
+          </div>
+
+          {cartaoPreview && (
+            <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-500/20 self-start sm:self-auto animate-fadeIn">
+              <Check className="w-3.5 h-3.5" />
+              <span>{mockCardsCatalog[bancoSelecionado]?.nome} {cartaoPreview.nome}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          {/* Área de Preview Visual (Ao lado do Formulário) */}
+          <div className="lg:col-span-6 flex flex-col items-center justify-center p-4 sm:p-6 rounded-2xl bg-slate-50/50 dark:bg-white/[0.01] border border-slate-200/60 dark:border-white/[0.04]">
+            <div className="w-full max-w-[340px] sm:max-w-[380px] aspect-[1.586/1] flex items-center justify-center">
+              {cartaoPreview ? (
+                /* Estado Preenchido com Renderização 3D estilo Apple Wallet */
+                <div className="w-full h-full relative group">
+                  <img
+                    src={cartaoPreview.imagePath}
+                    alt={cartaoPreview.nome}
+                    className="w-full h-full object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-300 -rotate-1 hover:rotate-0 cursor-pointer select-none"
+                    loading="eager"
+                  />
+                </div>
+              ) : (
+                /* Estado Vazio: Contorno Tracejado Elegante com Ícone Translúcido */
+                <div className="w-full h-full rounded-[22px] border-2 border-dashed border-slate-300 dark:border-white/20 bg-slate-100/50 dark:bg-white/[0.02] flex flex-col items-center justify-center p-6 text-center gap-3 transition-all hover:border-slate-400 dark:hover:border-white/30">
+                  <div className="w-14 h-10 rounded-xl border border-dashed border-slate-400/60 dark:border-white/25 flex items-center justify-center text-slate-400 dark:text-slate-500">
+                    <CreditCard className="w-6 h-6 opacity-60" />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                      Espaço Reservado do Cartão
+                    </span>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 max-w-[200px] leading-tight">
+                      Selecione o banco emissor e o modelo ao lado para carregar a prévia visual
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {cartaoPreview && (
+              <div className="mt-4 text-center animate-fadeIn space-y-0.5">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
+                  {cartaoPreview.nome}
+                </span>
+                <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500 block">
+                  {cartaoPreview.imagePath}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Formulário com Filtro em Cascata */}
+          <div className="lg:col-span-6 space-y-4">
+            <form onSubmit={handleAdicionarCartao} className="space-y-4">
+              {/* Input 1: Banco Emissor (<select>) */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="select-banco"
+                  className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between"
+                >
+                  <span>Banco Emissor</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Passo 1</span>
+                </label>
+                <select
+                  id="select-banco"
+                  value={bancoSelecionado}
+                  onChange={handleBancoChange}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/[0.12] text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50 transition-all cursor-pointer"
+                >
+                  <option value="" disabled className="dark:bg-slate-900 text-slate-400">
+                    Selecione o banco emissor...
+                  </option>
+                  {Object.entries(mockCardsCatalog).map(([chave, banco]) => (
+                    <option key={chave} value={chave} className="dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+                      {banco.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Input 2: Nome do Cartão (Em Cascata, desabilitado inicialmente) */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="select-cartao"
+                  className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between"
+                >
+                  <span>Nome do Cartão</span>
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    {!bancoSelecionado ? 'Desabilitado' : `${cartoesDisponiveis.length} modelos`}
+                  </span>
+                </label>
+                <select
+                  id="select-cartao"
+                  value={cartaoSelecionadoId}
+                  onChange={handleCartaoChange}
+                  disabled={!bancoSelecionado}
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-rose-500/50 ${
+                    !bancoSelecionado
+                      ? 'bg-slate-100 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] text-slate-400 cursor-not-allowed'
+                      : 'bg-slate-50 dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] text-slate-900 dark:text-white cursor-pointer'
+                  }`}
+                >
+                  <option value="" disabled className="dark:bg-slate-900 text-slate-400">
+                    {!bancoSelecionado ? 'Primeiro escolha um banco emissor' : 'Selecione o modelo do cartão...'}
+                  </option>
+                  {cartoesDisponiveis.map((cartao) => (
+                    <option key={cartao.id} value={cartao.id} className="dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+                      {cartao.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Botão de Adicionar Cartão */}
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={!cartaoPreview}
+                  className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+                    cartaoPreview
+                      ? 'bg-rose-500 hover:bg-rose-600 text-white shadow-md shadow-rose-500/20 active:scale-[0.98]'
+                      : 'bg-slate-200 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500 cursor-not-allowed'
+                  }`}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Adicionar à Carteira</span>
+                </button>
+              </div>
+
+              {feedbackAdicionado && (
+                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2 animate-fadeIn">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                  <span>Cartão adicionado com sucesso à sua carteira Apple Wallet!</span>
+                </div>
+              )}
+            </form>
+          </div>
+        </div>
+
+        {/* Carteira Apple Wallet: Cartões Cadastrados */}
+        {cartoesCadastrados.length > 0 && (
+          <div className="pt-4 border-t border-slate-100 dark:border-white/[0.06] space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <Wallet className="w-3.5 h-3.5 text-rose-500" />
+                <span>Cartões Ativos na Carteira ({cartoesCadastrados.length})</span>
+              </span>
+              <span className="text-[11px] text-slate-400">Clique para alternar o cartão ativo</span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {cartoesCadastrados.map((item) => {
+                const isAtivo = item.uid === cartaoAtivoUid;
+                return (
+                  <div
+                    key={item.uid}
+                    onClick={() => setCartaoAtivoUid(item.uid)}
+                    className={`relative p-2 rounded-xl border transition-all cursor-pointer group ${
+                      isAtivo
+                        ? 'border-rose-400 dark:border-rose-500 bg-rose-50/50 dark:bg-rose-500/10 shadow-sm'
+                        : 'border-slate-200/80 dark:border-white/[0.06] bg-slate-50/60 dark:bg-white/[0.02] hover:border-slate-300 dark:hover:border-white/20'
+                    }`}
+                  >
+                    <div className="aspect-[1.586/1] w-full rounded-lg overflow-hidden relative">
+                      <img
+                        src={item.imagePath}
+                        alt={item.cartaoNome}
+                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
+                      />
+                      {isAtivo && (
+                        <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px] font-bold">
+                          ✓
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-1.5 flex items-center justify-between">
+                      <div className="min-w-0 pr-1">
+                        <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate block">
+                          {item.cartaoNome}
+                        </span>
+                        <span className="text-[9px] text-slate-400 truncate block">
+                          {item.bancoNome}
+                        </span>
+                      </div>
+                      {cartoesCadastrados.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoverCartao(item.uid);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 transition-opacity"
+                          title="Remover cartão"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* 3. Timeline de Faturas (Feed Limpo) */}
       <section className="space-y-4">
         {/* Barra de Filtro de Faturas */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-1">

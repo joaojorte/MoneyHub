@@ -747,30 +747,30 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
         )}
       </section>
 
-      {/* 4. Modal de Questionário para Adicionar Cartão */}
+      {/* 4. Modal de Questionário para Adicionar ou Editar Cartão (Design Amplo e Espaçoso) */}
       {modalAberto && (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-fadeIn"
+          className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 md:p-8 animate-fadeIn"
           onClick={handleFecharModal}
         >
           <div
-            className="glass-panel max-w-3xl w-full p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-white/10 shadow-2xl relative max-h-[92vh] overflow-y-auto space-y-6"
+            className="glass-panel max-w-5xl w-full p-6 sm:p-9 md:p-10 rounded-[32px] border border-slate-200/90 dark:border-white/10 shadow-2xl relative max-h-[92vh] overflow-y-auto space-y-8"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Cabeçalho do Modal */}
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-500/15 border border-rose-200 dark:border-rose-400/30 flex items-center justify-center text-rose-600 dark:text-rose-400 shadow-sm">
-                  <CreditCard className="w-5 h-5" />
+            {/* Cabeçalho do Modal Amplo */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-5">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-500/15 border border-rose-200 dark:border-rose-400/30 flex items-center justify-center text-rose-600 dark:text-rose-400 shadow-sm flex-shrink-0">
+                  <CreditCard className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">
+                  <h3 className="text-lg sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
                     {modoModal === 'editar' ? 'Editar Dados do Cartão' : 'Cadastrar Novo Cartão'}
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                     {modoModal === 'editar'
-                      ? 'Atualize o modelo/categoria, limite total ou data de vencimento'
-                      : 'Preencha o questionário abaixo para configurar seu cartão'}
+                      ? 'Atualize o modelo ou categoria, ajuste seu limite ou altere a data de vencimento'
+                      : 'Selecione o banco emissor e o modelo para configurar seu cartão na carteira'}
                   </p>
                 </div>
               </div>
@@ -778,18 +778,18 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
               <button
                 type="button"
                 onClick={handleFecharModal}
-                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/[0.05] hover:bg-slate-200 dark:hover:bg-white/[0.1] flex items-center justify-center text-slate-500 dark:text-slate-400 transition-colors cursor-pointer"
-                title="Fechar"
+                className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.05] dark:hover:bg-white/[0.12] flex items-center justify-center text-slate-500 dark:text-slate-400 transition-colors cursor-pointer"
+                title="Fechar (ESC)"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Corpo do Modal: Preview Visual + Questionário */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-              {/* Lado Esquerdo: Preview Visual (Apple Wallet Style) */}
-              <div className="lg:col-span-5 flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.05]">
-                <div className="w-full max-w-[280px] aspect-[1.586/1] flex items-center justify-center">
+            {/* Corpo do Modal: Preview Visual Ampliado + Questionário Estruturado */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
+              {/* Lado Esquerdo: Preview Visual Ampliado (Apple Wallet Style) */}
+              <div className="lg:col-span-5 flex flex-col items-center justify-center p-6 sm:p-8 rounded-3xl bg-slate-100/80 dark:bg-white/[0.02] border border-slate-200/90 dark:border-white/[0.06] shadow-sm">
+                <div className="w-full max-w-[360px] sm:max-w-[400px] aspect-[1.586/1] flex items-center justify-center">
                   {modalCartaoPreview ? (
                     <div className="w-full h-full relative group">
                       <img
@@ -800,44 +800,54 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
                       />
                     </div>
                   ) : (
-                    <div className="w-full h-full rounded-[20px] border-2 border-dashed border-slate-300 dark:border-white/20 bg-slate-100/50 dark:bg-white/[0.02] flex flex-col items-center justify-center p-4 text-center gap-2">
-                      <CreditCard className="w-8 h-8 text-slate-400 opacity-60" />
-                      <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
-                        Preview do Cartão
-                      </span>
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 leading-tight">
-                        Selecione o emissor e o modelo ao lado para visualizar a imagem 3D
-                      </span>
+                    <div className="w-full h-full rounded-[24px] border-2 border-dashed border-slate-300 dark:border-white/20 bg-slate-50/50 dark:bg-white/[0.02] flex flex-col items-center justify-center p-6 text-center gap-3">
+                      <CreditCard className="w-12 h-12 text-slate-400 opacity-60" />
+                      <div>
+                        <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 block">
+                          Preview Visual do Cartão
+                        </span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500 leading-relaxed block mt-1">
+                          Selecione o banco emissor e o modelo ao lado para visualizar a representação realista em 3D
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>
 
                 {modalCartaoPreview && (
-                  <div className="mt-3 text-center animate-fadeIn">
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
-                      {modalCartaoPreview.nome}
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400 block">
-                      {mockCardsCatalog[modalBanco]?.nome}
-                    </span>
+                  <div className="mt-5 text-center space-y-1.5 animate-fadeIn w-full">
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-sm sm:text-base font-black text-slate-800 dark:text-slate-100">
+                        {modalCartaoPreview.nome}
+                      </span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/20 font-mono font-bold">
+                        {mockCardsCatalog[modalBanco]?.nome}
+                      </span>
+                    </div>
+
+                    <div className="text-xs text-slate-500 dark:text-slate-400 font-mono flex items-center justify-center gap-2">
+                      <span>Limite: R$ {formatarBRL(parseFloat(modalLimite) || 0)}</span>
+                      <span>•</span>
+                      <span>Vencimento: Dia {modalDiaVenc || 10}</span>
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Lado Direito: Questionário com Filtro em Cascata */}
-              <form onSubmit={handleSalvarCartaoQuestionario} className="lg:col-span-7 space-y-3.5">
+              {/* Lado Direito: Formulário Espaçoso e Confortável */}
+              <form onSubmit={handleSalvarCartaoQuestionario} className="lg:col-span-7 space-y-4 sm:space-y-5">
                 {/* Pergunta 1: Banco Emissor */}
-                <div className="space-y-1">
-                  <label htmlFor="modal-banco" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                <div className="space-y-1.5">
+                  <label htmlFor="modal-banco" className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
                     <span>1. Qual é o Banco Emissor?</span>
-                    <span className="text-[10px] text-rose-500 font-semibold">*obrigatório</span>
+                    <span className="text-[11px] text-rose-500 font-semibold">*obrigatório</span>
                   </label>
                   <select
                     id="modal-banco"
                     value={modalBanco}
                     onChange={handleModalBancoChange}
                     required
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/[0.12] text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50 cursor-pointer"
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/[0.12] text-xs sm:text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50 cursor-pointer transition-all shadow-sm"
                   >
                     <option value="" disabled className="dark:bg-slate-900 text-slate-400">
                       Selecione o banco emissor...
@@ -851,10 +861,10 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
                 </div>
 
                 {/* Pergunta 2: Modelo do Cartão (Filtro em Cascata) */}
-                <div className="space-y-1">
-                  <label htmlFor="modal-cartao" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                <div className="space-y-1.5">
+                  <label htmlFor="modal-cartao" className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
                     <span>2. Qual é o Modelo do Cartão?</span>
-                    <span className="text-[10px] text-rose-500 font-semibold">*obrigatório</span>
+                    <span className="text-[11px] text-rose-500 font-semibold">*obrigatório</span>
                   </label>
                   <select
                     id="modal-cartao"
@@ -862,7 +872,7 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
                     onChange={(e) => setModalCartaoId(e.target.value)}
                     disabled={!modalBanco}
                     required
-                    className={`w-full px-3 py-2 rounded-xl border text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500/50 ${
+                    className={`w-full px-4 py-3 rounded-2xl border text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500/50 transition-all shadow-sm ${
                       !modalBanco
                         ? 'bg-slate-100 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] text-slate-400 cursor-not-allowed'
                         : 'bg-slate-50 dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] text-slate-900 dark:text-white cursor-pointer'
@@ -879,43 +889,49 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
                   </select>
                 </div>
 
-                {/* Pergunta 3: Limite Total */}
-                <div className="space-y-1">
-                  <label htmlFor="modal-limite" className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    3. Qual o Limite Total deste Cartão? (R$)
-                  </label>
-                  <input
-                    id="modal-limite"
-                    type="number"
-                    step="100"
-                    min="0"
-                    value={modalLimite}
-                    onChange={(e) => setModalLimite(e.target.value)}
-                    placeholder="5000"
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/[0.12] text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50"
-                  />
-                </div>
+                {/* Perguntas 3 e 4: Limite Total e Dia do Vencimento (Lado a Lado em Grid) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label htmlFor="modal-limite" className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">
+                      3. Limite Total (R$)
+                    </label>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3.5 text-xs font-mono font-bold text-slate-400 dark:text-slate-500">
+                        R$
+                      </span>
+                      <input
+                        id="modal-limite"
+                        type="number"
+                        step="100"
+                        min="0"
+                        value={modalLimite}
+                        onChange={(e) => setModalLimite(e.target.value)}
+                        placeholder="5000"
+                        className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/[0.12] text-xs sm:text-sm font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50 shadow-sm"
+                      />
+                    </div>
+                  </div>
 
-                {/* Pergunta 4: Dia do Vencimento */}
-                <div className="space-y-1">
-                  <label htmlFor="modal-venc" className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    4. Qual o Dia de Vencimento da Fatura? (1 a 31)
-                  </label>
-                  <input
-                    id="modal-venc"
-                    type="number"
-                    min="1"
-                    max="31"
-                    value={modalDiaVenc}
-                    onChange={(e) => setModalDiaVenc(e.target.value)}
-                    placeholder="10"
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/[0.12] text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50"
-                  />
+                  <div className="space-y-1.5">
+                    <label htmlFor="modal-venc" className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">
+                      4. Dia do Vencimento (1 a 31)
+                    </label>
+                    <input
+                      id="modal-venc"
+                      type="number"
+                      min="1"
+                      max="31"
+                      value={modalDiaVenc}
+                      onChange={(e) => setModalDiaVenc(e.target.value)}
+                      placeholder="10"
+                      className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/[0.12] text-xs sm:text-sm font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50 shadow-sm text-center"
+                    />
+                  </div>
                 </div>
 
                 {/* Pergunta 5: Apelido / Identificação */}
-                <div className="space-y-1">
-                  <label htmlFor="modal-apelido" className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                <div className="space-y-1.5">
+                  <label htmlFor="modal-apelido" className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">
                     5. Apelido do Cartão (Opcional)
                   </label>
                   <input
@@ -923,13 +939,13 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
                     type="text"
                     value={modalApelido}
                     onChange={(e) => setModalApelido(e.target.value)}
-                    placeholder="Ex: Meu Cartão Principal"
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/[0.12] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                    placeholder="Ex: Cartão Principal, Uso Diário, Milhas"
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/[0.12] text-xs sm:text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50 shadow-sm"
                   />
                 </div>
 
                 {/* Ações do Questionário */}
-                <div className="pt-3 flex flex-wrap items-center justify-between gap-2.5">
+                <div className="pt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 dark:border-white/[0.06]">
                   {modoModal === 'editar' ? (
                     <button
                       type="button"
@@ -939,27 +955,27 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
                           setModalAberto(false);
                         }
                       }}
-                      className="px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10 flex items-center gap-1.5 transition-colors cursor-pointer"
+                      className="px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10 flex items-center gap-2 transition-colors cursor-pointer border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                       <span>Excluir Cartão</span>
                     </button>
                   ) : <div />}
 
-                  <div className="flex items-center gap-2 ml-auto">
+                  <div className="flex items-center gap-3 ml-auto">
                     <button
                       type="button"
                       onClick={handleFecharModal}
-                      className="px-4 py-2 rounded-xl border border-slate-300 dark:border-white/10 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-colors cursor-pointer"
+                      className="px-5 py-2.5 sm:py-3 rounded-2xl border border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-bold hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-colors cursor-pointer"
                     >
                       Cancelar
                     </button>
                     <button
                       type="submit"
                       disabled={!modalCartaoPreview}
-                      className={`px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                      className={`px-6 sm:px-8 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm font-extrabold flex items-center gap-2.5 transition-all cursor-pointer ${
                         modalCartaoPreview
-                          ? 'bg-[#0e4b6c] hover:bg-[#0a3852] text-white shadow-md shadow-[#0e4b6c]/30 active:scale-[0.98]'
+                          ? 'bg-[#0e4b6c] hover:bg-[#0a3852] text-white shadow-lg shadow-[#0e4b6c]/30 active:scale-[0.98]'
                           : 'bg-slate-200 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500 cursor-not-allowed'
                       }`}
                     >
@@ -967,7 +983,7 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
                       {modoModal === 'editar' ? (
                         <Check className="w-4 h-4 text-emerald-400" />
                       ) : (
-                        <span className="text-emerald-400 font-bold text-base leading-none">+</span>
+                        <span className="text-emerald-400 font-bold text-lg leading-none">+</span>
                       )}
                     </button>
                   </div>

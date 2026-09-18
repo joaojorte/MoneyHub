@@ -269,251 +269,248 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      {/* 1. Header do Painel: Gestão e Configuração Rápida */}
-      <section className="glass-panel p-5 sm:p-6 space-y-6 border-slate-200/90 dark:border-white/[0.08]">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            {cartaoAtivo ? (
-              <div className="w-14 h-9 rounded-lg overflow-hidden shadow-sm flex-shrink-0 border border-slate-200 dark:border-white/10 group cursor-pointer" title={cartaoAtivo.cartaoNome}>
-                <img
-                  src={cartaoAtivo.imagePath}
-                  alt={cartaoAtivo.cartaoNome}
-                  className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-110"
-                />
-              </div>
-            ) : (
-              <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-500/15 border border-rose-200 dark:border-rose-400/30 flex items-center justify-center text-rose-600 dark:text-rose-400 shadow-sm">
-                <CreditCard className="w-5 h-5" />
-              </div>
-            )}
-            <div>
-              <h2 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-                <span>Gestão de Cartões</span>
-                {cartaoAtivo ? (
-                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/20 font-mono font-medium">
-                    {cartaoAtivo.cartaoNome}
-                  </span>
-                ) : (
-                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/20 font-mono font-medium">
-                    Exclusivo
-                  </span>
-                )}
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Controle de limites, faturas abertas e parcelas futuras em timeline limpa
+      {/* Painel Unificado de Cartões (Substituição e Fusão de Gestão de Cartões com o Banner) */}
+      {cartoesCadastrados.length === 0 ? (
+        <section className="space-y-4">
+          {/* Banner do Protótipo: Quando NÃO há cartão cadastrado */}
+          <div className="p-6 sm:p-8 rounded-[28px] border-2 border-slate-300 dark:border-slate-700 bg-slate-200/80 dark:bg-slate-800/80 backdrop-blur-md flex flex-col md:flex-row items-center justify-between gap-6 shadow-md transition-all">
+            <div className="space-y-1.5 text-center md:text-left">
+              <h3 className="text-base sm:text-lg font-black uppercase tracking-wider text-slate-800 dark:text-slate-100">
+                Você ainda não possui nenhum cartão cadastrado
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl leading-relaxed">
+                Adicione seu cartão de crédito para gerenciar limites, faturas em aberto, compras parceladas e usufruir da visualização exclusiva da sua carteira estilo Apple Wallet.
               </p>
             </div>
+
+            <button
+              type="button"
+              onClick={handleAbrirModal}
+              className="flex-shrink-0 px-6 sm:px-7 py-3.5 rounded-2xl bg-[#0e4b6c] hover:bg-[#0a3852] text-white font-extrabold text-sm sm:text-base flex items-center gap-3 shadow-lg shadow-[#0e4b6c]/30 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer group"
+            >
+              <span>Adicionar cartão</span>
+              <span className="text-emerald-400 font-black text-2xl leading-none transition-transform group-hover:rotate-90 duration-200">
+                +
+              </span>
+            </button>
           </div>
 
-          {/* Controles Minimalistas de Limite e Vencimento */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08]">
-              <Wallet className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-              <label htmlFor="input-limite" className="text-xs font-semibold text-slate-600 dark:text-slate-400">
-                Limite Total:
-              </label>
-              <div className="flex items-center">
-                <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 mr-1">R$</span>
-                <input
-                  id="input-limite"
-                  type="number"
-                  step="100"
-                  min="0"
-                  value={limiteTotal}
-                  onChange={handleSalvarLimite}
-                  className="w-24 bg-transparent text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none"
-                  placeholder="5000"
-                />
+          {/* Dados Gerais Sempre Visíveis: Fatura Atual e Total Comprometido */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.05] flex items-center justify-between shadow-sm">
+              <div>
+                <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider block mb-1">
+                  Fatura Atual ({formatarMesAno(mesAtual).split(' de ')[0]})
+                </span>
+                <span className="text-2xl sm:text-3xl font-mono font-black text-rose-600 dark:text-rose-400 tabular-nums">
+                  R$ {formatarBRL(faturaAtual.total)}
+                </span>
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 block mt-1">
+                  {faturaAtual.itens.length} {faturaAtual.itens.length === 1 ? 'lançamento no mês' : 'lançamentos no mês'}
+                </span>
+              </div>
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 flex items-center justify-center text-rose-600 dark:text-rose-400">
+                <CreditCard className="w-6 h-6" />
               </div>
             </div>
 
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08]">
-              <Calendar className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-              <label htmlFor="input-dia-venc" className="text-xs font-semibold text-slate-600 dark:text-slate-400">
-                Dia Venc.:
-              </label>
-              <input
-                id="input-dia-venc"
-                type="number"
-                min="1"
-                max="31"
-                value={diaVencimento}
-                onChange={handleSalvarDiaVencimento}
-                className="w-10 bg-transparent text-xs font-mono font-bold text-slate-900 dark:text-white text-center focus:outline-none"
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={handleAbrirModal}
-              className="px-3.5 py-1.5 rounded-xl bg-[#0e4b6c] hover:bg-[#0a3852] text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-all cursor-pointer"
-            >
-              <span>Adicionar cartão</span>
-              <span className="text-emerald-400 font-extrabold text-base leading-none">+</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Indicador de Progresso (Barra de Limite Total vs. Consumido) */}
-        <div className="space-y-2.5 pt-2 border-t border-slate-100 dark:border-white/[0.06]">
-          <div className="flex flex-wrap items-center justify-between text-xs">
-            <span className="font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
-              <span>Limite Consumido no Cartão:</span>
-              <strong className="font-mono text-slate-900 dark:text-white tabular-nums">
-                {percentualConsumo}%
-              </strong>
-            </span>
-            <div className="flex items-center gap-3 font-mono font-semibold">
-              <span className="text-rose-600 dark:text-rose-400">
-                Comprometido: R$ {formatarBRL(totalComprometido)}
-              </span>
-              <span className="text-slate-400 dark:text-slate-500">|</span>
-              <span className="text-emerald-600 dark:text-emerald-400">
-                Disponível: R$ {formatarBRL(limiteDisponivel)}
-              </span>
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.05] flex items-center justify-between shadow-sm">
+              <div>
+                <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider block mb-1">
+                  Total Comprometido
+                </span>
+                <span className="text-2xl sm:text-3xl font-mono font-black text-amber-600 dark:text-amber-400 tabular-nums">
+                  R$ {formatarBRL(totalComprometido)}
+                </span>
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 block mt-1">
+                  Fatura atual + parcelas futuras
+                </span>
+              </div>
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                <Calendar className="w-6 h-6" />
+              </div>
             </div>
           </div>
-
-          <div className="w-full h-3.5 bg-slate-100 dark:bg-[#04070F]/80 backdrop-blur-md rounded-full overflow-hidden p-0.5 border border-slate-200 dark:border-white/[0.08] shadow-inner">
-            <div
-              className={`h-full rounded-full transition-all duration-700 ${corProgresso}`}
-              style={{ width: `${Math.max(2, percentualConsumo)}%` }}
-            />
-          </div>
-        </div>
-
-        {/* 4 Cards Informativos Rápidos */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
-          <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.05]">
-            <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider block mb-0.5">
-              Fatura Atual ({formatarMesAno(mesAtual).split(' de ')[0]})
-            </span>
-            <span className="text-lg font-mono font-bold text-rose-600 dark:text-rose-400 tabular-nums">
-              R$ {formatarBRL(faturaAtual.total)}
-            </span>
-          </div>
-
-          <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.05]">
-            <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider block mb-0.5">
-              Total Comprometido
-            </span>
-            <span className="text-lg font-mono font-bold text-amber-600 dark:text-amber-400 tabular-nums">
-              R$ {formatarBRL(totalComprometido)}
-            </span>
-          </div>
-
-          <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.05]">
-            <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider block mb-0.5">
-              Limite Disponível
-            </span>
-            <span className="text-lg font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-              R$ {formatarBRL(limiteDisponivel)}
-            </span>
-          </div>
-
-          <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.05]">
-            <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider block mb-0.5">
-              Limite Cadastrado
-            </span>
-            <span className="text-lg font-mono font-bold text-slate-800 dark:text-slate-200 tabular-nums">
-              R$ {formatarBRL(limiteTotal)}
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* 2. Banner de Cartão Não Cadastrado (Protótipo do Usuário) OU Carteira Ativa */}
-      {cartoesCadastrados.length === 0 ? (
-        <section className="p-6 sm:p-8 rounded-[28px] border-2 border-slate-300 dark:border-slate-700 bg-slate-200/80 dark:bg-slate-800/80 backdrop-blur-md flex flex-col md:flex-row items-center justify-between gap-6 shadow-md transition-all">
-          <div className="space-y-1.5 text-center md:text-left">
-            <h3 className="text-base sm:text-lg font-black uppercase tracking-wider text-slate-800 dark:text-slate-100">
-              Você ainda não possui nenhum cartão cadastrado
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl leading-relaxed">
-              Adicione seu cartão de crédito para gerenciar limites, faturas em aberto, compras parceladas e usufruir da visualização exclusiva da sua carteira estilo Apple Wallet.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleAbrirModal}
-            className="flex-shrink-0 px-6 sm:px-7 py-3.5 rounded-2xl bg-[#0e4b6c] hover:bg-[#0a3852] text-white font-extrabold text-sm sm:text-base flex items-center gap-3 shadow-lg shadow-[#0e4b6c]/30 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer group"
-          >
-            <span>Adicionar cartão</span>
-            <span className="text-emerald-400 font-black text-2xl leading-none transition-transform group-hover:rotate-90 duration-200">
-              +
-            </span>
-          </button>
         </section>
       ) : (
-        <section className="glass-panel p-5 sm:p-6 space-y-4 border-slate-200/90 dark:border-white/[0.08]">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 dark:border-white/[0.06] pb-3">
-            <div className="flex items-center gap-2">
-              <Wallet className="w-4 h-4 text-rose-500" />
-              <h3 className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-white">
-                Sua Carteira Digital ({cartoesCadastrados.length} {cartoesCadastrados.length === 1 ? 'cartão' : 'cartões'})
-              </h3>
+        /* Painel Completo: Quando HÁ cartão cadastrado */
+        <section className="glass-panel p-5 sm:p-6 space-y-6 border-slate-200/90 dark:border-white/[0.08]">
+          {/* Cabeçalho do Cartão Ativo + Controles de Limite Total e Dia de Vencimento */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              {cartaoAtivo && (
+                <div className="w-16 h-10 rounded-xl overflow-hidden shadow-md flex-shrink-0 border border-slate-200 dark:border-white/10 group cursor-pointer" title={cartaoAtivo.cartaoNome}>
+                  <img
+                    src={cartaoAtivo.imagePath}
+                    alt={cartaoAtivo.cartaoNome}
+                    className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-110"
+                  />
+                </div>
+              )}
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">
+                    {cartaoAtivo?.apelido || cartaoAtivo?.cartaoNome || 'Cartão de Crédito'}
+                  </h2>
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/20 font-mono font-medium">
+                    {cartaoAtivo?.bancoNome}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Modelo {cartaoAtivo?.cartaoNome} · Vencimento dia {diaVencimento}
+                </p>
+              </div>
             </div>
 
-            <button
-              type="button"
-              onClick={handleAbrirModal}
-              className="inline-flex items-center gap-2 text-xs font-bold text-white bg-[#0e4b6c] hover:bg-[#0a3852] px-3.5 py-1.5 rounded-xl shadow-sm transition-all self-start sm:self-auto cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Adicionar outro cartão</span>
-            </button>
+            {/* Controles de Limite e Vencimento (Aparecem apenas após adicionar cartão) */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08]">
+                <Wallet className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                <label htmlFor="input-limite" className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                  Limite Total:
+                </label>
+                <div className="flex items-center">
+                  <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 mr-1">R$</span>
+                  <input
+                    id="input-limite"
+                    type="number"
+                    step="100"
+                    min="0"
+                    value={limiteTotal}
+                    onChange={handleSalvarLimite}
+                    className="w-24 bg-transparent text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none"
+                    placeholder="5000"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08]">
+                <Calendar className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                <label htmlFor="input-dia-venc" className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                  Dia Venc.:
+                </label>
+                <input
+                  id="input-dia-venc"
+                  type="number"
+                  min="1"
+                  max="31"
+                  value={diaVencimento}
+                  onChange={handleSalvarDiaVencimento}
+                  className="w-10 bg-transparent text-xs font-mono font-bold text-slate-900 dark:text-white text-center focus:outline-none"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAbrirModal}
+                className="px-3.5 py-1.5 rounded-xl bg-[#0e4b6c] hover:bg-[#0a3852] text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-all cursor-pointer"
+              >
+                <span>Adicionar outro</span>
+                <span className="text-emerald-400 font-extrabold text-base leading-none">+</span>
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 pt-1">
-            {cartoesCadastrados.map((item) => {
-              const isAtivo = item.uid === cartaoAtivoUid;
-              return (
-                <div
-                  key={item.uid}
-                  onClick={() => setCartaoAtivoUid(item.uid)}
-                  className={`relative p-2.5 rounded-2xl border transition-all cursor-pointer group ${
-                    isAtivo
-                      ? 'border-rose-400 dark:border-rose-500 bg-rose-50/50 dark:bg-rose-500/10 shadow-md ring-2 ring-rose-400/30'
-                      : 'border-slate-200/80 dark:border-white/[0.06] bg-slate-50/60 dark:bg-white/[0.02] hover:border-slate-300 dark:hover:border-white/20'
-                  }`}
-                >
-                  <div className="aspect-[1.586/1] w-full rounded-xl overflow-hidden relative">
-                    <img
-                      src={item.imagePath}
-                      alt={item.cartaoNome}
-                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
-                    />
-                    {isAtivo && (
-                      <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px] font-bold shadow-sm">
-                        ✓
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-2 flex items-center justify-between">
-                    <div className="min-w-0 pr-1">
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate block">
-                        {item.apelido || item.cartaoNome}
-                      </span>
-                      <span className="text-[10px] text-slate-400 truncate block">
-                        {item.bancoNome} · {item.cartaoNome}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemoverCartao(item.uid);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 transition-opacity"
-                      title="Remover cartão"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+          {/* Se houver mais de 1 cartão cadastrado, exibe a tira para alternar */}
+          {cartoesCadastrados.length > 1 && (
+            <div className="pt-2 border-t border-slate-100 dark:border-white/[0.06] flex items-center gap-2 overflow-x-auto pb-1">
+              <span className="text-[11px] font-bold text-slate-400 flex-shrink-0 mr-1">Alternar:</span>
+              {cartoesCadastrados.map((c) => {
+                const isAtivo = c.uid === cartaoAtivoUid;
+                return (
+                  <button
+                    key={c.uid}
+                    type="button"
+                    onClick={() => setCartaoAtivoUid(c.uid)}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all flex-shrink-0 cursor-pointer ${
+                      isAtivo
+                        ? 'border-rose-400 dark:border-rose-500 bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300 shadow-sm'
+                        : 'border-slate-200 dark:border-white/[0.08] text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    <img src={c.imagePath} alt="" className="w-5 h-3.5 rounded object-cover" />
+                    <span>{c.apelido || c.cartaoNome}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Indicador de Progresso com Porcentagem GRANDE do LIMITE UTILIZADO */}
+          <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-white/[0.06]">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+              <div>
+                <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1">
+                  Limite Utilizado no Cartão
+                </span>
+                <div className="flex items-baseline gap-3">
+                  {/* Porcentagem do Limite UTILIZADO em destaque MAIOR */}
+                  <span className="text-4xl sm:text-5xl lg:text-6xl font-mono font-black text-slate-900 dark:text-white tabular-nums tracking-tight">
+                    {percentualConsumo}%
+                  </span>
+                  <span className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400">
+                    do limite de R$ {formatarBRL(limiteTotal)}
+                  </span>
                 </div>
-              );
-            })}
+              </div>
+
+              <div className="flex items-center gap-3 font-mono text-xs sm:text-sm font-bold">
+                <span className="text-rose-600 dark:text-rose-400">
+                  Utilizado: R$ {formatarBRL(totalComprometido)}
+                </span>
+                <span className="text-slate-300 dark:text-slate-600">|</span>
+                <span className="text-emerald-600 dark:text-emerald-400">
+                  Disponível: R$ {formatarBRL(limiteDisponivel)}
+                </span>
+              </div>
+            </div>
+
+            {/* Barra de Progresso */}
+            <div className="w-full h-4 bg-slate-100 dark:bg-[#04070F]/80 backdrop-blur-md rounded-full overflow-hidden p-0.5 border border-slate-200 dark:border-white/[0.08] shadow-inner">
+              <div
+                className={`h-full rounded-full transition-all duration-700 ${corProgresso}`}
+                style={{ width: `${Math.max(2, percentualConsumo)}%` }}
+              />
+            </div>
+          </div>
+
+          {/* 4 Cards Informativos (Fatura Atual, Total Comprometido, Limite Disponível, Limite Cadastrado) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+            <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.05]">
+              <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider block mb-0.5">
+                Fatura Atual ({formatarMesAno(mesAtual).split(' de ')[0]})
+              </span>
+              <span className="text-lg font-mono font-bold text-rose-600 dark:text-rose-400 tabular-nums">
+                R$ {formatarBRL(faturaAtual.total)}
+              </span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.05]">
+              <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider block mb-0.5">
+                Total Comprometido
+              </span>
+              <span className="text-lg font-mono font-bold text-amber-600 dark:text-amber-400 tabular-nums">
+                R$ {formatarBRL(totalComprometido)}
+              </span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.05]">
+              <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider block mb-0.5">
+                Limite Disponível
+              </span>
+              <span className="text-lg font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                R$ {formatarBRL(limiteDisponivel)}
+              </span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.05]">
+              <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider block mb-0.5">
+                Limite Cadastrado
+              </span>
+              <span className="text-lg font-mono font-bold text-slate-800 dark:text-slate-200 tabular-nums">
+                R$ {formatarBRL(limiteTotal)}
+              </span>
+            </div>
           </div>
         </section>
       )}

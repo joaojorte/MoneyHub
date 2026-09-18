@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { CreditCard, Calendar, Wallet, AlertCircle, CheckCircle2, ChevronRight, Filter, Plus, Check, Trash2, Sparkles } from 'lucide-react';
+import { CreditCard, Calendar, Wallet, AlertCircle, CheckCircle2, ChevronRight, Filter, Plus, Check, Trash2, Sparkles, X } from 'lucide-react';
 import { formatarBRL, formatarDataBR, formatarMesAno, obterDataHojeISO } from '../../utils/formatters';
 import { STORAGE_KEYS } from '../../utils/constants';
 import { mockCardsCatalog } from '../../data/cardsCatalog';
@@ -34,112 +34,138 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
 
   const mesAtual = useMemo(() => obterDataHojeISO().slice(0, 7), []);
 
-  // Estado do Filtro em Cascata (Banco emissor -> Cartão)
-  const [bancoSelecionado, setBancoSelecionado] = useState('');
-  const [cartaoSelecionadoId, setCartaoSelecionadoId] = useState('');
-  const [feedbackAdicionado, setFeedbackAdicionado] = useState(false);
+  // Estado do Modal de Questionário para Adicionar Cartão
+  const [modalAberto, setModalAberto] = useState(false);
+
+  // Estados dos campos do Questionário (Filtro em Cascata e Atributos)
+  const [modalBanco, setModalBanco] = useState('');
+  const [modalCartaoId, setModalCartaoId] = useState('');
+  const [modalLimite, setModalLimite] = useState(() => String(limiteTotal));
+  const [modalDiaVenc, setModalDiaVenc] = useState(() => String(diaVencimento));
+  const [modalApelido, setModalApelido] = useState('');
 
   // Cartões cadastrados pelo usuário e cartão ativo na carteira
   const [cartoesCadastrados, setCartoesCadastrados] = useState(() => {
     try {
       const salvo = localStorage.getItem('moneyhub_cartoes_cadastrados');
-      if (salvo) return JSON.parse(salvo);
-    } catch (e) {}
-    // Padrão inicial com Nubank Ultravioleta para demonstração rica
-    return [
-      {
-        uid: 'default-1',
-        bancoId: 'nubank',
-        bancoNome: 'Nubank',
-        cartaoId: 'nubank-ultravioleta',
-        cartaoNome: 'Ultravioleta',
-        imagePath: '/cards/nubank-ultravioleta.webp',
-        dataCadastro: new Date().toISOString()
+      if (salvo) {
+        const parsed = JSON.parse(salvo);
+        if (Array.isArray(parsed)) {
+          // Remove default-1 de testes anteriores para começar com tela limpa
+          return parsed.filter(c => c.uid !== 'default-1');
+        }
       }
-    ];
+    } catch (e) {}
+    return [];
   });
 
   const [cartaoAtivoUid, setCartaoAtivoUid] = useState(() => {
     try {
-      return localStorage.getItem('moneyhub_cartao_ativo_uid') || 'default-1';
+      return localStorage.getItem('moneyhub_cartao_ativo_uid') || '';
     } catch (e) {}
-    return 'default-1';
+    return '';
   });
 
-  // Lista de cartões disponíveis para o banco selecionado
-  const cartoesDisponiveis = useMemo(() => {
-    if (!bancoSelecionado || !mockCardsCatalog[bancoSelecionado]) {
-      return [];
-    }
-    return mockCardsCatalog[bancoSelecionado].cartoes;
-  }, [bancoSelecionado]);
+  // Lista de modelos disponíveis em cascata para o banco selecionado no questionário
+  const modalCartoesDisponiveis = useMemo(() => {
+    if (!modalBanco || !mockCardsCatalog[modalBanco]) return [];
+    return mockCardsCatalog[modalBanco].cartoes;
+  }, [modalBanco]);
 
-  // Objeto do cartão selecionado no preview do formulário
-  const cartaoPreview = useMemo(() => {
-    if (!cartaoSelecionadoId) return null;
-    return cartoesDisponiveis.find((c) => c.id === cartaoSelecionadoId) || null;
-  }, [cartoesDisponiveis, cartaoSelecionadoId]);
+  // Cartão selecionado para o preview no Questionário
+  const modalCartaoPreview = useMemo(() => {
+    if (!modalCartaoId) return null;
+    return modalCartoesDisponiveis.find((c) => c.id === modalCartaoId) || null;
+  }, [modalCartoesDisponiveis, modalCartaoId]);
 
-  // Cartão ativo na carteira (Apple Wallet Showcase)
+  // Cartão ativo na carteira
   const cartaoAtivo = useMemo(() => {
+    if (cartoesCadastrados.length === 0) return null;
     return cartoesCadastrados.find((c) => c.uid === cartaoAtivoUid) || cartoesCadastrados[0] || null;
   }, [cartoesCadastrados, cartaoAtivoUid]);
 
-  // Manipulador da troca de banco (reseta seleção do cartão)
-  const handleBancoChange = (e) => {
-    const novoBanco = e.target.value;
-    setBancoSelecionado(novoBanco);
-    setCartaoSelecionadoId(''); // Reseta o segundo select
+  // Abertura e fechamento do modal
+  const handleAbrirModal = () => {
+    setModalBanco('');
+    setModalCartaoId('');
+    setModalLimite(String(limiteTotal || 5000));
+    setModalDiaVenc(String(diaVencimento || 10));
+    setModalApelido('');
+    setModalAberto(true);
   };
 
-  // Manipulador da troca de cartão
-  const handleCartaoChange = (e) => {
-    setCartaoSelecionadoId(e.target.value);
+  const handleFecharModal = () => {
+    setModalAberto(false);
   };
 
-  // Adicionar cartão à carteira do usuário
-  const handleAdicionarCartao = (e) => {
+  const handleModalBancoChange = (e) => {
+    setModalBanco(e.target.value);
+    setModalCartaoId(''); // Reseta o segundo select de modelo
+  };
+
+  // Submissão do Questionário e salvamento do novo cartão
+  const handleSalvarCartaoQuestionario = (e) => {
     e.preventDefault();
-    if (!cartaoPreview || !bancoSelecionado) return;
+    if (!modalBanco || !modalCartaoPreview) return;
 
     const novoUid = `card_${Date.now()}`;
+    const limNum = parseFloat(modalLimite) || limiteTotal;
+    const diaNum = parseInt(modalDiaVenc, 10) || diaVencimento;
+
     const novoCartao = {
       uid: novoUid,
-      bancoId: bancoSelecionado,
-      bancoNome: mockCardsCatalog[bancoSelecionado]?.nome || bancoSelecionado,
-      cartaoId: cartaoPreview.id,
-      cartaoNome: cartaoPreview.nome,
-      imagePath: cartaoPreview.imagePath,
+      bancoId: modalBanco,
+      bancoNome: mockCardsCatalog[modalBanco]?.nome || modalBanco,
+      cartaoId: modalCartaoPreview.id,
+      cartaoNome: modalCartaoPreview.nome,
+      apelido: modalApelido.trim() || modalCartaoPreview.nome,
+      imagePath: modalCartaoPreview.imagePath,
+      limite: limNum,
+      diaVencimento: diaNum,
       dataCadastro: new Date().toISOString()
     };
 
-    const novaLista = [novoCartao, ...cartoesCadastrados.filter(c => c.cartaoId !== cartaoPreview.id)];
+    const novaLista = [novoCartao, ...cartoesCadastrados.filter(c => c.cartaoId !== modalCartaoPreview.id)];
     setCartoesCadastrados(novaLista);
     setCartaoAtivoUid(novoUid);
+    setLimiteTotal(limNum);
+    setDiaVencimento(diaNum);
 
     try {
       localStorage.setItem('moneyhub_cartoes_cadastrados', JSON.stringify(novaLista));
       localStorage.setItem('moneyhub_cartao_ativo_uid', novoUid);
+      localStorage.setItem(STORAGE_KEYS.CARTAO_LIMITE_TOTAL, String(limNum));
+      localStorage.setItem(STORAGE_KEYS.CARTAO_DIA_VENCIMENTO, String(diaNum));
     } catch (err) {}
 
-    setFeedbackAdicionado(true);
-    setTimeout(() => setFeedbackAdicionado(false), 3000);
+    setModalAberto(false);
   };
 
   // Remover cartão da carteira
   const handleRemoverCartao = (uidParaRemover) => {
     const novaLista = cartoesCadastrados.filter(c => c.uid !== uidParaRemover);
     setCartoesCadastrados(novaLista);
-    if (cartaoAtivoUid === uidParaRemover && novaLista.length > 0) {
-      setCartaoAtivoUid(novaLista[0].uid);
+    if (cartaoAtivoUid === uidParaRemover) {
+      setCartaoAtivoUid(novaLista.length > 0 ? novaLista[0].uid : '');
     }
     try {
       localStorage.setItem('moneyhub_cartoes_cadastrados', JSON.stringify(novaLista));
-      if (cartaoAtivoUid === uidParaRemover && novaLista.length > 0) {
-        localStorage.setItem('moneyhub_cartao_ativo_uid', novaLista[0].uid);
+      if (cartaoAtivoUid === uidParaRemover) {
+        localStorage.setItem('moneyhub_cartao_ativo_uid', novaLista.length > 0 ? novaLista[0].uid : '');
       }
     } catch (err) {}
   };
+
+  // Tecla ESC para fechar modal
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && modalAberto) {
+        setModalAberto(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [modalAberto]);
 
   const handleSalvarLimite = (e) => {
     const val = parseFloat(e.target.value);
@@ -316,6 +342,15 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
                 className="w-10 bg-transparent text-xs font-mono font-bold text-slate-900 dark:text-white text-center focus:outline-none"
               />
             </div>
+
+            <button
+              type="button"
+              onClick={handleAbrirModal}
+              className="px-3.5 py-1.5 rounded-xl bg-[#0e4b6c] hover:bg-[#0a3852] text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-all cursor-pointer"
+            >
+              <span>Adicionar cartão</span>
+              <span className="text-emerald-400 font-extrabold text-base leading-none">+</span>
+            </button>
           </div>
         </div>
 
@@ -387,227 +422,101 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
         </div>
       </section>
 
-      {/* 2. Adicionar Cartão com Filtro em Cascata e Preview Visual (Apple Wallet) */}
-      <section className="glass-panel p-5 sm:p-6 space-y-6 border-slate-200/90 dark:border-white/[0.08]">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 dark:border-white/[0.06] pb-4">
-          <div>
-            <h3 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-              <span>Adicionar Cartão</span>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/20 font-mono font-medium">
-                Apple Wallet Style
-              </span>
+      {/* 2. Banner de Cartão Não Cadastrado (Protótipo do Usuário) OU Carteira Ativa */}
+      {cartoesCadastrados.length === 0 ? (
+        <section className="p-6 sm:p-8 rounded-[28px] border-2 border-slate-300 dark:border-slate-700 bg-slate-200/80 dark:bg-slate-800/80 backdrop-blur-md flex flex-col md:flex-row items-center justify-between gap-6 shadow-md transition-all">
+          <div className="space-y-1.5 text-center md:text-left">
+            <h3 className="text-base sm:text-lg font-black uppercase tracking-wider text-slate-800 dark:text-slate-100">
+              Você ainda não possui nenhum cartão cadastrado
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Selecione o emissor e o modelo para visualizar o cartão em tempo real com renderização 3D
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl leading-relaxed">
+              Adicione seu cartão de crédito para gerenciar limites, faturas em aberto, compras parceladas e usufruir da visualização exclusiva da sua carteira estilo Apple Wallet.
             </p>
           </div>
 
-          {cartaoPreview && (
-            <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-500/20 self-start sm:self-auto animate-fadeIn">
-              <Check className="w-3.5 h-3.5" />
-              <span>{mockCardsCatalog[bancoSelecionado]?.nome} {cartaoPreview.nome}</span>
-            </div>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          {/* Área de Preview Visual (Ao lado do Formulário) */}
-          <div className="lg:col-span-6 flex flex-col items-center justify-center p-4 sm:p-6 rounded-2xl bg-slate-50/50 dark:bg-white/[0.01] border border-slate-200/60 dark:border-white/[0.04]">
-            <div className="w-full max-w-[340px] sm:max-w-[380px] aspect-[1.586/1] flex items-center justify-center">
-              {cartaoPreview ? (
-                /* Estado Preenchido com Renderização 3D estilo Apple Wallet */
-                <div className="w-full h-full relative group">
-                  <img
-                    src={cartaoPreview.imagePath}
-                    alt={cartaoPreview.nome}
-                    className="w-full h-full object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-300 -rotate-1 hover:rotate-0 cursor-pointer select-none"
-                    loading="eager"
-                  />
-                </div>
-              ) : (
-                /* Estado Vazio: Contorno Tracejado Elegante com Ícone Translúcido */
-                <div className="w-full h-full rounded-[22px] border-2 border-dashed border-slate-300 dark:border-white/20 bg-slate-100/50 dark:bg-white/[0.02] flex flex-col items-center justify-center p-6 text-center gap-3 transition-all hover:border-slate-400 dark:hover:border-white/30">
-                  <div className="w-14 h-10 rounded-xl border border-dashed border-slate-400/60 dark:border-white/25 flex items-center justify-center text-slate-400 dark:text-slate-500">
-                    <CreditCard className="w-6 h-6 opacity-60" />
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
-                      Espaço Reservado do Cartão
-                    </span>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500 max-w-[200px] leading-tight">
-                      Selecione o banco emissor e o modelo ao lado para carregar a prévia visual
-                    </p>
-                  </div>
-                </div>
-              )}
+          <button
+            type="button"
+            onClick={handleAbrirModal}
+            className="flex-shrink-0 px-6 sm:px-7 py-3.5 rounded-2xl bg-[#0e4b6c] hover:bg-[#0a3852] text-white font-extrabold text-sm sm:text-base flex items-center gap-3 shadow-lg shadow-[#0e4b6c]/30 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer group"
+          >
+            <span>Adicionar cartão</span>
+            <span className="text-emerald-400 font-black text-2xl leading-none transition-transform group-hover:rotate-90 duration-200">
+              +
+            </span>
+          </button>
+        </section>
+      ) : (
+        <section className="glass-panel p-5 sm:p-6 space-y-4 border-slate-200/90 dark:border-white/[0.08]">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 dark:border-white/[0.06] pb-3">
+            <div className="flex items-center gap-2">
+              <Wallet className="w-4 h-4 text-rose-500" />
+              <h3 className="text-sm font-extrabold tracking-tight text-slate-900 dark:text-white">
+                Sua Carteira Digital ({cartoesCadastrados.length} {cartoesCadastrados.length === 1 ? 'cartão' : 'cartões'})
+              </h3>
             </div>
 
-            {cartaoPreview && (
-              <div className="mt-4 text-center animate-fadeIn space-y-0.5">
-                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
-                  {cartaoPreview.nome}
-                </span>
-                <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500 block">
-                  {cartaoPreview.imagePath}
-                </span>
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={handleAbrirModal}
+              className="inline-flex items-center gap-2 text-xs font-bold text-white bg-[#0e4b6c] hover:bg-[#0a3852] px-3.5 py-1.5 rounded-xl shadow-sm transition-all self-start sm:self-auto cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Adicionar outro cartão</span>
+            </button>
           </div>
 
-          {/* Formulário com Filtro em Cascata */}
-          <div className="lg:col-span-6 space-y-4">
-            <form onSubmit={handleAdicionarCartao} className="space-y-4">
-              {/* Input 1: Banco Emissor (<select>) */}
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="select-banco"
-                  className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between"
-                >
-                  <span>Banco Emissor</span>
-                  <span className="text-[10px] text-slate-400 font-normal">Passo 1</span>
-                </label>
-                <select
-                  id="select-banco"
-                  value={bancoSelecionado}
-                  onChange={handleBancoChange}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/[0.12] text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50 transition-all cursor-pointer"
-                >
-                  <option value="" disabled className="dark:bg-slate-900 text-slate-400">
-                    Selecione o banco emissor...
-                  </option>
-                  {Object.entries(mockCardsCatalog).map(([chave, banco]) => (
-                    <option key={chave} value={chave} className="dark:bg-slate-900 text-slate-800 dark:text-slate-100">
-                      {banco.nome}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Input 2: Nome do Cartão (Em Cascata, desabilitado inicialmente) */}
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="select-cartao"
-                  className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between"
-                >
-                  <span>Nome do Cartão</span>
-                  <span className="text-[10px] text-slate-400 font-normal">
-                    {!bancoSelecionado ? 'Desabilitado' : `${cartoesDisponiveis.length} modelos`}
-                  </span>
-                </label>
-                <select
-                  id="select-cartao"
-                  value={cartaoSelecionadoId}
-                  onChange={handleCartaoChange}
-                  disabled={!bancoSelecionado}
-                  className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-rose-500/50 ${
-                    !bancoSelecionado
-                      ? 'bg-slate-100 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] text-slate-400 cursor-not-allowed'
-                      : 'bg-slate-50 dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] text-slate-900 dark:text-white cursor-pointer'
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 pt-1">
+            {cartoesCadastrados.map((item) => {
+              const isAtivo = item.uid === cartaoAtivoUid;
+              return (
+                <div
+                  key={item.uid}
+                  onClick={() => setCartaoAtivoUid(item.uid)}
+                  className={`relative p-2.5 rounded-2xl border transition-all cursor-pointer group ${
+                    isAtivo
+                      ? 'border-rose-400 dark:border-rose-500 bg-rose-50/50 dark:bg-rose-500/10 shadow-md ring-2 ring-rose-400/30'
+                      : 'border-slate-200/80 dark:border-white/[0.06] bg-slate-50/60 dark:bg-white/[0.02] hover:border-slate-300 dark:hover:border-white/20'
                   }`}
                 >
-                  <option value="" disabled className="dark:bg-slate-900 text-slate-400">
-                    {!bancoSelecionado ? 'Primeiro escolha um banco emissor' : 'Selecione o modelo do cartão...'}
-                  </option>
-                  {cartoesDisponiveis.map((cartao) => (
-                    <option key={cartao.id} value={cartao.id} className="dark:bg-slate-900 text-slate-800 dark:text-slate-100">
-                      {cartao.nome}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Botão de Adicionar Cartão */}
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={!cartaoPreview}
-                  className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
-                    cartaoPreview
-                      ? 'bg-rose-500 hover:bg-rose-600 text-white shadow-md shadow-rose-500/20 active:scale-[0.98]'
-                      : 'bg-slate-200 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500 cursor-not-allowed'
-                  }`}
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Adicionar à Carteira</span>
-                </button>
-              </div>
-
-              {feedbackAdicionado && (
-                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2 animate-fadeIn">
-                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                  <span>Cartão adicionado com sucesso à sua carteira Apple Wallet!</span>
-                </div>
-              )}
-            </form>
-          </div>
-        </div>
-
-        {/* Carteira Apple Wallet: Cartões Cadastrados */}
-        {cartoesCadastrados.length > 0 && (
-          <div className="pt-4 border-t border-slate-100 dark:border-white/[0.06] space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <Wallet className="w-3.5 h-3.5 text-rose-500" />
-                <span>Cartões Ativos na Carteira ({cartoesCadastrados.length})</span>
-              </span>
-              <span className="text-[11px] text-slate-400">Clique para alternar o cartão ativo</span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {cartoesCadastrados.map((item) => {
-                const isAtivo = item.uid === cartaoAtivoUid;
-                return (
-                  <div
-                    key={item.uid}
-                    onClick={() => setCartaoAtivoUid(item.uid)}
-                    className={`relative p-2 rounded-xl border transition-all cursor-pointer group ${
-                      isAtivo
-                        ? 'border-rose-400 dark:border-rose-500 bg-rose-50/50 dark:bg-rose-500/10 shadow-sm'
-                        : 'border-slate-200/80 dark:border-white/[0.06] bg-slate-50/60 dark:bg-white/[0.02] hover:border-slate-300 dark:hover:border-white/20'
-                    }`}
-                  >
-                    <div className="aspect-[1.586/1] w-full rounded-lg overflow-hidden relative">
-                      <img
-                        src={item.imagePath}
-                        alt={item.cartaoNome}
-                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
-                      />
-                      {isAtivo && (
-                        <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px] font-bold">
-                          ✓
-                        </div>
-                      )}
-                    </div>
-                    <div className="mt-1.5 flex items-center justify-between">
-                      <div className="min-w-0 pr-1">
-                        <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate block">
-                          {item.cartaoNome}
-                        </span>
-                        <span className="text-[9px] text-slate-400 truncate block">
-                          {item.bancoNome}
-                        </span>
+                  <div className="aspect-[1.586/1] w-full rounded-xl overflow-hidden relative">
+                    <img
+                      src={item.imagePath}
+                      alt={item.cartaoNome}
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
+                    />
+                    {isAtivo && (
+                      <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px] font-bold shadow-sm">
+                        ✓
                       </div>
-                      {cartoesCadastrados.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoverCartao(item.uid);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 transition-opacity"
-                          title="Remover cartão"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
+                    )}
                   </div>
-                );
-              })}
-            </div>
+                  <div className="mt-2 flex items-center justify-between">
+                    <div className="min-w-0 pr-1">
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate block">
+                        {item.apelido || item.cartaoNome}
+                      </span>
+                      <span className="text-[10px] text-slate-400 truncate block">
+                        {item.bancoNome} · {item.cartaoNome}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoverCartao(item.uid);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 transition-opacity"
+                      title="Remover cartão"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
       {/* 3. Timeline de Faturas (Feed Limpo) */}
       <section className="space-y-4">
@@ -798,6 +707,213 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
           </div>
         )}
       </section>
+
+      {/* 4. Modal de Questionário para Adicionar Cartão */}
+      {modalAberto && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-fadeIn"
+          onClick={handleFecharModal}
+        >
+          <div
+            className="glass-panel max-w-3xl w-full p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-white/10 shadow-2xl relative max-h-[92vh] overflow-y-auto space-y-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Cabeçalho do Modal */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-500/15 border border-rose-200 dark:border-rose-400/30 flex items-center justify-center text-rose-600 dark:text-rose-400 shadow-sm">
+                  <CreditCard className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">
+                    Cadastrar Novo Cartão
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Preencha o questionário abaixo para configurar seu cartão
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleFecharModal}
+                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/[0.05] hover:bg-slate-200 dark:hover:bg-white/[0.1] flex items-center justify-center text-slate-500 dark:text-slate-400 transition-colors cursor-pointer"
+                title="Fechar"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Corpo do Modal: Preview Visual + Questionário */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+              {/* Lado Esquerdo: Preview Visual (Apple Wallet Style) */}
+              <div className="lg:col-span-5 flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.05]">
+                <div className="w-full max-w-[280px] aspect-[1.586/1] flex items-center justify-center">
+                  {modalCartaoPreview ? (
+                    <div className="w-full h-full relative group">
+                      <img
+                        src={modalCartaoPreview.imagePath}
+                        alt={modalCartaoPreview.nome}
+                        className="w-full h-full object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-300 -rotate-1 hover:rotate-0 cursor-pointer select-none"
+                        loading="eager"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full h-full rounded-[20px] border-2 border-dashed border-slate-300 dark:border-white/20 bg-slate-100/50 dark:bg-white/[0.02] flex flex-col items-center justify-center p-4 text-center gap-2">
+                      <CreditCard className="w-8 h-8 text-slate-400 opacity-60" />
+                      <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                        Preview do Cartão
+                      </span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 leading-tight">
+                        Selecione o emissor e o modelo ao lado para visualizar a imagem 3D
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {modalCartaoPreview && (
+                  <div className="mt-3 text-center animate-fadeIn">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
+                      {modalCartaoPreview.nome}
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-400 block">
+                      {mockCardsCatalog[modalBanco]?.nome}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Lado Direito: Questionário com Filtro em Cascata */}
+              <form onSubmit={handleSalvarCartaoQuestionario} className="lg:col-span-7 space-y-3.5">
+                {/* Pergunta 1: Banco Emissor */}
+                <div className="space-y-1">
+                  <label htmlFor="modal-banco" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                    <span>1. Qual é o Banco Emissor?</span>
+                    <span className="text-[10px] text-rose-500 font-semibold">*obrigatório</span>
+                  </label>
+                  <select
+                    id="modal-banco"
+                    value={modalBanco}
+                    onChange={handleModalBancoChange}
+                    required
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/[0.12] text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50 cursor-pointer"
+                  >
+                    <option value="" disabled className="dark:bg-slate-900 text-slate-400">
+                      Selecione o banco emissor...
+                    </option>
+                    {Object.entries(mockCardsCatalog).map(([chave, banco]) => (
+                      <option key={chave} value={chave} className="dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+                        {banco.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Pergunta 2: Modelo do Cartão (Filtro em Cascata) */}
+                <div className="space-y-1">
+                  <label htmlFor="modal-cartao" className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                    <span>2. Qual é o Modelo do Cartão?</span>
+                    <span className="text-[10px] text-rose-500 font-semibold">*obrigatório</span>
+                  </label>
+                  <select
+                    id="modal-cartao"
+                    value={modalCartaoId}
+                    onChange={(e) => setModalCartaoId(e.target.value)}
+                    disabled={!modalBanco}
+                    required
+                    className={`w-full px-3 py-2 rounded-xl border text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500/50 ${
+                      !modalBanco
+                        ? 'bg-slate-100 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] text-slate-400 cursor-not-allowed'
+                        : 'bg-slate-50 dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] text-slate-900 dark:text-white cursor-pointer'
+                    }`}
+                  >
+                    <option value="" disabled className="dark:bg-slate-900 text-slate-400">
+                      {!modalBanco ? 'Escolha primeiro o banco acima' : 'Selecione o modelo do cartão...'}
+                    </option>
+                    {modalCartoesDisponiveis.map((cartao) => (
+                      <option key={cartao.id} value={cartao.id} className="dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+                        {cartao.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Pergunta 3: Limite Total */}
+                <div className="space-y-1">
+                  <label htmlFor="modal-limite" className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    3. Qual o Limite Total deste Cartão? (R$)
+                  </label>
+                  <input
+                    id="modal-limite"
+                    type="number"
+                    step="100"
+                    min="0"
+                    value={modalLimite}
+                    onChange={(e) => setModalLimite(e.target.value)}
+                    placeholder="5000"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/[0.12] text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                  />
+                </div>
+
+                {/* Pergunta 4: Dia do Vencimento */}
+                <div className="space-y-1">
+                  <label htmlFor="modal-venc" className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    4. Qual o Dia de Vencimento da Fatura? (1 a 31)
+                  </label>
+                  <input
+                    id="modal-venc"
+                    type="number"
+                    min="1"
+                    max="31"
+                    value={modalDiaVenc}
+                    onChange={(e) => setModalDiaVenc(e.target.value)}
+                    placeholder="10"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/[0.12] text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                  />
+                </div>
+
+                {/* Pergunta 5: Apelido / Identificação */}
+                <div className="space-y-1">
+                  <label htmlFor="modal-apelido" className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    5. Apelido do Cartão (Opcional)
+                  </label>
+                  <input
+                    id="modal-apelido"
+                    type="text"
+                    value={modalApelido}
+                    onChange={(e) => setModalApelido(e.target.value)}
+                    placeholder="Ex: Meu Cartão Principal"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/[0.12] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                  />
+                </div>
+
+                {/* Ações do Questionário */}
+                <div className="pt-3 flex items-center justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={handleFecharModal}
+                    className="px-4 py-2 rounded-xl border border-slate-300 dark:border-white/10 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-colors cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!modalCartaoPreview}
+                    className={`px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                      modalCartaoPreview
+                        ? 'bg-[#0e4b6c] hover:bg-[#0a3852] text-white shadow-md shadow-[#0e4b6c]/30 active:scale-[0.98]'
+                        : 'bg-slate-200 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500 cursor-not-allowed'
+                    }`}
+                  >
+                    <span>Cadastrar Cartão</span>
+                    <span className="text-emerald-400 font-bold text-base leading-none">+</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

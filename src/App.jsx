@@ -40,24 +40,24 @@ export function App() {
 
       {/* Top Header */}
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-[#060911]/80 backdrop-blur-2xl border-b border-slate-200/80 dark:border-white/[0.08] shadow-sm dark:shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
-        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 sm:gap-4">
+        <div className="max-w-7xl 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 sm:gap-6">
             <h1
               onClick={() => setActiveTab('calculadora')}
-              className="text-lg sm:text-xl font-black tracking-tight flex items-center cursor-pointer select-none"
+              className="text-xl sm:text-2xl font-black tracking-tight flex items-center cursor-pointer select-none"
             >
               <span className="text-slate-900 dark:text-white">Money</span><span className="text-amber-500 dark:text-amber-400">Hub</span>
             </h1>
 
-            {/* Navegação entre Módulos */}
-            <nav className="flex items-center p-1 bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl shadow-inner">
+            {/* Navegação entre Módulos (Abas Ampliadas) */}
+            <nav className="flex items-center p-1.5 bg-slate-100 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl shadow-inner gap-1">
               <button
                 type="button"
                 onClick={() => setActiveTab('calculadora')}
-                className={`px-2.5 sm:px-3.5 py-1 rounded-lg text-xs font-bold transition-all duration-200 ${
+                className={`px-3.5 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer ${
                   activeTab === 'calculadora'
                     ? 'bg-white text-slate-900 shadow-sm border border-slate-300/80 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30'
-                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                    : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/[0.03]'
                 }`}
               >
                 Calculadora
@@ -65,10 +65,10 @@ export function App() {
               <button
                 type="button"
                 onClick={() => setActiveTab('dashboard')}
-                className={`px-2.5 sm:px-3.5 py-1 rounded-lg text-xs font-bold transition-all duration-200 ${
+                className={`px-3.5 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer ${
                   activeTab === 'dashboard'
                     ? 'bg-white text-slate-900 shadow-sm border border-slate-300/80 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30'
-                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                    : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/[0.03]'
                 }`}
               >
                 Dashboard
@@ -76,13 +76,13 @@ export function App() {
               <button
                 type="button"
                 onClick={() => setActiveTab('cartoes')}
-                className={`px-2.5 sm:px-3.5 py-1 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
+                className={`px-3.5 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-2 cursor-pointer ${
                   activeTab === 'cartoes'
                     ? 'bg-white text-slate-900 shadow-sm border border-slate-300/80 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500/30'
-                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                    : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/[0.03]'
                 }`}
               >
-                <CreditCard className="w-3.5 h-3.5" />
+                <CreditCard className="w-4 h-4" />
                 <span>Cartões</span>
               </button>
             </nav>

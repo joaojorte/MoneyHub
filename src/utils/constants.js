@@ -30,5 +30,7 @@ export const PRAZO_ANOS_PADRAO = 10;
 export const STORAGE_KEYS = {
   LOCAL_DATA: 'moneyhub_dados_locais',
   CARTAO_DIA_VENCIMENTO: 'moneyhub_cartao_dia_vencimento',
+  CARTAO_LIMITE_TOTAL: 'moneyhub_cartao_limite_total',
   INVESTIMENTOS: 'moneyhub_investimentos_historico'
 };
+

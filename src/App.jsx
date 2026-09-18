@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { CreditCard } from 'lucide-react';
 import { useTransactions } from './hooks/useTransactions';
 import { useFinancialCalculator } from './hooks/useFinancialCalculator';
 import { useTheme } from './hooks/useTheme';
@@ -10,10 +11,11 @@ import { SlidersSection } from './components/calculator/SlidersSection';
 import { DistributionBar } from './components/calculator/DistributionBar';
 import { TransactionList } from './components/history/TransactionList';
 import { Dashboard } from './components/dashboard/Dashboard';
+import { CreditCardDashboard } from './components/cards/CreditCardDashboard';
 import { formatarBRL } from './utils/formatters';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState('calculadora'); // 'calculadora' | 'dashboard'
+  const [activeTab, setActiveTab] = useState('calculadora'); // 'calculadora' | 'dashboard' | 'cartoes'
   const { isDark, toggleTheme } = useTheme();
 
   const {
@@ -39,7 +41,7 @@ export function App() {
       {/* Top Header */}
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-[#060911]/80 backdrop-blur-2xl border-b border-slate-200/80 dark:border-white/[0.08] shadow-sm dark:shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <h1
               onClick={() => setActiveTab('calculadora')}
               className="text-base sm:text-lg font-extrabold tracking-tight flex items-center gap-1.5 cursor-pointer select-none"
@@ -53,7 +55,7 @@ export function App() {
               <button
                 type="button"
                 onClick={() => setActiveTab('calculadora')}
-                className={`px-3 sm:px-4 py-1 rounded-lg text-xs font-bold transition-all duration-200 ${
+                className={`px-2.5 sm:px-3.5 py-1 rounded-lg text-xs font-bold transition-all duration-200 ${
                   activeTab === 'calculadora'
                     ? 'bg-white text-slate-900 shadow-sm border border-slate-300/80 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30'
                     : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
@@ -64,13 +66,25 @@ export function App() {
               <button
                 type="button"
                 onClick={() => setActiveTab('dashboard')}
-                className={`px-3 sm:px-4 py-1 rounded-lg text-xs font-bold transition-all duration-200 ${
+                className={`px-2.5 sm:px-3.5 py-1 rounded-lg text-xs font-bold transition-all duration-200 ${
                   activeTab === 'dashboard'
                     ? 'bg-white text-slate-900 shadow-sm border border-slate-300/80 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30'
                     : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
                 Dashboard
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('cartoes')}
+                className={`px-2.5 sm:px-3.5 py-1 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
+                  activeTab === 'cartoes'
+                    ? 'bg-white text-slate-900 shadow-sm border border-slate-300/80 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500/30'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                <span>Cartões</span>
               </button>
             </nav>
           </div>
@@ -104,7 +118,7 @@ export function App() {
 
       {/* Main Container */}
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-        {activeTab === 'calculadora' ? (
+        {activeTab === 'calculadora' && (
           <>
             {/* Métricas Principais */}
             <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -177,11 +191,18 @@ export function App() {
               />
             </section>
           </>
-        ) : (
+        )}
+
+        {activeTab === 'dashboard' && (
           <Dashboard entradas={entradas} saidas={saidas} calc={calc} />
+        )}
+
+        {activeTab === 'cartoes' && (
+          <CreditCardDashboard saidas={saidas} onRemoveSaida={removeSaida} />
         )}
       </main>
     </div>
   );
 }
 export default App;
+

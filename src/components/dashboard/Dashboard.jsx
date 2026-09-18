@@ -217,25 +217,25 @@ export function Dashboard({ entradas = [], saidas = [], calc }) {
       {/* Cards de Resumo Mensal */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
         <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-b from-emerald-50/80 via-white to-white dark:from-emerald-500/[0.08] dark:via-[#0C1326]/70 dark:to-[#0C1326]/60 border border-emerald-200 dark:border-emerald-500/25 shadow-sm dark:shadow-[inset_0_1px_0_0_rgba(52,211,153,0.2),0_16px_36px_-6px_rgba(0,0,0,0.6)] backdrop-blur-xl">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+          <div className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">
             Entradas ({formatarMesAno(mesSelecionado).split(' de ')[0]})
           </div>
-          <div className="text-2xl sm:text-3xl font-mono font-bold text-emerald-700 dark:text-emerald-400">
+          <div className="text-2xl sm:text-3xl lg:text-4xl font-mono font-black text-emerald-700 dark:text-emerald-400">
             R$ {formatarBRL(totalEntradasMes)}
           </div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400/80 font-medium mt-1">
+          <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">
             {entradasMes.length} lançamento(s)
           </div>
         </div>
 
         <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-b from-rose-50/80 via-white to-white dark:from-rose-500/[0.08] dark:via-[#0C1326]/70 dark:to-[#0C1326]/60 border border-rose-200 dark:border-rose-500/25 shadow-sm dark:shadow-[inset_0_1px_0_0_rgba(251,113,133,0.2),0_16px_36px_-6px_rgba(0,0,0,0.6)] backdrop-blur-xl">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+          <div className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">
             Saídas ({formatarMesAno(mesSelecionado).split(' de ')[0]})
           </div>
-          <div className="text-2xl sm:text-3xl font-mono font-bold text-rose-700 dark:text-rose-400">
+          <div className="text-2xl sm:text-3xl lg:text-4xl font-mono font-black text-rose-700 dark:text-rose-400">
             R$ {formatarBRL(totalSaidasMes)}
           </div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400/80 font-medium mt-1">
+          <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">
             {saidasMes.length} lançamento(s)
           </div>
         </div>
@@ -245,17 +245,17 @@ export function Dashboard({ entradas = [], saidas = [], calc }) {
             ? 'bg-gradient-to-b from-amber-50/80 via-white to-white dark:from-amber-500/[0.08] dark:via-[#0C1326]/70 dark:to-[#0C1326]/60 border-amber-200 dark:border-amber-500/25'
             : 'bg-gradient-to-b from-rose-50/80 via-white to-white dark:from-rose-500/[0.08] dark:via-[#0C1326]/70 dark:to-[#0C1326]/60 border-rose-200 dark:border-rose-500/25'
         }`}>
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+          <div className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">
             Saldo do Mês
           </div>
-          <div className={`text-2xl sm:text-3xl font-mono font-bold ${
+          <div className={`text-2xl sm:text-3xl lg:text-4xl font-mono font-black ${
             saldoMes >= 0
               ? 'text-amber-700 dark:text-amber-400'
               : 'text-rose-700 dark:text-rose-400'
           }`}>
             R$ {formatarBRL(saldoMes)}
           </div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400/80 font-medium mt-1">
+          <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">
             {saldoMes >= 0 ? 'Superávit no período' : 'Déficit no período'}
           </div>
         </div>
@@ -268,11 +268,11 @@ export function Dashboard({ entradas = [], saidas = [], calc }) {
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">Fluxo de Caixa</h3>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">Entradas vs. Saídas em {formatarMesAno(mesSelecionado)}</span>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">Fluxo de Caixa</h3>
+                <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">Entradas vs. Saídas em {formatarMesAno(mesSelecionado)}</span>
               </div>
               {totalEntradasMes > 0 && (
-                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-full border ${
                   saldoMes >= 0
                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/30'
                     : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/30'
@@ -344,12 +344,12 @@ export function Dashboard({ entradas = [], saidas = [], calc }) {
         {/* Gráfico de Despesas por Categoria */}
         <section className="p-5 rounded-2xl bg-white dark:bg-[#0C1326]/70 border border-slate-200 dark:border-white/[0.08] shadow-sm dark:shadow-[0_16px_36px_-6px_rgba(0,0,0,0.5)] backdrop-blur-xl">
           <div className="mb-4">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">Despesas por Categoria</h3>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400">Distribuição das saídas no mês selecionado</span>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">Despesas por Categoria</h3>
+            <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">Distribuição das saídas no mês selecionado</span>
           </div>
 
           {categoriasAgrupadas.length === 0 ? (
-            <div className="h-48 flex items-center justify-center text-xs text-slate-400 dark:text-slate-500 font-medium">
+            <div className="h-48 flex items-center justify-center text-xs sm:text-sm text-slate-400 dark:text-slate-500 font-medium">
               Nenhuma saída registrada neste mês.
             </div>
           ) : (
@@ -382,8 +382,8 @@ export function Dashboard({ entradas = [], saidas = [], calc }) {
                   ))}
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium uppercase">Total</span>
-                  <span className="text-xs font-mono font-bold text-slate-800 dark:text-slate-100">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Total</span>
+                  <span className="text-sm sm:text-base font-mono font-black text-slate-800 dark:text-slate-100">
                     R$ {formatarBRL(totalCategorias).split(',')[0]}
                   </span>
                 </div>
@@ -392,14 +392,14 @@ export function Dashboard({ entradas = [], saidas = [], calc }) {
               {/* Lista de Categorias */}
               <div className="w-full space-y-1.5 max-h-48 overflow-y-auto pr-1">
                 {categoriasAgrupadas.map((cat, i) => (
-                  <div key={i} className="flex items-center justify-between text-xs py-1 px-2 rounded-lg bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.04]">
+                  <div key={i} className="flex items-center justify-between text-xs sm:text-sm py-1.5 px-2.5 rounded-lg bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.04]">
                     <div className="flex items-center gap-2 truncate">
                       <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.cor }} />
-                      <span className="text-slate-700 dark:text-slate-300 font-medium truncate max-w-[130px]">{cat.nome}</span>
+                      <span className="text-slate-700 dark:text-slate-300 font-semibold truncate max-w-[130px]">{cat.nome}</span>
                     </div>
                     <div className="flex items-center gap-2 font-mono flex-shrink-0">
-                      <span className="text-slate-800 dark:text-slate-200">R$ {formatarBRL(cat.valor)}</span>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-200/60 dark:bg-white/[0.04] px-1.5 py-0.5 rounded font-bold">
+                      <span className="text-slate-800 dark:text-slate-200 font-bold">R$ {formatarBRL(cat.valor)}</span>
+                      <span className="text-xs text-slate-600 dark:text-slate-400 bg-slate-200/60 dark:bg-white/[0.04] px-2 py-0.5 rounded font-bold">
                         {cat.porcentagem.toFixed(0)}%
                       </span>
                     </div>
@@ -492,28 +492,28 @@ export function Dashboard({ entradas = [], saidas = [], calc }) {
         {/* Resumo da Projeção */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-6">
           <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.05]">
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-0.5">
+            <span className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider block mb-0.5">
               Total Aportado Futuro
             </span>
-            <span className="text-lg font-mono font-bold text-slate-800 dark:text-slate-200">
+            <span className="text-xl sm:text-2xl font-mono font-black text-slate-800 dark:text-slate-200">
               R$ {formatarBRL(projecao.totalAportadoFuturo)}
             </span>
           </div>
 
           <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.05]">
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-0.5">
+            <span className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider block mb-0.5">
               Juros Compostos Ganhos
             </span>
-            <span className="text-lg font-mono font-bold text-emerald-700 dark:text-emerald-400">
+            <span className="text-xl sm:text-2xl font-mono font-black text-emerald-700 dark:text-emerald-400">
               R$ {formatarBRL(projecao.totalJuros)}
             </span>
           </div>
 
           <div className="p-3.5 rounded-xl bg-gradient-to-r from-emerald-50 to-sky-50 dark:from-emerald-500/10 dark:to-sky-500/10 border border-emerald-200 dark:border-emerald-500/20">
-            <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider block mb-0.5">
+            <span className="text-xs sm:text-sm font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider block mb-0.5">
               Patrimônio Final Estimado
             </span>
-            <span className="text-xl font-mono font-bold text-emerald-800 dark:text-emerald-300">
+            <span className="text-xl sm:text-2xl font-mono font-black text-emerald-800 dark:text-emerald-300">
               R$ {formatarBRL(projecao.patrimonioFinal)}
             </span>
           </div>
@@ -521,9 +521,9 @@ export function Dashboard({ entradas = [], saidas = [], calc }) {
 
         {/* Gráfico Visual de Barras Empilhadas Ano a Ano */}
         <div>
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-3">
-            <span className="font-semibold text-slate-700 dark:text-slate-300">Evolução do Patrimônio no Tempo</span>
-            <div className="flex items-center gap-4 text-[11px]">
+          <div className="flex items-center justify-between text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-3">
+            <span className="font-bold text-slate-700 dark:text-slate-300">Evolução do Patrimônio no Tempo</span>
+            <div className="flex items-center gap-4 text-xs font-semibold">
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-sm bg-[#6366F1]" />
                 Total Aportado
@@ -544,9 +544,9 @@ export function Dashboard({ entradas = [], saidas = [], calc }) {
               return (
                 <div key={idx} className="flex-1 min-w-[48px] flex flex-col items-center h-full justify-end group relative">
                   {/* Tooltip ao passar o mouse */}
-                  <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white dark:bg-[#111827] text-[10px] font-mono p-1.5 rounded-lg border border-slate-700 dark:border-white/10 shadow-xl pointer-events-none z-20 whitespace-nowrap">
+                  <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white dark:bg-[#111827] text-xs font-mono p-2 rounded-lg border border-slate-700 dark:border-white/10 shadow-xl pointer-events-none z-20 whitespace-nowrap">
                     <div>{item.anoLabel}: R$ {formatarBRL(item.patrimonioFinal)}</div>
-                    <div className="text-emerald-400">Juros: R$ {formatarBRL(item.jurosAcumulados)}</div>
+                    <div className="text-emerald-400 font-bold">Juros: R$ {formatarBRL(item.jurosAcumulados)}</div>
                   </div>
 
                   {/* Barra Empilhada */}
@@ -567,7 +567,7 @@ export function Dashboard({ entradas = [], saidas = [], calc }) {
                   </div>
 
                   {/* Rótulo do Ano */}
-                  <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-2 font-mono">
+                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 mt-2 font-mono">
                     {item.anoLabel.replace('Ano ', 'A')}
                   </span>
                 </div>

@@ -25,20 +25,20 @@ export function StatCard({
   return (
     <div className={`p-4 sm:p-5 rounded-2xl backdrop-blur-2xl border flex flex-col justify-between transition-all duration-300 group hover:-translate-y-0.5 ${accentCardStyles[accent] || accentCardStyles.default} ${className}`}>
       <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors">
+        <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
           {title}
         </span>
         {icon && (
-          <span className="text-base leading-none p-1.5 rounded-full bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.05]">
+          <span className="text-lg leading-none p-1.5 rounded-full bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08]">
             {icon}
           </span>
         )}
       </div>
-      <div className={`text-xl sm:text-2xl lg:text-3xl font-mono font-bold tabular-nums tracking-tight ${textAccentStyles[accent] || textAccentStyles.default}`}>
+      <div className={`text-xl sm:text-2xl lg:text-3xl font-mono font-black tabular-nums tracking-tight ${textAccentStyles[accent] || textAccentStyles.default}`}>
         {value}
       </div>
       {subtitle && (
-        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1.5">
+        <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1.5">
           {subtitle}
         </div>
       )}

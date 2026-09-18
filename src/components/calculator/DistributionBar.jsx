@@ -46,27 +46,27 @@ export function DistributionBar({
       {/* Legenda com valores tabulares */}
       <div className="grid grid-cols-3 gap-2.5 text-center pt-1">
         <div className="p-2.5 bg-emerald-50/70 dark:bg-white/[0.03] backdrop-blur-md rounded-xl border border-emerald-200 dark:border-emerald-500/20 shadow-sm">
-          <div className="text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-400 tracking-wider">Investimento</div>
-          <div className="font-mono text-xs sm:text-sm font-bold text-emerald-800 dark:text-emerald-300 tabular-nums tracking-tight mt-0.5">
+          <div className="text-xs uppercase font-bold text-emerald-700 dark:text-emerald-400 tracking-wider">Investimento</div>
+          <div className="font-mono text-sm sm:text-base font-black text-emerald-800 dark:text-emerald-300 tabular-nums tracking-tight mt-0.5">
             R$ {formatarBRL(investimentoRecomendado)}
           </div>
-          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono font-semibold mt-0.5">{pctInvest}%</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 font-mono font-bold mt-0.5">{pctInvest}%</div>
         </div>
 
         <div className="p-2.5 bg-sky-50/70 dark:bg-white/[0.03] backdrop-blur-md rounded-xl border border-sky-200 dark:border-sky-500/20 shadow-sm">
-          <div className="text-[10px] uppercase font-bold text-sky-700 dark:text-sky-400 tracking-wider">Reserva</div>
-          <div className="font-mono text-xs sm:text-sm font-bold text-sky-800 dark:text-sky-300 tabular-nums tracking-tight mt-0.5">
+          <div className="text-xs uppercase font-bold text-sky-700 dark:text-sky-400 tracking-wider">Reserva</div>
+          <div className="font-mono text-sm sm:text-base font-black text-sky-800 dark:text-sky-300 tabular-nums tracking-tight mt-0.5">
             R$ {formatarBRL(reservaRecomendada)}
           </div>
-          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono font-semibold mt-0.5">{pctReserva}%</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 font-mono font-bold mt-0.5">{pctReserva}%</div>
         </div>
 
         <div className="p-2.5 bg-amber-50/70 dark:bg-white/[0.03] backdrop-blur-md rounded-xl border border-amber-200 dark:border-amber-500/20 shadow-sm">
-          <div className="text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400 tracking-wider">Livre</div>
-          <div className="font-mono text-xs sm:text-sm font-bold text-amber-800 dark:text-amber-300 tabular-nums tracking-tight mt-0.5">
+          <div className="text-xs uppercase font-bold text-amber-700 dark:text-amber-400 tracking-wider">Livre</div>
+          <div className="font-mono text-sm sm:text-base font-black text-amber-800 dark:text-amber-300 tabular-nums tracking-tight mt-0.5">
             R$ {formatarBRL(livreRecomendado)}
           </div>
-          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono font-semibold mt-0.5">{pctLivre}%</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 font-mono font-bold mt-0.5">{pctLivre}%</div>
         </div>
       </div>
     </div>

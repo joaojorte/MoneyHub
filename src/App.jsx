@@ -89,21 +89,21 @@ export function App() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="flex items-center gap-2.5 text-xs font-mono">
+            <div className="flex items-center gap-2.5 text-xs sm:text-sm font-mono">
               {usuario ? (
-                <span className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] text-emerald-600 dark:text-emerald-400 shadow-sm">
-                  <span className={`w-2 h-2 rounded-full ${statusSincronizacao === 'salvando' ? 'bg-amber-400 animate-ping' : 'bg-emerald-500 dark:bg-emerald-400'}`} />
-                  <span className="truncate max-w-[130px] text-slate-700 dark:text-slate-300 font-semibold">{usuario.email}</span>
+                <span className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] text-emerald-600 dark:text-emerald-400 shadow-sm">
+                  <span className={`w-2.5 h-2.5 rounded-full ${statusSincronizacao === 'salvando' ? 'bg-amber-400 animate-ping' : 'bg-emerald-500 dark:bg-emerald-400'}`} />
+                  <span className="truncate max-w-[150px] text-slate-700 dark:text-slate-300 font-semibold">{usuario.email}</span>
                   {statusSincronizacao === 'salvando' && (
-                    <span className="text-[10px] text-amber-500 dark:text-amber-300 font-bold animate-pulse hidden sm:inline">(salvando...)</span>
+                    <span className="text-xs text-amber-500 dark:text-amber-300 font-bold animate-pulse hidden sm:inline">(salvando...)</span>
                   )}
                   {statusSincronizacao === 'salvo' && (
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold hidden sm:inline">✓</span>
+                    <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold hidden sm:inline">✓</span>
                   )}
                 </span>
               ) : (
-                <span className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-400 shadow-sm">
-                  <span className="w-2 h-2 rounded-full bg-amber-500 dark:bg-amber-400" />
+                <span className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-400 shadow-sm">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 dark:bg-amber-400" />
                   <span className="font-semibold text-slate-700 dark:text-slate-300">Modo Local</span>
                 </span>
               )}

@@ -10,8 +10,8 @@ import { TransactionList } from './components/history/TransactionList';
 import { UnifiedDashboard } from './components/dashboard/UnifiedDashboard';
 import { InvestmentsHub } from './components/investments/InvestmentsHub';
 import { Sidebar } from './components/layout/Sidebar';
-import { formatarBRL, formatarDataBR, obterDataHojeISO } from './utils/formatters';
-import { LayoutDashboard, Calculator, TrendingUp } from 'lucide-react';
+import { formatarBRL } from './utils/formatters';
+import { Cloud } from 'lucide-react';
 
 export function App() {
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'calculadora' | 'investimentos'
@@ -30,14 +30,6 @@ export function App() {
 
   const calc = useFinancialCalculator(entradas, saidas);
 
-  // Data de hoje formatada por extenso para a saudação
-  const hojeFormatado = new Intl.DateTimeFormat('pt-BR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  }).format(new Date());
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#080D1A] text-slate-800 dark:text-slate-100 selection:bg-rose-500/20 relative overflow-x-hidden transition-colors duration-200">
       {/* Luzes ambiente de fundo discretas */}
@@ -45,23 +37,22 @@ export function App() {
       <div className="absolute top-40 right-10 w-[500px] h-[500px] bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute top-[600px] left-10 w-[500px] h-[500px] bg-rose-500/5 dark:bg-rose-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
 
-      {/* Top Header Global: Saudação na Esquerda e Logo no CANTO SUPERIOR DIREITO */}
+      {/* Top Header Global: Logo APENAS no Canto Superior Esquerdo | Login e Modo de Página no Canto Superior Direito */}
       <header className="sticky top-0 z-40 bg-white/80 dark:bg-[#060911]/80 backdrop-blur-2xl border-b border-slate-200/80 dark:border-white/[0.08] shadow-sm dark:shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
         <div className="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
           
-          {/* Saudação e Data no canto esquerdo (Conforme Modelo Behance ZIXO) */}
+          {/* CANTO SUPERIOR ESQUERDO: APENAS A LOGO (Conforme solicitado) */}
           <div className="flex items-center gap-3">
-            <div>
-              <h2 className="text-base sm:text-lg lg:text-xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-                Olá! Bem-vindo ao MoneyHub
-              </h2>
-              <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 capitalize font-medium">
-                {hojeFormatado}
-              </span>
-            </div>
+            <h1
+              onClick={() => setActiveTab('dashboard')}
+              className="text-2xl sm:text-3xl font-black tracking-tight flex items-center cursor-pointer select-none transition-transform hover:scale-105"
+            >
+              <span className="text-slate-900 dark:text-white">Money</span>
+              <span className="text-amber-500 dark:text-amber-400">Hub</span>
+            </h1>
           </div>
 
-          {/* Abas Mobile (Apenas em telas pequenas) */}
+          {/* Abas Mobile (Apenas em telas pequenas para fácil navegação) */}
           <div className="flex lg:hidden items-center p-1 bg-slate-100 dark:bg-white/[0.05] rounded-xl border border-slate-200 dark:border-white/10 text-xs">
             <button
               type="button"
@@ -98,15 +89,31 @@ export function App() {
             </button>
           </div>
 
-          {/* LOGO NO CANTO SUPERIOR DIREITO (Conforme solicitado pelo usuário) */}
-          <div className="flex items-center gap-4 flex-shrink-0">
-            <h1
-              onClick={() => setActiveTab('dashboard')}
-              className="text-2xl sm:text-3xl font-black tracking-tight flex items-center cursor-pointer select-none transition-transform hover:scale-105"
-            >
-              <span className="text-slate-900 dark:text-white">Money</span>
-              <span className="text-amber-500 dark:text-amber-400">Hub</span>
-            </h1>
+          {/* CANTO SUPERIOR DIREITO: INFORMAÇÕES DE LOGIN E MODO DA PÁGINA (CLARO/ESCURO) */}
+          <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
+            {/* Informações de Login / E-mail */}
+            <div className="flex items-center gap-2.5 text-xs sm:text-sm font-mono">
+              {usuario ? (
+                <span className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] text-emerald-600 dark:text-emerald-400 shadow-sm">
+                  <span className={`w-2.5 h-2.5 rounded-full ${statusSincronizacao === 'salvando' ? 'bg-amber-400 animate-ping' : 'bg-emerald-500 dark:bg-emerald-400'}`} />
+                  <span className="truncate max-w-[150px] sm:max-w-[200px] text-slate-700 dark:text-slate-300 font-semibold">{usuario.email}</span>
+                  {statusSincronizacao === 'salvando' && (
+                    <span className="text-xs text-amber-500 dark:text-amber-300 font-bold animate-pulse hidden sm:inline">(salvando...)</span>
+                  )}
+                  {statusSincronizacao === 'salvo' && (
+                    <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold hidden sm:inline">✓</span>
+                  )}
+                </span>
+              ) : (
+                <span className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 shadow-sm">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 dark:bg-amber-400" />
+                  <span className="font-semibold">Modo Local</span>
+                </span>
+              )}
+            </div>
+
+            {/* Modo da página (escuro/claro) */}
+            <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
           </div>
         </div>
       </header>
@@ -119,10 +126,6 @@ export function App() {
           <Sidebar
             activeTab={activeTab}
             onSelectTab={setActiveTab}
-            usuario={usuario}
-            statusSincronizacao={statusSincronizacao}
-            isDark={isDark}
-            onToggleTheme={toggleTheme}
           />
         </div>
 

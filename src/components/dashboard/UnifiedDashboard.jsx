@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { 
   CreditCard, Calendar, Wallet, AlertCircle, CheckCircle2, ChevronRight, 
   Filter, Plus, Check, Trash2, Sparkles, X, Edit3, ArrowUpRight, ArrowDownRight, 
-  PieChart, DollarSign, TrendingUp, Layers
+  PieChart, DollarSign, TrendingUp, Layers, BarChart3
 } from 'lucide-react';
 import { formatarBRL, formatarDataBR, formatarMesAno, obterDataHojeISO } from '../../utils/formatters';
 import { STORAGE_KEYS } from '../../utils/constants';
@@ -24,12 +24,27 @@ const CORES_CATEGORIAS = {
   'Não identificado': '#64748B'
 };
 
+const ICONES_CATEGORIAS = {
+  'Alimentação': '🍽️',
+  'Mercado': '🛒',
+  'Transporte': '🚗',
+  'Saúde': '🏥',
+  'Educação': '📚',
+  'Comunicação': '📱',
+  'Compras': '🛍️',
+  'Serviços': '⚙️',
+  'Transferências/Pagamentos pessoais': '💸',
+  'Outros': '📦',
+  'Fatura a conciliar': '📑',
+  'Não identificado': '🏷️'
+};
+
 const CORES_FALLBACK = [
   '#EA580C', '#0284C7', '#D97706', '#059669', '#6366F1',
   '#E11D48', '#0D9488', '#F97316', '#4F46E5', '#DB2777'
 ];
 
-export function UnifiedDashboard({ entradas = [], saidas = [], calc, onRemoveSaida }) {
+export function UnifiedDashboard({ entradas = [], saidas = [], calc }) {
   // Limite total configurável pelo usuário
   const [limiteTotal, setLimiteTotal] = useState(() => {
     try {
@@ -53,10 +68,6 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, onRemoveSai
     } catch (e) {}
     return 10;
   });
-
-  // Filtros da Timeline
-  const [filtroStatus, setFiltroStatus] = useState('todas');
-  const [filtroVisualizacaoCartao, setFiltroVisualizacaoCartao] = useState('ativo');
 
   const mesAtual = useMemo(() => obterDataHojeISO().slice(0, 7), []);
 
@@ -330,23 +341,15 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, onRemoveSai
     });
 
     const lista = Object.values(mapa).sort((a, b) => a.mesFatura.localeCompare(b.mesFatura));
-    lista.forEach(f => {
-      f.itens.sort((a, b) => (b.data || '').localeCompare(a.data || ''));
-    });
-
     return lista;
   };
-
-  const faturasTodas = useMemo(() => {
-    return agruparPorFatura(transacoesCartao, diaVencimento);
-  }, [transacoesCartao, mesAtual, diaVencimento]);
 
   const faturasCartaoAtivo = useMemo(() => {
     const dia = cartaoAtivo?.diaVencimento || diaVencimento;
     return agruparPorFatura(transacoesCartaoAtivo, dia);
   }, [transacoesCartaoAtivo, cartaoAtivo, diaVencimento, mesAtual]);
 
-  const faturasMetricas = cartaoAtivo ? faturasCartaoAtivo : faturasTodas;
+  const faturasMetricas = faturasCartaoAtivo;
 
   // Fatura Atual do cartão
   const faturaAtual = useMemo(() => {
@@ -379,21 +382,6 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, onRemoveSai
     if (percentualConsumo > 60) return 'bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.4)]';
     return 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]';
   }, [percentualConsumo]);
-
-  // Feed de faturas
-  const faturasBaseTimeline = (cartaoAtivo && filtroVisualizacaoCartao === 'ativo')
-    ? faturasCartaoAtivo 
-    : faturasTodas;
-
-  const faturasFiltradas = useMemo(() => {
-    if (filtroStatus === 'atual') {
-      return faturasBaseTimeline.filter(f => f.mesFatura === mesAtual);
-    }
-    if (filtroStatus === 'futuras') {
-      return faturasBaseTimeline.filter(f => f.mesFatura > mesAtual);
-    }
-    return faturasBaseTimeline;
-  }, [faturasBaseTimeline, filtroStatus, mesAtual]);
 
   // Dados do Dashboard de Fluxo de Caixa Mensal
   const entradasMes = useMemo(() => {
@@ -443,7 +431,77 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, onRemoveSai
 
   const saldoMes = totalEntradasMes - totalSaidasMes;
 
-  // Agrupamento de Gastos por Categoria (Gráfico Donut)
+  // 1. Histórico de Gastos Mensais para o NOVO Gráfico de Barras (Últimos 6 meses)
+  const historicoGastosMensais = useMemo(() => {
+    const mapaMeses = {};
+    const hoje = new Date();
+
+    // Gera os últimos 6 meses cronológicos
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+      const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      mapaMeses[chave] = 0;
+    }
+
+    // Garante que o mês selecionado esteja presente
+    if (mesSelecionado && !mapaMeses[mesSelecionado]) {
+      mapaMeses[mesSelecionado] = 0;
+    }
+
+    Object.keys(mapaMeses).forEach(mes => {
+      const cartoesComFatura = new Set();
+      let temFaturaGeral = false;
+
+      const itensMes = saidas.filter(item => {
+        const d = item.data_pagamento || item.data || '';
+        return d.startsWith(mes) || item.recorrente === true;
+      });
+
+      itensMes.forEach(item => {
+        if (item.isFaturaTotal) {
+          if (item.cartaoUid) cartoesComFatura.add(item.cartaoUid);
+          if (item.cartaoNome) cartoesComFatura.add(item.cartaoNome.toLowerCase());
+          if (!item.cartaoUid && !item.cartaoNome) temFaturaGeral = true;
+        }
+      });
+
+      const totalMes = itensMes.reduce((acc, item) => {
+        if (item.forma_pagamento === 'cartao_credito' && !item.isFaturaTotal) {
+          const temFatura = (item.cartaoUid && cartoesComFatura.has(item.cartaoUid)) ||
+            (item.cartaoNome && cartoesComFatura.has(item.cartaoNome.toLowerCase())) ||
+            (!item.cartaoUid && !item.cartaoNome && (temFaturaGeral || cartoesComFatura.size > 0));
+          if (temFatura) return acc;
+        }
+        return acc + (parseFloat(item.valor) || 0);
+      }, 0);
+
+      mapaMeses[mes] = totalMes;
+    });
+
+    const lista = Object.entries(mapaMeses)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([mes, valor]) => {
+        const nomesMes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        const mesIndex = parseInt(mes.slice(5, 7), 10) - 1;
+        return {
+          mes,
+          mesLabel: formatarMesAno(mes),
+          mesCurto: nomesMes[mesIndex] || mes.slice(5, 7),
+          valor
+        };
+      });
+
+    const maxGasto = Math.max(...lista.map(i => i.valor), 1);
+    const mediaGasto = lista.reduce((acc, i) => acc + i.valor, 0) / (lista.length || 1);
+
+    return {
+      lista,
+      maxGasto,
+      mediaGasto
+    };
+  }, [saidas, mesSelecionado]);
+
+  // 2. Agrupamento de Gastos por Categoria
   const { categoriasAgrupadas, totalCategorias } = useMemo(() => {
     const mapa = {};
     const cartoesComFaturaTotal = new Set();
@@ -509,27 +567,39 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, onRemoveSai
     return { categoriasAgrupadas: lista, totalCategorias: total };
   }, [saidasMes]);
 
-  const donutSlices = useMemo(() => {
-    const raio = 58;
-    const circunferencia = 2 * Math.PI * raio;
-    let offsetAcumulado = 0;
+  // 3. Gráfico de Pizza Completo (Sendo toda a pizza 100% dos gastos totais)
+  const pieSlices = useMemo(() => {
+    if (totalCategorias <= 0) return [];
+    const cx = 90;
+    const cy = 90;
+    const radius = 80;
+    let currentAngle = -Math.PI / 2; // Começa no topo (12h)
 
-    return categoriasAgrupadas.map(item => {
-      const proporcao = totalCategorias > 0 ? item.valor / totalCategorias : 0;
-      const strokeDash = proporcao * circunferencia;
-      const slice = {
-        ...item,
-        strokeDasharray: `${strokeDash} ${circunferencia}`,
-        strokeDashoffset: -offsetAcumulado
+    return categoriasAgrupadas.map(cat => {
+      const sliceAngle = (cat.valor / totalCategorias) * (2 * Math.PI);
+      const startAngle = currentAngle;
+      const endAngle = currentAngle + sliceAngle;
+      currentAngle = endAngle;
+
+      const x1 = cx + radius * Math.cos(startAngle);
+      const y1 = cy + radius * Math.sin(startAngle);
+      const x2 = cx + radius * Math.cos(endAngle);
+      const y2 = cy + radius * Math.sin(endAngle);
+
+      const isLargeArc = sliceAngle > Math.PI ? 1 : 0;
+      const pathData = `M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${isLargeArc} 1 ${x2} ${y2} Z`;
+
+      return {
+        ...cat,
+        pathData,
+        isFullCircle: cat.porcentagem >= 99.9
       };
-      offsetAcumulado += strokeDash;
-      return slice;
     });
   }, [categoriasAgrupadas, totalCategorias]);
 
   return (
     <div className="space-y-6 animate-fadeIn pb-10">
-      {/* 1. CAIXAS ACIMA DO CARTÃO (Modelo ZIXO / Behance): Fatura Atual, Limite Disponível, Limite Cadastrado e Saldo do Mês */}
+      {/* 1. CAIXAS ACIMA DO CARTÃO: Fatura Atual, Limite Disponível, Limite Cadastrado e Saldo do Mês */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         {/* Caixa 1: Fatura Atual */}
         <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.08] shadow-xs backdrop-blur-md transition-all hover:border-rose-300 dark:hover:border-rose-500/30">
@@ -587,7 +657,7 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, onRemoveSai
           </span>
         </div>
 
-        {/* Caixa 4: Saldo do Mês / Fluxo Líquido */}
+        {/* Caixa 4: Saldo Líquido do Mês */}
         <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.08] shadow-xs backdrop-blur-md transition-all hover:border-amber-300 dark:hover:border-amber-500/30">
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
@@ -606,7 +676,7 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, onRemoveSai
         </div>
       </section>
 
-      {/* 2. GRID PRINCIPAL DO MODELO (Cartão na esquerda, Dashboards ao lado) */}
+      {/* 2. GRID PRINCIPAL (Cartão na esquerda, Dashboards ao lado) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         {/* COLUNA ESQUERDA: ÁREA DO CARTÃO COM LIMITE E QUANTIA UTILIZADA EM CIMA */}
@@ -670,7 +740,7 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, onRemoveSai
                     </span>
                   </div>
 
-                  {/* Detalhe visual elegante sobreposto */}
+                  {/* Detalhe visual sobreposto */}
                   <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-white/90 text-xs font-mono drop-shadow pointer-events-none">
                     <span className="font-bold tracking-widest">•••• 6050</span>
                     <span className="font-bold uppercase">{cartaoAtivo.bancoNome}</span>
@@ -811,299 +881,206 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, onRemoveSai
           </div>
         </div>
 
-        {/* COLUNA DIREITA: DASHBOARDS AO LADO DO CARTÃO COM OS DADOS DA PÁGINA 'DASHBOARD' */}
+        {/* COLUNA DIREITA: DASHBOARDS AO LADO DO CARTÃO COM GRÁFICO DE BARRA E PIZZA + CARTÕES DE CATEGORIAS */}
         <div className="lg:col-span-7 space-y-6">
           
-          {/* Widget 1: Resumo Mensal & Seletor de Mês */}
+          {/* 1. NOVO GRÁFICO DE BARRAS: GASTOS MENSAIS (Substitui a linha do tempo de faturas conforme solicitado) */}
           <div className="glass-panel p-5 sm:p-6 rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 dark:border-white/[0.06] pb-3">
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <PieChart className="w-4 h-4 text-emerald-500" />
-                  <span>Resumo Financeiro Mensal</span>
+                  <BarChart3 className="w-5 h-5 text-emerald-500" />
+                  <span>Gastos Mensais (Monthly Spending)</span>
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Visão consolidada de entradas, saídas e resultado operacional.
+                  Comparativo de gastos mês a mês. Clique na barra para navegar pelo mês desejado.
                 </p>
               </div>
 
-              {/* Seletor de Mês */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Mês:</span>
-                <select
-                  value={mesSelecionado}
-                  onChange={(e) => setMesSelecionado(e.target.value)}
-                  className="glass-input px-3 py-1.5 text-xs sm:text-sm font-bold bg-white dark:bg-black/40 cursor-pointer"
-                >
-                  {mesesDisponiveis.map((m) => (
-                    <option key={m} value={m} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
-                      {formatarMesAno(m)}
-                    </option>
-                  ))}
-                </select>
+              <div className="flex items-center gap-2 text-xs font-mono">
+                <span className="text-slate-500 dark:text-slate-400">Gasto Médio:</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-white/[0.05] px-2.5 py-1 rounded-full border border-slate-200 dark:border-white/[0.08]">
+                  R$ {formatarBRL(historicoGastosMensais.mediaGasto)}
+                </span>
               </div>
             </div>
 
-            {/* 3 Caixas Compactas do Mês: Receitas, Despesas e Saldo */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-center">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 block">
-                  Receitas
-                </span>
-                <span className="font-mono text-base sm:text-lg font-black text-emerald-700 dark:text-emerald-400 tabular-nums mt-0.5 block">
-                  R$ {formatarBRL(totalEntradasMes)}
-                </span>
-              </div>
+            {/* Visualização em Barras Verticais */}
+            <div className="pt-2 pb-1">
+              <div className="grid grid-cols-6 gap-2 sm:gap-4 items-end h-44 sm:h-52 px-2">
+                {historicoGastosMensais.lista.map((item) => {
+                  const isSelected = item.mes === mesSelecionado;
+                  const heightPct = historicoGastosMensais.maxGasto > 0 
+                    ? Math.max(12, Math.round((item.valor / historicoGastosMensais.maxGasto) * 100))
+                    : 12;
 
-              <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-center">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300 block">
-                  Despesas
-                </span>
-                <span className="font-mono text-base sm:text-lg font-black text-rose-700 dark:text-rose-400 tabular-nums mt-0.5 block">
-                  R$ {formatarBRL(totalSaidasMes)}
-                </span>
-              </div>
+                  return (
+                    <div
+                      key={item.mes}
+                      onClick={() => setMesSelecionado(item.mes)}
+                      className="flex flex-col items-center justify-end h-full gap-2 cursor-pointer group select-none transition-all"
+                      title={`${item.mesLabel}: R$ ${formatarBRL(item.valor)}`}
+                    >
+                      {/* Valor Flutuante */}
+                      <span className={`text-[10px] sm:text-xs font-mono font-bold transition-all ${
+                        isSelected 
+                          ? 'text-emerald-600 dark:text-emerald-400 scale-105' 
+                          : 'text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'
+                      }`}>
+                        {item.valor >= 1000 ? `${(item.valor / 1000).toFixed(1)}k` : `R$ ${Math.round(item.valor)}`}
+                      </span>
 
-              <div className={`p-3.5 rounded-2xl border text-center ${saldoMes >= 0 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300' : 'bg-rose-500/10 border-rose-500/20 text-rose-700 dark:text-rose-300'}`}>
-                <span className="text-[11px] font-bold uppercase tracking-wider block">
-                  Saldo Líquido
+                      {/* Barra Vertical */}
+                      <div className="w-full max-w-[48px] h-full flex items-end">
+                        <div
+                          style={{ height: `${heightPct}%` }}
+                          className={`w-full rounded-2xl transition-all duration-500 relative overflow-hidden ${
+                            isSelected
+                              ? 'bg-gradient-to-t from-emerald-600 to-teal-400 shadow-lg shadow-emerald-500/30 ring-2 ring-emerald-400/40'
+                              : 'bg-slate-200 hover:bg-slate-300 dark:bg-white/[0.07] dark:hover:bg-white/[0.14]'
+                          }`}
+                        />
+                      </div>
+
+                      {/* Etiqueta do Mês */}
+                      <span className={`text-[11px] sm:text-xs font-bold uppercase transition-all ${
+                        isSelected 
+                          ? 'text-emerald-600 dark:text-emerald-400 font-black' 
+                          : 'text-slate-500 dark:text-slate-400'
+                      }`}>
+                        {item.mesCurto}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Resumo do Mês Selecionado */}
+            <div className="pt-3 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between flex-wrap gap-2 text-xs">
+              <span className="text-slate-600 dark:text-slate-400">
+                Mês em foco: <strong className="text-slate-900 dark:text-white capitalize">{formatarMesAno(mesSelecionado)}</strong>
+              </span>
+              <div className="flex items-center gap-3 font-mono">
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                  Receitas: R$ {formatarBRL(totalEntradasMes)}
                 </span>
-                <span className="font-mono text-base sm:text-lg font-black tabular-nums mt-0.5 block">
-                  R$ {formatarBRL(saldoMes)}
+                <span className="text-rose-600 dark:text-rose-400 font-bold">
+                  Despesas: R$ {formatarBRL(totalSaidasMes)}
+                </span>
+                <span className={`font-black ${saldoMes >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                  Saldo: R$ {formatarBRL(saldoMes)}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Widget 2: Gastos por Categoria (Gráfico de Rosca / Spending Categories) */}
-          <div className="glass-panel p-5 sm:p-6 rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <span>Categorias de Gastos (Spending Categories)</span>
-              </h3>
-              <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
-                Total: R$ {formatarBRL(totalCategorias)}
+          {/* 2. GASTOS POR CATEGORIA: GRÁFICO DE PIZZA (TODA A PIZZA É O TOTAL) + ESTILO DE CARTÕES */}
+          <div className="glass-panel p-5 sm:p-6 rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-sm space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 dark:border-white/[0.06] pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <PieChart className="w-5 h-5 text-amber-500" />
+                  <span>Gastos por Categoria (Spending Categories)</span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Gráfico de pizza com a totalidade dos gastos e cartões detalhados por área.
+                </p>
+              </div>
+
+              <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.05] px-3 py-1 rounded-full border border-slate-200 dark:border-white/[0.08] self-start sm:self-auto">
+                Total de Gastos: R$ {formatarBRL(totalCategorias)}
               </span>
             </div>
 
             {totalCategorias === 0 ? (
-              <div className="py-8 text-center text-slate-400 dark:text-slate-500 text-xs sm:text-sm">
-                Nenhuma despesa registrada para o mês selecionado.
+              <div className="py-10 text-center text-slate-400 dark:text-slate-500 text-xs sm:text-sm">
+                Nenhuma despesa registrada para o mês de {formatarMesAno(mesSelecionado)}.
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                {/* SVG Donut */}
-                <div className="md:col-span-5 flex items-center justify-center">
-                  <div className="relative w-44 h-44 flex items-center justify-center">
-                    <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 160 160">
-                      <circle
-                        cx="80"
-                        cy="80"
-                        r="58"
-                        className="text-slate-200 dark:text-white/[0.05]"
-                        strokeWidth="20"
-                        stroke="currentColor"
-                        fill="transparent"
-                      />
-                      {donutSlices.map((slice) => (
-                        <circle
-                          key={slice.nome}
-                          cx="80"
-                          cy="80"
-                          r="58"
-                          stroke={slice.cor}
-                          strokeWidth="20"
-                          strokeDasharray={slice.strokeDasharray}
-                          strokeDashoffset={slice.strokeDashoffset}
-                          strokeLinecap="round"
-                          fill="transparent"
-                          className="transition-all duration-700"
-                        />
-                      ))}
+                
+                {/* GRÁFICO DE PIZZA COMPLETO (Toda a pizza são os gastos totais) */}
+                <div className="md:col-span-5 flex flex-col items-center justify-center">
+                  <div className="relative w-44 h-44 sm:w-48 sm:h-48 flex items-center justify-center">
+                    <svg className="w-full h-full transform drop-shadow-md" viewBox="0 0 180 180">
+                      {pieSlices.map((slice) => {
+                        if (slice.isFullCircle) {
+                          return (
+                            <circle
+                              key={slice.nome}
+                              cx="90"
+                              cy="90"
+                              r="80"
+                              fill={slice.cor}
+                              className="transition-all duration-500 hover:opacity-90"
+                            />
+                          );
+                        }
+                        return (
+                          <path
+                            key={slice.nome}
+                            d={slice.pathData}
+                            fill={slice.cor}
+                            stroke="rgba(255,255,255,0.2)"
+                            strokeWidth="1.5"
+                            className="transition-all duration-300 hover:opacity-90 cursor-pointer"
+                          >
+                            <title>{`${slice.nome}: R$ ${formatarBRL(slice.valor)} (${slice.porcentagem.toFixed(1)}%)`}</title>
+                          </path>
+                        );
+                      })}
                     </svg>
-                    <div className="absolute flex flex-col items-center justify-center text-center pointer-events-none">
-                      <span className="text-[10px] uppercase font-bold text-slate-400">Total</span>
-                      <span className="font-mono text-sm sm:text-base font-black text-slate-900 dark:text-white">
-                        R$ {formatarBRL(totalCategorias)}
-                      </span>
-                    </div>
                   </div>
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 font-mono mt-3">
+                    100% dos Gastos do Mês
+                  </span>
                 </div>
 
-                {/* Lista de Categorias com Barra de Distribuição */}
-                <div className="md:col-span-7 space-y-2.5 max-h-56 overflow-y-auto pr-1">
-                  {categoriasAgrupadas.map((cat) => (
-                    <div key={cat.nome} className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2 min-w-0 pr-2">
-                        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.cor }} />
-                        <span className="font-bold text-slate-700 dark:text-slate-300 truncate">{cat.nome}</span>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0 font-mono font-bold">
-                        <span className="text-slate-500 dark:text-slate-400">{cat.porcentagem.toFixed(1)}%</span>
-                        <span className="text-slate-900 dark:text-white">R$ {formatarBRL(cat.valor)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Widget 3: Linha do Tempo de Faturas & Gastos Detalhados */}
-          <div className="glass-panel p-5 sm:p-6 rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 dark:border-white/[0.06] pb-3">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
-                <span>Linha do Tempo de Faturas</span>
-                <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300 bg-slate-200/70 dark:bg-white/[0.08] px-2.5 py-0.5 rounded-full">
-                  {faturasBaseTimeline.length} {faturasBaseTimeline.length === 1 ? 'fatura' : 'faturas'}
-                </span>
-              </h3>
-
-              <div className="flex flex-wrap items-center gap-2">
-                {cartoesCadastrados.length > 1 && (
-                  <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl text-xs">
-                    <button
-                      type="button"
-                      onClick={() => setFiltroVisualizacaoCartao('ativo')}
-                      className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
-                        filtroVisualizacaoCartao === 'ativo'
-                          ? 'bg-white text-slate-900 shadow-sm dark:bg-rose-500/20 dark:text-rose-300'
-                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
-                      }`}
-                    >
-                      💳 {cartaoAtivo?.apelido || 'Ativo'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFiltroVisualizacaoCartao('todos')}
-                      className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
-                        filtroVisualizacaoCartao === 'todos'
-                          ? 'bg-white text-slate-900 shadow-sm dark:bg-rose-500/20 dark:text-rose-300'
-                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
-                      }`}
-                    >
-                      🌐 Todos
-                    </button>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setFiltroStatus('todas')}
-                    className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
-                      filtroStatus === 'todas'
-                        ? 'bg-white text-slate-900 shadow-sm dark:bg-rose-500/20 dark:text-rose-300'
-                        : 'text-slate-500 dark:text-slate-400'
-                    }`}
-                  >
-                    Todas
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFiltroStatus('atual')}
-                    className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
-                      filtroStatus === 'atual'
-                        ? 'bg-white text-slate-900 shadow-sm dark:bg-rose-500/20 dark:text-rose-300'
-                        : 'text-slate-500 dark:text-slate-400'
-                    }`}
-                  >
-                    Atual
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFiltroStatus('futuras')}
-                    className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
-                      filtroStatus === 'futuras'
-                        ? 'bg-white text-slate-900 shadow-sm dark:bg-rose-500/20 dark:text-rose-300'
-                        : 'text-slate-500 dark:text-slate-400'
-                    }`}
-                  >
-                    Futuras
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Lista de Faturas do Feed */}
-            {faturasFiltradas.length === 0 ? (
-              <div className="py-8 text-center text-slate-400 dark:text-slate-500 text-xs sm:text-sm">
-                Nenhuma despesa ou fatura de cartão encontrada no período selecionado.
-              </div>
-            ) : (
-              <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
-                {faturasFiltradas.map((fatura) => {
-                  const isMesAtual = fatura.mesFatura === mesAtual;
-
-                  return (
-                    <div
-                      key={fatura.mesFatura}
-                      className={`p-4 rounded-2xl border transition-all ${
-                        isMesAtual
-                          ? 'bg-rose-50/30 dark:bg-rose-500/[0.04] border-rose-300 dark:border-rose-500/30 shadow-xs'
-                          : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200/80 dark:border-white/[0.06]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-100 dark:border-white/[0.04]">
-                        <div className="flex items-center gap-2">
-                          <span className={`w-2.5 h-2.5 rounded-full ${isMesAtual ? 'bg-amber-500 animate-pulse' : 'bg-slate-400'}`} />
-                          <span className="font-bold text-sm text-slate-900 dark:text-white">
-                            Fatura de {formatarMesAno(fatura.mesFatura)}
-                          </span>
-                          <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
-                            (Venc.: {formatarDataBR(fatura.dataVencimento)})
-                          </span>
+                {/* GASTOS POR CATEGORIA NO ESTILO DE CARTÕES (Conforme solicitado) */}
+                <div className="md:col-span-7">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[340px] overflow-y-auto pr-1">
+                    {categoriasAgrupadas.map((cat) => (
+                      <div
+                        key={cat.nome}
+                        className="p-3 sm:p-3.5 rounded-2xl bg-slate-50/90 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/20 transition-all shadow-xs hover:scale-[1.02] flex items-center justify-between gap-3"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div
+                            className="w-9 h-9 rounded-xl flex items-center justify-center text-base shadow-xs flex-shrink-0"
+                            style={{ 
+                              backgroundColor: `${cat.cor}20`,
+                              border: `1px solid ${cat.cor}40`
+                            }}
+                          >
+                            <span>{ICONES_CATEGORIAS[cat.nome] || '🏷️'}</span>
+                          </div>
+                          <div className="min-w-0">
+                            <span className="block text-xs font-bold text-slate-800 dark:text-slate-200 truncate leading-tight">
+                              {cat.nome}
+                            </span>
+                            <span className="block text-sm font-mono font-black text-slate-900 dark:text-white tabular-nums mt-0.5">
+                              R$ {formatarBRL(cat.valor)}
+                            </span>
+                          </div>
                         </div>
 
-                        <span className="font-mono text-base font-black text-rose-600 dark:text-rose-400">
-                          R$ {formatarBRL(fatura.total)}
-                        </span>
+                        <div className="text-right flex-shrink-0">
+                          <span
+                            className="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold border"
+                            style={{
+                              backgroundColor: `${cat.cor}18`,
+                              color: cat.cor,
+                              borderColor: `${cat.cor}35`
+                            }}
+                          >
+                            {cat.porcentagem.toFixed(1)}%
+                          </span>
+                        </div>
                       </div>
-
-                      {/* Transações dentro desta fatura */}
-                      <div className="divide-y divide-slate-100 dark:divide-white/[0.04] text-xs">
-                        {fatura.itens.map((item) => (
-                          <div key={item.id} className="py-2 flex items-center justify-between gap-2 group">
-                            <div className="flex items-center gap-2 min-w-0 pr-2">
-                              <span className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[160px] sm:max-w-xs">
-                                {item.descricao}
-                              </span>
-                              <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.05] text-[11px] text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/[0.06]">
-                                {item.categoria}
-                              </span>
-                              {item.cartaoNome && (
-                                <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300 text-[10px] font-bold">
-                                  💳 {item.cartaoNome}
-                                </span>
-                              )}
-                              {item.isFaturaTotal && (
-                                <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300 text-[10px] font-bold">
-                                  📑 Consolidada
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <span className="font-mono font-bold text-rose-600 dark:text-rose-400">
-                                − R$ {formatarBRL(item.valor)}
-                              </span>
-                              {onRemoveSaida && (
-                                <button
-                                  type="button"
-                                  onClick={() => onRemoveSaida(item.id)}
-                                  className="w-5 h-5 flex items-center justify-center rounded-full text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-                                  title="Remover lançamento"
-                                >
-                                  ×
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </div>

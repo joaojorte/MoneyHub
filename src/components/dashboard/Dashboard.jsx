@@ -64,7 +64,13 @@ export function Dashboard({ entradas = [], saidas = [], calc }) {
   }, [entradasMes]);
 
   const totalSaidasMes = useMemo(() => {
-    return saidasMes.reduce((acc, cur) => acc + (parseFloat(cur.valor) || 0), 0);
+    const temFaturaTotalNoMes = saidasMes.some(item => item.isFaturaTotal === true);
+    return saidasMes.reduce((acc, cur) => {
+      if (temFaturaTotalNoMes && cur.forma_pagamento === 'cartao_credito' && !cur.isFaturaTotal) {
+        return acc;
+      }
+      return acc + (parseFloat(cur.valor) || 0);
+    }, 0);
   }, [saidasMes]);
 
   const saldoMes = totalEntradasMes - totalSaidasMes;
@@ -72,11 +78,37 @@ export function Dashboard({ entradas = [], saidas = [], calc }) {
   // Agrupamento por Categoria para o Gráfico de Rosca
   const { categoriasAgrupadas, totalCategorias } = useMemo(() => {
     const mapa = {};
-    saidasMes.forEach(item => {
-      const cat = item.categoria || 'Não identificado';
-      const val = parseFloat(item.valor) || 0;
-      mapa[cat] = (mapa[cat] || 0) + val;
-    });
+    const temFaturaTotalNoMes = saidasMes.some(item => item.isFaturaTotal === true);
+
+    if (temFaturaTotalNoMes) {
+      const totalFaturaDeclarado = saidasMes
+        .filter(item => item.isFaturaTotal === true)
+        .reduce((acc, cur) => acc + (parseFloat(cur.valor) || 0), 0);
+
+      let totalConciliado = 0;
+
+      saidasMes.forEach(item => {
+        if (item.isFaturaTotal) return;
+        const cat = item.categoria || 'Não identificado';
+        const val = parseFloat(item.valor) || 0;
+        mapa[cat] = (mapa[cat] || 0) + val;
+
+        if (item.forma_pagamento === 'cartao_credito') {
+          totalConciliado += val;
+        }
+      });
+
+      const diferencaPendente = Math.max(0, totalFaturaDeclarado - totalConciliado);
+      if (diferencaPendente > 0) {
+        mapa['Fatura a conciliar'] = (mapa['Fatura a conciliar'] || 0) + diferencaPendente;
+      }
+    } else {
+      saidasMes.forEach(item => {
+        const cat = item.categoria || 'Não identificado';
+        const val = parseFloat(item.valor) || 0;
+        mapa[cat] = (mapa[cat] || 0) + val;
+      });
+    }
 
     const total = Object.values(mapa).reduce((a, b) => a + b, 0);
     const lista = Object.entries(mapa)

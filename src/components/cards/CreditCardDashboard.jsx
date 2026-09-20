@@ -265,12 +265,29 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
           diaVencimento: dia,
           dataVencimento: `${mesFatura}-${String(dia).padStart(2, '0')}`,
           itens: [],
-          total: 0
+          total: 0,
+          totalFaturaDeclarado: 0,
+          totalItensDetalhados: 0,
+          temFaturaDeclarada: false
         };
       }
 
+      if (item.isFaturaTotal) {
+        mapa[mesFatura].totalFaturaDeclarado += (parseFloat(item.valor) || 0);
+        mapa[mesFatura].temFaturaDeclarada = true;
+      } else {
+        mapa[mesFatura].totalItensDetalhados += (parseFloat(item.valor) || 0);
+      }
+
       mapa[mesFatura].itens.push(item);
-      mapa[mesFatura].total += (parseFloat(item.valor) || 0);
+    });
+
+    Object.values(mapa).forEach(f => {
+      f.total = f.temFaturaDeclarada ? f.totalFaturaDeclarado : f.totalItensDetalhados;
+      f.pctConciliado = f.totalFaturaDeclarado > 0 
+        ? Math.min(100, Math.round((f.totalItensDetalhados / f.totalFaturaDeclarado) * 100)) 
+        : 100;
+      f.diferencaAConciliar = Math.max(0, f.totalFaturaDeclarado - f.totalItensDetalhados);
     });
 
     // Ordena as faturas cronologicamente
@@ -286,7 +303,15 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
 
   // Fatura Atual
   const faturaAtual = useMemo(() => {
-    return faturas.find(f => f.mesFatura === mesAtual) || { total: 0, itens: [] };
+    return faturas.find(f => f.mesFatura === mesAtual) || { 
+      total: 0, 
+      itens: [], 
+      totalFaturaDeclarado: 0, 
+      totalItensDetalhados: 0, 
+      temFaturaDeclarada: false, 
+      pctConciliado: 100, 
+      diferencaAConciliar: 0 
+    };
   }, [faturas, mesAtual]);
 
   // Total Comprometido (Fatura Atual + Faturas Futuras)
@@ -359,7 +384,9 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
                   R$ {formatarBRL(faturaAtual.total)}
                 </span>
                 <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium block mt-1">
-                  {faturaAtual.itens.length} {faturaAtual.itens.length === 1 ? 'lançamento no mês' : 'lançamentos no mês'}
+                  {faturaAtual.temFaturaDeclarada 
+                    ? `Fatura consolidada (${faturaAtual.pctConciliado}% detalhado)` 
+                    : `${faturaAtual.itens.length} ${faturaAtual.itens.length === 1 ? 'lançamento no mês' : 'lançamentos no mês'}`}
                 </span>
               </div>
               <div className="w-14 h-14 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 flex items-center justify-center text-rose-600 dark:text-rose-400">
@@ -538,6 +565,11 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
               <span className="text-xl sm:text-2xl font-mono font-black text-rose-600 dark:text-rose-400 tabular-nums">
                 R$ {formatarBRL(faturaAtual.total)}
               </span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block mt-1">
+                {faturaAtual.temFaturaDeclarada 
+                  ? `Fatura consolidada (${faturaAtual.pctConciliado}% detalhado)` 
+                  : `${faturaAtual.itens.length} lançamento(s)`}
+              </span>
             </div>
 
             <div className="p-4 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.05]">
@@ -567,6 +599,70 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
               </span>
             </div>
           </div>
+
+          {/* Painel de Conciliação de Gastos da Fatura Atual */}
+          {faturaAtual.temFaturaDeclarada && (
+            <div className="mt-3.5 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-rose-50/80 via-white to-amber-50/80 dark:from-rose-500/[0.08] dark:via-[#0C1326]/80 dark:to-amber-500/[0.08] border border-rose-200 dark:border-rose-500/25 shadow-sm space-y-3">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-2xl leading-none">📑</span>
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 flex-wrap">
+                      <span>Conciliação de Gastos da Fatura Atual</span>
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-bold border ${
+                        faturaAtual.pctConciliado >= 100
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-400/40'
+                          : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-400/40'
+                      }`}>
+                        {faturaAtual.pctConciliado}% conciliado
+                      </span>
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      O valor da fatura fechada impacta o fluxo de caixa, enquanto as saídas detalhadas conciliam suas despesas por categoria.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <span className="text-xs uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider block">
+                    Fatura Declarada
+                  </span>
+                  <span className="font-mono text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400">
+                    R$ {formatarBRL(faturaAtual.totalFaturaDeclarado)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Barra de Progresso da Conciliação */}
+              <div className="h-3 w-full bg-slate-200/80 dark:bg-black/50 rounded-full overflow-hidden p-0.5 border border-slate-300/80 dark:border-white/[0.08]">
+                <div
+                  className={`h-full rounded-full transition-all duration-700 ${
+                    faturaAtual.pctConciliado >= 100
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                      : 'bg-gradient-to-r from-rose-500 to-amber-500'
+                  }`}
+                  style={{ width: `${Math.min(100, Math.max(3, faturaAtual.pctConciliado))}%` }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-xs sm:text-sm font-medium flex-wrap gap-2">
+                <span className="text-slate-600 dark:text-slate-300">
+                  Gastos Detalhados Lançados: <strong className="text-emerald-700 dark:text-emerald-400 font-mono font-bold">R$ {formatarBRL(faturaAtual.totalItensDetalhados)}</strong>
+                </span>
+                <span>
+                  {faturaAtual.diferencaAConciliar > 0 ? (
+                    <span className="text-amber-700 dark:text-amber-400 font-semibold">
+                      Pendente a detalhar: <strong className="font-mono font-bold">R$ {formatarBRL(faturaAtual.diferencaAConciliar)}</strong>
+                    </span>
+                  ) : (
+                    <span className="text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1">
+                      <span>✓</span> Fatura 100% conciliada
+                    </span>
+                  )}
+                </span>
+              </div>
+            </div>
+          )}
         </section>
       )}
 
@@ -676,6 +772,30 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
                         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">
                           Vencimento previsto: <strong className="text-slate-700 dark:text-slate-300 font-bold">{formatarDataBR(fatura.dataVencimento)}</strong> · {fatura.itens.length} {fatura.itens.length === 1 ? 'lançamento' : 'lançamentos'}
                         </p>
+                        {fatura.temFaturaDeclarada && (
+                          <div className="mt-1.5 flex items-center gap-2 flex-wrap text-xs">
+                            <span className="text-slate-500 dark:text-slate-400">Conciliação:</span>
+                            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                              R$ {formatarBRL(fatura.totalItensDetalhados)}
+                            </span>
+                            <span className="text-slate-400">/</span>
+                            <span className="font-mono font-bold text-slate-700 dark:text-slate-300">
+                              R$ {formatarBRL(fatura.totalFaturaDeclarado)}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded-full font-mono font-bold text-[11px] ${
+                              fatura.pctConciliado >= 100 
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' 
+                                : 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
+                            }`}>
+                              {fatura.pctConciliado}%
+                            </span>
+                            {fatura.diferencaAConciliar > 0 && (
+                              <span className="text-amber-600 dark:text-amber-400 font-mono font-semibold">
+                                (R$ {formatarBRL(fatura.diferencaAConciliar)} a detalhar)
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -711,6 +831,12 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
                                 <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.04] px-3 py-0.5 rounded-full border border-slate-200 dark:border-white/[0.06]">
                                   {item.categoria}
                                 </span>
+
+                                {item.isFaturaTotal && (
+                                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-400/40">
+                                    📑 Fatura Consolidada
+                                  </span>
+                                )}
 
                                 {/* Badge de Parcela */}
                                 {isParcelado && (

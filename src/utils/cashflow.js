@@ -36,26 +36,41 @@ export function projetarDataVencimentoCartao(dataCompraISO, diaVencimentoFixo, d
 export function gerarLancamentosParcelados({
   descricao,
   valorTotal,
+  valorPorParcela = null,
   categoria,
   dataBase,
   formaPagamento = 'cartao_credito',
   diaVencimento = 10,
   quantidadeParcelas = 1,
+  parcelaInicial = 1,
   detalhamento = '',
   conveniencia = false
 }) {
   const qtd = Math.max(1, parseInt(quantidadeParcelas, 10) || 1);
-  const total = typeof valorTotal === 'number' ? valorTotal : parseFloat(valorTotal) || 0;
-  const valorParcelaBase = Math.floor((total / qtd) * 100) / 100;
-  const diferencaCentavos = Math.round((total - (valorParcelaBase * qtd)) * 100) / 100;
+  const inicial = Math.max(1, Math.min(qtd, parseInt(parcelaInicial, 10) || 1));
+
+  let valorItemBase;
+  let diferencaCentavos = 0;
+
+  if (valorPorParcela !== null && valorPorParcela > 0) {
+    valorItemBase = Math.round(parseFloat(valorPorParcela) * 100) / 100;
+  } else {
+    const total = typeof valorTotal === 'number' ? valorTotal : parseFloat(valorTotal) || 0;
+    valorItemBase = Math.floor((total / qtd) * 100) / 100;
+    diferencaCentavos = Math.round((total - (valorItemBase * qtd)) * 100) / 100;
+  }
 
   const parcelas = [];
   const idOrigemParcelamento = gerarId();
 
-  for (let i = 0; i < qtd; i++) {
-    const numeroParcela = i + 1;
-    const valorItem = (i === 0) ? Math.round((valorParcelaBase + diferencaCentavos) * 100) / 100 : valorParcelaBase;
-    const dataPagamentoProjetada = projetarDataVencimentoCartao(dataBase, diaVencimento, i);
+  for (let p = inicial; p <= qtd; p++) {
+    const numeroParcela = p;
+    // O primeiro mês da transação é para a parcelaInicial (offset 0), o mês seguinte para parcelaInicial + 1, etc.
+    const deslocamentoMeses = p - inicial;
+    const valorItem = (numeroParcela === 1 && diferencaCentavos !== 0) 
+      ? Math.round((valorItemBase + diferencaCentavos) * 100) / 100 
+      : valorItemBase;
+    const dataPagamentoProjetada = projetarDataVencimentoCartao(dataBase, diaVencimento, deslocamentoMeses);
 
     const item = {
       id: gerarId(),

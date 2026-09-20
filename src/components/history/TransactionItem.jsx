@@ -46,6 +46,12 @@ export function TransactionItem({ item, tipo = 'saida', onRemove }) {
             </span>
           )}
 
+          {item.isFaturaTotal && (
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-400/40">
+              📑 Fatura Consolidada
+            </span>
+          )}
+
           {/* Tag de Frequência */}
           {isRecorrente && (
             <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-800 border-purple-200 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-400/30">

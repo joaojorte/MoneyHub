@@ -34,10 +34,20 @@ export function useFinancialCalculator(entradas = [], saidas = []) {
 
   // Considera saídas vigentes no mês atual e assinaturas projetadas
   const totalSaidas = useMemo(() => {
+    // Se houver Fatura Total consolidada no mês atual, as saídas individuais de cartão
+    // atuam apenas para conciliação dos gastos e não duplicam a saída de caixa
+    const temFaturaTotalNoMes = saidas.some(item => {
+      const dataRef = item.data_pagamento || item.data || '';
+      return dataRef.startsWith(mesAtual) && item.isFaturaTotal === true;
+    });
+
     return saidas.reduce((acc, item) => {
       const dataRef = item.data_pagamento || item.data || '';
       const mesItem = dataRef.slice(0, 7);
       if (mesItem === mesAtual || item.recorrente === true) {
+        if (temFaturaTotalNoMes && item.forma_pagamento === 'cartao_credito' && !item.isFaturaTotal) {
+          return acc;
+        }
         return acc + (parseFloat(item.valor) || 0);
       }
       return acc;

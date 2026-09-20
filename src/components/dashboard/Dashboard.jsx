@@ -64,10 +64,27 @@ export function Dashboard({ entradas = [], saidas = [], calc }) {
   }, [entradasMes]);
 
   const totalSaidasMes = useMemo(() => {
-    const temFaturaTotalNoMes = saidasMes.some(item => item.isFaturaTotal === true);
+    const cartoesComFaturaTotal = new Set();
+    let temFaturaSemCartaoEspecificado = false;
+
+    saidasMes.forEach(item => {
+      if (item.isFaturaTotal === true) {
+        if (item.cartaoUid) cartoesComFaturaTotal.add(item.cartaoUid);
+        if (item.cartaoNome) cartoesComFaturaTotal.add(item.cartaoNome.toLowerCase());
+        if (!item.cartaoUid && !item.cartaoNome) temFaturaSemCartaoEspecificado = true;
+      }
+    });
+
     return saidasMes.reduce((acc, cur) => {
-      if (temFaturaTotalNoMes && cur.forma_pagamento === 'cartao_credito' && !cur.isFaturaTotal) {
-        return acc;
+      if (cur.forma_pagamento === 'cartao_credito' && !cur.isFaturaTotal) {
+        const temFaturaDesteCartao = 
+          (cur.cartaoUid && cartoesComFaturaTotal.has(cur.cartaoUid)) ||
+          (cur.cartaoNome && cartoesComFaturaTotal.has(cur.cartaoNome.toLowerCase())) ||
+          (!cur.cartaoUid && !cur.cartaoNome && (temFaturaSemCartaoEspecificado || cartoesComFaturaTotal.size > 0));
+
+        if (temFaturaDesteCartao) {
+          return acc;
+        }
       }
       return acc + (parseFloat(cur.valor) || 0);
     }, 0);
@@ -78,9 +95,20 @@ export function Dashboard({ entradas = [], saidas = [], calc }) {
   // Agrupamento por Categoria para o Gráfico de Rosca
   const { categoriasAgrupadas, totalCategorias } = useMemo(() => {
     const mapa = {};
-    const temFaturaTotalNoMes = saidasMes.some(item => item.isFaturaTotal === true);
+    const cartoesComFaturaTotal = new Set();
+    let temFaturaSemCartaoEspecificado = false;
 
-    if (temFaturaTotalNoMes) {
+    saidasMes.forEach(item => {
+      if (item.isFaturaTotal === true) {
+        if (item.cartaoUid) cartoesComFaturaTotal.add(item.cartaoUid);
+        if (item.cartaoNome) cartoesComFaturaTotal.add(item.cartaoNome.toLowerCase());
+        if (!item.cartaoUid && !item.cartaoNome) temFaturaSemCartaoEspecificado = true;
+      }
+    });
+
+    const temAlgumaFatura = cartoesComFaturaTotal.size > 0 || temFaturaSemCartaoEspecificado;
+
+    if (temAlgumaFatura) {
       const totalFaturaDeclarado = saidasMes
         .filter(item => item.isFaturaTotal === true)
         .reduce((acc, cur) => acc + (parseFloat(cur.valor) || 0), 0);
@@ -94,7 +122,14 @@ export function Dashboard({ entradas = [], saidas = [], calc }) {
         mapa[cat] = (mapa[cat] || 0) + val;
 
         if (item.forma_pagamento === 'cartao_credito') {
-          totalConciliado += val;
+          const temFaturaDesteCartao = 
+            (item.cartaoUid && cartoesComFaturaTotal.has(item.cartaoUid)) ||
+            (item.cartaoNome && cartoesComFaturaTotal.has(item.cartaoNome.toLowerCase())) ||
+            (!item.cartaoUid && !item.cartaoNome && (temFaturaSemCartaoEspecificado || cartoesComFaturaTotal.size > 0));
+
+          if (temFaturaDesteCartao) {
+            totalConciliado += val;
+          }
         }
       });
 

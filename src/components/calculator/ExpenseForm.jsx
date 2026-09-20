@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { CATEGORIAS_SAIDA, CATEGORIA_SAIDA_PADRAO } from '../../utils/constants';
 import { SegmentedControl } from '../ui/SegmentedControl';
 import { DateChips } from '../ui/DateChips';
 import { Button } from '../ui/Button';
 import { useDateChips } from '../../hooks/useDateChips';
 import { useCreditCardDue } from '../../hooks/useCreditCardDue';
+import { useCreditCards } from '../../hooks/useCreditCards';
 import { gerarLancamentosParcelados, projetarDataVencimentoCartao } from '../../utils/cashflow';
 import { gerarId, formatarBRL } from '../../utils/formatters';
 
-export function ExpenseForm({ onAddExpense }) {
+export function ExpenseForm({ onAddExpense, saidas = [] }) {
   const [descricao, setDescricao] = useState('');
   const [valor, setValor] = useState('');
   const [categoria, setCategoria] = useState('Alimentação');
@@ -23,12 +24,56 @@ export function ExpenseForm({ onAddExpense }) {
   const [parcelaAtual, setParcelaAtual] = useState(1);
   const [tipoValorParcelado, setTipoValorParcelado] = useState('total'); // 'total' | 'parcela'
   const [isFaturaTotal, setIsFaturaTotal] = useState(false);
+  const [cartaoSelecionadoUid, setCartaoSelecionadoUid] = useState('');
 
   // Hooks dedicados
   const dateChips = useDateChips();
   const cardDue = useCreditCardDue();
+  const { cartoes, cartaoAtivo, temCartoesCadastrados } = useCreditCards();
 
   const isCartao = formaPagamento === 'cartao_credito';
+
+  // Cartão efetivo associado ao lançamento
+  const cartaoEfetivo = useMemo(() => {
+    if (cartoes.length === 0) return null;
+    return cartoes.find(c => c.uid === cartaoSelecionadoUid) || cartaoAtivo || cartoes[0];
+  }, [cartoes, cartaoSelecionadoUid, cartaoAtivo]);
+
+  const mesAlvo = useMemo(() => {
+    return (dateChips.dataEfetiva || '').slice(0, 7);
+  }, [dateChips.dataEfetiva]);
+
+  // Verifica se já existe fatura total lançada para este cartão neste mês
+  const faturaExistente = useMemo(() => {
+    if (!isFaturaTotal || !isCartao) return null;
+    return saidas.find(s => {
+      if (!s.isFaturaTotal) return false;
+      const mesItem = (s.data_pagamento || s.data || '').slice(0, 7);
+      if (mesItem !== mesAlvo) return false;
+      if (cartaoEfetivo && s.cartaoUid) return s.cartaoUid === cartaoEfetivo.uid;
+      if (cartaoEfetivo && s.cartaoNome) {
+        const nomeEfetivo = (cartaoEfetivo.apelido || cartaoEfetivo.cartaoNome || '').toLowerCase();
+        return (s.cartaoNome || '').toLowerCase() === nomeEfetivo;
+      }
+      return !cartaoEfetivo && !s.cartaoUid;
+    });
+  }, [saidas, isFaturaTotal, isCartao, mesAlvo, cartaoEfetivo]);
+
+  // Preenche ou atualiza automaticamente o valor anterior ao ativar Fatura Total ou trocar de cartão
+  const ultimoFaturaIdRef = useRef(null);
+  useEffect(() => {
+    if (isFaturaTotal && faturaExistente) {
+      if (ultimoFaturaIdRef.current !== faturaExistente.id) {
+        ultimoFaturaIdRef.current = faturaExistente.id;
+        setValor(String(faturaExistente.valor));
+        if (faturaExistente.descricao && (!descricao.trim() || descricao === 'Fatura do Cartão de Crédito')) {
+          setDescricao(faturaExistente.descricao);
+        }
+      }
+    } else if (!faturaExistente && ultimoFaturaIdRef.current) {
+      ultimoFaturaIdRef.current = null;
+    }
+  }, [isFaturaTotal, faturaExistente?.id]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -37,17 +82,27 @@ export function ExpenseForm({ onAddExpense }) {
 
     if (categoria === 'Outros' && !detalhamento.trim()) return;
 
-    const diaVenc = cardDue.diaVencimento || 10;
+    const diaVenc = cartaoEfetivo?.diaVencimento || cardDue.diaVencimento || 10;
     const dataTransacao = dateChips.dataEfetiva;
     const dataPagamentoInicial = isCartao
       ? projetarDataVencimentoCartao(dataTransacao, diaVenc, 0)
       : dataTransacao;
 
+    const cartaoInfo = cartaoEfetivo ? {
+      cartaoUid: cartaoEfetivo.uid,
+      cartaoNome: cartaoEfetivo.apelido || cartaoEfetivo.cartaoNome,
+      bancoNome: cartaoEfetivo.bancoNome
+    } : {};
+
     if (isCartao && isFaturaTotal) {
       // Lançamento do Valor Total Fechado da Fatura do Mês (Conciliação)
+      const nomePadrao = cartaoEfetivo 
+        ? `Fatura ${cartaoEfetivo.apelido || cartaoEfetivo.cartaoNome}` 
+        : 'Fatura do Cartão de Crédito';
+
       const novoItem = {
-        id: gerarId(),
-        descricao: descricao.trim() || 'Fatura do Cartão de Crédito',
+        id: faturaExistente ? faturaExistente.id : gerarId(),
+        descricao: descricao.trim() || nomePadrao,
         valor: numValor,
         categoria: 'Fatura de Cartão',
         data: dataTransacao,
@@ -57,7 +112,8 @@ export function ExpenseForm({ onAddExpense }) {
         mes_fatura: dataPagamentoInicial.slice(0, 7),
         frequencia: 'unico',
         recorrente: false,
-        isFaturaTotal: true
+        isFaturaTotal: true,
+        ...cartaoInfo
       };
       onAddExpense(novoItem);
     } else if (isCartao && isParcelado) {
@@ -73,7 +129,8 @@ export function ExpenseForm({ onAddExpense }) {
         quantidadeParcelas: qtdParcelas,
         parcelaInicial: parcelaAtual,
         detalhamento: categoria === 'Outros' ? detalhamento.trim() : '',
-        conveniencia: categoria === 'Alimentação' ? isDelivery : false
+        conveniencia: categoria === 'Alimentação' ? isDelivery : false,
+        ...cartaoInfo
       });
       onAddExpense(parcelas);
     } else {
@@ -93,6 +150,7 @@ export function ExpenseForm({ onAddExpense }) {
       if (isCartao) {
         novoItem.dia_vencimento = diaVenc;
         novoItem.mes_fatura = dataPagamentoInicial.slice(0, 7);
+        Object.assign(novoItem, cartaoInfo);
       }
 
       if (categoria === 'Outros' && detalhamento.trim()) {
@@ -214,6 +272,70 @@ export function ExpenseForm({ onAddExpense }) {
         ]}
       />
 
+      {/* Seletor Visual de Cartão Cadastrado para Vincular / Conciliar */}
+      {isCartao && (
+        <div className="p-3.5 rounded-2xl bg-slate-50/90 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.08] space-y-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <span>💳</span>
+              <span>{isFaturaTotal ? 'Vincular Fatura ao Cartão' : 'Vincular Gasto ao Cartão'}</span>
+            </span>
+            {cartaoEfetivo && (
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 font-mono">
+                Venc.: dia {cartaoEfetivo.diaVencimento || 10}
+              </span>
+            )}
+          </div>
+
+          {temCartoesCadastrados ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+              {cartoes.map((cartao) => {
+                const selecionado = cartao.uid === cartaoEfetivo?.uid;
+                return (
+                  <button
+                    key={cartao.uid}
+                    type="button"
+                    onClick={() => setCartaoSelecionadoUid(cartao.uid)}
+                    className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all duration-200 cursor-pointer select-none ${
+                      selecionado
+                        ? 'bg-rose-50 dark:bg-rose-500/15 border-rose-400 dark:border-rose-500 text-rose-900 dark:text-rose-200 ring-2 ring-rose-400/20 shadow-xs font-bold'
+                        : 'bg-white dark:bg-black/30 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-slate-100/70 dark:hover:bg-white/[0.05]'
+                    }`}
+                  >
+                    {cartao.imagePath ? (
+                      <img
+                        src={cartao.imagePath}
+                        alt=""
+                        className="w-10 h-6 object-cover rounded shadow-xs flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-10 h-6 rounded bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs flex-shrink-0">
+                        💳
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <span className="block text-xs font-black truncate leading-tight">
+                        {cartao.apelido || cartao.cartaoNome}
+                      </span>
+                      <span className="block text-[11px] text-slate-500 dark:text-slate-400 truncate leading-tight">
+                        {cartao.bancoNome} · Dia {cartao.diaVencimento}
+                      </span>
+                    </div>
+                    {selecionado && (
+                      <span className="text-rose-600 dark:text-rose-400 font-black text-sm leading-none">✓</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-xs text-amber-800 dark:text-amber-300">
+              Nenhum cartão cadastrado na carteira. O MoneyHub usará os dados padrões. Cadastre seus cartões na aba <strong>Cartões</strong> para personalização com limites e imagens.
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Toggles discretos de Frequência e Modalidade de Cartão */}
       <div className="flex flex-wrap items-center gap-2">
         <button
@@ -280,14 +402,38 @@ export function ExpenseForm({ onAddExpense }) {
 
       {/* Banner Informativo quando Fatura Total está ativa */}
       {isCartao && isFaturaTotal && (
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-rose-50/80 to-amber-50/60 dark:from-rose-500/10 dark:to-amber-500/10 border border-rose-200 dark:border-rose-500/30 text-xs sm:text-sm text-slate-700 dark:text-slate-200 flex items-start gap-3">
-          <span className="text-xl leading-none">📑</span>
-          <div className="space-y-1">
-            <span className="font-bold text-rose-700 dark:text-rose-300 block">Lançamento de Fatura Fechada:</span>
-            <p className="text-slate-600 dark:text-slate-300">
-              Este valor representará o compromisso real de caixa no mês. Os demais lançamentos de cartão de crédito servirão para <strong>conciliar e detalhar exatamente onde você gastou</strong>, sem duplicar o valor no seu saldo.
-            </p>
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-rose-50/80 to-amber-50/60 dark:from-rose-500/10 dark:to-amber-500/10 border border-rose-200 dark:border-rose-500/30 text-xs sm:text-sm text-slate-700 dark:text-slate-200 space-y-2.5">
+          <div className="flex items-start gap-3">
+            <span className="text-xl leading-none">📑</span>
+            <div className="space-y-1">
+              <span className="font-bold text-rose-700 dark:text-rose-300 block">
+                {faturaExistente 
+                  ? `Atualização da Fatura (${cartaoEfetivo ? (cartaoEfetivo.apelido || cartaoEfetivo.cartaoNome) : 'Cartão'}):`
+                  : `Lançamento de Fatura Fechada (${cartaoEfetivo ? (cartaoEfetivo.apelido || cartaoEfetivo.cartaoNome) : 'Cartão'}):`}
+              </span>
+              <p className="text-slate-600 dark:text-slate-300">
+                Este valor representará o compromisso real de caixa no mês. Os demais lançamentos deste cartão servirão para <strong>conciliar e detalhar exatamente onde você gastou</strong>, sem duplicar o valor no seu saldo.
+              </p>
+            </div>
           </div>
+
+          {faturaExistente && (
+            <div className="pt-2 border-t border-rose-200/70 dark:border-rose-500/20 flex items-center justify-between gap-2 flex-wrap">
+              <span className="text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-1.5">
+                <span>⚠️</span>
+                <span>Fatura cadastrada anteriormente: <strong className="font-mono font-bold">R$ {formatarBRL(faturaExistente.valor)}</strong>. Ao salvar, ela será atualizada para o novo valor informado.</span>
+              </span>
+              {valor !== String(faturaExistente.valor) && (
+                <button
+                  type="button"
+                  onClick={() => setValor(String(faturaExistente.valor))}
+                  className="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 dark:bg-amber-500/20 dark:hover:bg-amber-500/30 text-amber-900 dark:text-amber-200 font-bold text-xs transition-colors cursor-pointer"
+                >
+                  Restaurar valor anterior (R$ {formatarBRL(faturaExistente.valor)})
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -408,7 +554,11 @@ export function ExpenseForm({ onAddExpense }) {
           accent="expense"
         />
         <Button type="submit" variant="expense" size="md">
-          + Incluir Saída
+          {isCartao && isFaturaTotal
+            ? (faturaExistente 
+                ? `🔄 Atualizar Fatura (${cartaoEfetivo ? (cartaoEfetivo.apelido || cartaoEfetivo.cartaoNome) : 'Cartão'})` 
+                : `📑 Lançar Fatura (${cartaoEfetivo ? (cartaoEfetivo.apelido || cartaoEfetivo.cartaoNome) : 'Cartão'})`)
+            : '+ Incluir Saída'}
         </Button>
       </div>
     </form>

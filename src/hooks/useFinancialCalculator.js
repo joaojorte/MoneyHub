@@ -34,19 +34,34 @@ export function useFinancialCalculator(entradas = [], saidas = []) {
 
   // Considera saídas vigentes no mês atual e assinaturas projetadas
   const totalSaidas = useMemo(() => {
-    // Se houver Fatura Total consolidada no mês atual, as saídas individuais de cartão
-    // atuam apenas para conciliação dos gastos e não duplicam a saída de caixa
-    const temFaturaTotalNoMes = saidas.some(item => {
+    // Mapeia quais cartões possuem Fatura Total consolidada no mês atual
+    const cartoesComFaturaTotal = new Set();
+    let temFaturaSemCartaoEspecificado = false;
+
+    saidas.forEach(item => {
       const dataRef = item.data_pagamento || item.data || '';
-      return dataRef.startsWith(mesAtual) && item.isFaturaTotal === true;
+      if (dataRef.startsWith(mesAtual) && item.isFaturaTotal === true) {
+        if (item.cartaoUid) cartoesComFaturaTotal.add(item.cartaoUid);
+        if (item.cartaoNome) cartoesComFaturaTotal.add(item.cartaoNome.toLowerCase());
+        if (!item.cartaoUid && !item.cartaoNome) temFaturaSemCartaoEspecificado = true;
+      }
     });
 
     return saidas.reduce((acc, item) => {
       const dataRef = item.data_pagamento || item.data || '';
       const mesItem = dataRef.slice(0, 7);
       if (mesItem === mesAtual || item.recorrente === true) {
-        if (temFaturaTotalNoMes && item.forma_pagamento === 'cartao_credito' && !item.isFaturaTotal) {
-          return acc;
+        if (item.forma_pagamento === 'cartao_credito' && !item.isFaturaTotal) {
+          // Se este cartão específico possui uma fatura consolidada no mês,
+          // os itens individuais dele servem para conciliação e não duplicam o caixa
+          const temFaturaDesteCartao = 
+            (item.cartaoUid && cartoesComFaturaTotal.has(item.cartaoUid)) ||
+            (item.cartaoNome && cartoesComFaturaTotal.has(item.cartaoNome.toLowerCase())) ||
+            (!item.cartaoUid && !item.cartaoNome && (temFaturaSemCartaoEspecificado || cartoesComFaturaTotal.size > 0));
+
+          if (temFaturaDesteCartao) {
+            return acc;
+          }
         }
         return acc + (parseFloat(item.valor) || 0);
       }

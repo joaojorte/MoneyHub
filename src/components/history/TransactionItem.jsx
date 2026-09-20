@@ -42,7 +42,9 @@ export function TransactionItem({ item, tipo = 'saida', onRemove }) {
                 ? 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-400/30'
                 : 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-400/30'
             }`}>
-              {isCartao ? `💳 Cartão${item.dia_vencimento ? ` (dia ${item.dia_vencimento})` : ''}` : '⚡ PIX/Débito'}
+              {isCartao 
+                ? (item.cartaoNome ? `💳 ${item.cartaoNome}` : `💳 Cartão${item.dia_vencimento ? ` (dia ${item.dia_vencimento})` : ''}`)
+                : '⚡ PIX/Débito'}
             </span>
           )}
 

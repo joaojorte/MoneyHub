@@ -44,7 +44,10 @@ export function gerarLancamentosParcelados({
   quantidadeParcelas = 1,
   parcelaInicial = 1,
   detalhamento = '',
-  conveniencia = false
+  conveniencia = false,
+  cartaoUid = '',
+  cartaoNome = '',
+  bancoNome = ''
 }) {
   const qtd = Math.max(1, parseInt(quantidadeParcelas, 10) || 1);
   const inicial = Math.max(1, Math.min(qtd, parseInt(parcelaInicial, 10) || 1));
@@ -88,6 +91,10 @@ export function gerarLancamentosParcelados({
       totalParcelas: qtd,
       idParcelamento: idOrigemParcelamento
     };
+
+    if (cartaoUid) item.cartaoUid = cartaoUid;
+    if (cartaoNome) item.cartaoNome = cartaoNome;
+    if (bancoNome) item.bancoNome = bancoNome;
 
     if (categoria === 'Outros' && detalhamento) {
       item.detalhamento = detalhamento;

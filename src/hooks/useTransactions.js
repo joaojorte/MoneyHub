@@ -123,7 +123,44 @@ export function useTransactions() {
     if (Array.isArray(novoOuLista)) {
       setSaidas(prev => [...novoOuLista, ...prev]);
     } else {
-      setSaidas(prev => [novoOuLista, ...prev]);
+      const novoItem = novoOuLista;
+      // Se for lançamento de Fatura Total (Consolidada), verifica se já existe uma fatura
+      // para o mesmo mês e mesmo cartão. Se existir, atualiza o valor e dados (upsert)!
+      if (novoItem && novoItem.isFaturaTotal) {
+        setSaidas(prev => {
+          const indexExistente = prev.findIndex(item => {
+            if (!item.isFaturaTotal) return false;
+            const mesItem = (item.data_pagamento || item.data || '').slice(0, 7);
+            const mesNovo = (novoItem.data_pagamento || novoItem.data || '').slice(0, 7);
+            if (mesItem !== mesNovo) return false;
+
+            // Se ambos têm cartaoUid, compara por cartaoUid
+            if (item.cartaoUid && novoItem.cartaoUid) {
+              return item.cartaoUid === novoItem.cartaoUid;
+            }
+            // Se ambos têm cartaoNome, compara por cartaoNome
+            if (item.cartaoNome && novoItem.cartaoNome) {
+              return item.cartaoNome === novoItem.cartaoNome;
+            }
+            // Se nenhum tem cartão especificado, considera o mesmo
+            return !item.cartaoUid && !novoItem.cartaoUid;
+          });
+
+          if (indexExistente !== -1) {
+            const copia = [...prev];
+            copia[indexExistente] = {
+              ...copia[indexExistente],
+              ...novoItem,
+              id: copia[indexExistente].id // Preserva o ID original para consistência
+            };
+            return copia;
+          }
+
+          return [novoItem, ...prev];
+        });
+      } else {
+        setSaidas(prev => [novoItem, ...prev]);
+      }
     }
   }, []);
 

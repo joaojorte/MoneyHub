@@ -3,6 +3,7 @@ import { CreditCard, Calendar, Wallet, AlertCircle, CheckCircle2, ChevronRight, 
 import { formatarBRL, formatarDataBR, formatarMesAno, obterDataHojeISO } from '../../utils/formatters';
 import { STORAGE_KEYS } from '../../utils/constants';
 import { mockCardsCatalog } from '../../data/cardsCatalog';
+import { notificarAtualizacaoCartoes } from '../../hooks/useCreditCards';
 
 export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
   // Limite total configurável pelo usuário
@@ -31,6 +32,8 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
 
   // Filtro de faturas: 'todas' | 'atual' | 'futuras'
   const [filtroStatus, setFiltroStatus] = useState('todas');
+  // Filtro de visualização da timeline: 'ativo' (apenas cartão ativo) | 'todos' (todos os cartões)
+  const [filtroVisualizacaoCartao, setFiltroVisualizacaoCartao] = useState('ativo');
 
   const mesAtual = useMemo(() => obterDataHojeISO().slice(0, 7), []);
 
@@ -159,6 +162,7 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
       try {
         localStorage.setItem('moneyhub_cartoes_cadastrados', JSON.stringify(novaLista));
       } catch (err) {}
+      notificarAtualizacaoCartoes();
       setModalAberto(false);
       return;
     }
@@ -190,6 +194,7 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
       localStorage.setItem(STORAGE_KEYS.CARTAO_LIMITE_TOTAL, String(limNum));
       localStorage.setItem(STORAGE_KEYS.CARTAO_DIA_VENCIMENTO, String(diaNum));
     } catch (err) {}
+    notificarAtualizacaoCartoes();
 
     setModalAberto(false);
   };
@@ -207,6 +212,7 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
         localStorage.setItem('moneyhub_cartao_ativo_uid', novaLista.length > 0 ? novaLista[0].uid : '');
       }
     } catch (err) {}
+    notificarAtualizacaoCartoes();
   };
 
   // Tecla ESC para fechar modal
@@ -249,17 +255,39 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
     );
   }, [saidas]);
 
-  // Agrupa transações por Fatura (Mês/Ano)
-  const faturas = useMemo(() => {
+  // Função auxiliar para verificar se um lançamento pertence ao cartão selecionado
+  const pertenceAoCartao = (item, cartao) => {
+    if (!cartao) return true;
+    if (item.cartaoUid) return item.cartaoUid === cartao.uid;
+    if (item.cartaoNome) {
+      const nomeAlvo = (cartao.apelido || cartao.cartaoNome || '').toLowerCase();
+      const itemNome = item.cartaoNome.toLowerCase();
+      if (itemNome === nomeAlvo) return true;
+      if (cartao.bancoNome && itemNome.includes(cartao.bancoNome.toLowerCase())) return true;
+      return false;
+    }
+    // Se o item não possui cartão especificado (itens legados ou anteriores):
+    // Se só existe 1 cartão cadastrado, associa a ele; se múltiplos, associa ao primeiro
+    if (cartoesCadastrados.length <= 1) return true;
+    return cartao.uid === cartoesCadastrados[0]?.uid;
+  };
+
+  // Transações exclusivas do cartão ativo na carteira
+  const transacoesCartaoAtivo = useMemo(() => {
+    if (!cartaoAtivo) return transacoesCartao;
+    return transacoesCartao.filter(item => pertenceAoCartao(item, cartaoAtivo));
+  }, [transacoesCartao, cartaoAtivo, cartoesCadastrados]);
+
+  // Helper para agrupar lançamentos por Mês/Fatura com cálculo de conciliação
+  const agruparPorFatura = (listaItens, diaPadrao) => {
     const mapa = {};
 
-    transacoesCartao.forEach(item => {
+    listaItens.forEach(item => {
       const dataRef = item.data_pagamento || item.data || '';
       const mesFatura = dataRef.length >= 7 ? dataRef.slice(0, 7) : mesAtual;
 
       if (!mapa[mesFatura]) {
-        // Estima o vencimento a partir do dia configurado ou do primeiro item
-        const dia = item.dia_vencimento || diaVencimento;
+        const dia = item.dia_vencimento || diaPadrao;
         mapa[mesFatura] = {
           mesFatura,
           diaVencimento: dia,
@@ -299,11 +327,25 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
     });
 
     return lista;
+  };
+
+  // Faturas de todos os cartões consolidadas
+  const faturasTodas = useMemo(() => {
+    return agruparPorFatura(transacoesCartao, diaVencimento);
   }, [transacoesCartao, mesAtual, diaVencimento]);
 
-  // Fatura Atual
+  // Faturas específicas do cartão atualmente ativo na carteira
+  const faturasCartaoAtivo = useMemo(() => {
+    const dia = cartaoAtivo?.diaVencimento || diaVencimento;
+    return agruparPorFatura(transacoesCartaoAtivo, dia);
+  }, [transacoesCartaoAtivo, cartaoAtivo, diaVencimento, mesAtual]);
+
+  // As métricas de limite e fatura do painel superior utilizam os dados do cartão ativo
+  const faturasMetricas = cartaoAtivo ? faturasCartaoAtivo : faturasTodas;
+
+  // Fatura Atual do cartão em foco
   const faturaAtual = useMemo(() => {
-    return faturas.find(f => f.mesFatura === mesAtual) || { 
+    return faturasMetricas.find(f => f.mesFatura === mesAtual) || { 
       total: 0, 
       itens: [], 
       totalFaturaDeclarado: 0, 
@@ -312,19 +354,20 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
       pctConciliado: 100, 
       diferencaAConciliar: 0 
     };
-  }, [faturas, mesAtual]);
+  }, [faturasMetricas, mesAtual]);
 
-  // Total Comprometido (Fatura Atual + Faturas Futuras)
+  // Total Comprometido (Fatura Atual + Faturas Futuras) do cartão
   const totalComprometido = useMemo(() => {
-    return faturas
+    return faturasMetricas
       .filter(f => f.mesFatura >= mesAtual)
       .reduce((acc, cur) => acc + cur.total, 0);
-  }, [faturas, mesAtual]);
+  }, [faturasMetricas, mesAtual]);
 
-  // Limite Disponível
-  const limiteDisponivel = Math.max(0, limiteTotal - totalComprometido);
-  const percentualConsumo = limiteTotal > 0 
-    ? Math.min(100, Math.round((totalComprometido / limiteTotal) * 100)) 
+  // Limite Disponível e Percentual Consumido específicos deste cartão
+  const limiteEfetivo = cartaoAtivo?.limite || limiteTotal;
+  const limiteDisponivel = Math.max(0, limiteEfetivo - totalComprometido);
+  const percentualConsumo = limiteEfetivo > 0 
+    ? Math.min(100, Math.round((totalComprometido / limiteEfetivo) * 100)) 
     : 0;
 
   // Cor do indicador de limite
@@ -334,16 +377,21 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
     return 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]';
   }, [percentualConsumo]);
 
+  // Faturas base para a timeline (de acordo com a preferência de visualização)
+  const faturasBaseTimeline = (cartaoAtivo && filtroVisualizacaoCartao === 'ativo')
+    ? faturasCartaoAtivo 
+    : faturasTodas;
+
   // Faturas filtradas para exibição no feed
   const faturasFiltradas = useMemo(() => {
     if (filtroStatus === 'atual') {
-      return faturas.filter(f => f.mesFatura === mesAtual);
+      return faturasBaseTimeline.filter(f => f.mesFatura === mesAtual);
     }
     if (filtroStatus === 'futuras') {
-      return faturas.filter(f => f.mesFatura > mesAtual);
+      return faturasBaseTimeline.filter(f => f.mesFatura > mesAtual);
     }
-    return faturas;
-  }, [faturas, filtroStatus, mesAtual]);
+    return faturasBaseTimeline;
+  }, [faturasBaseTimeline, filtroStatus, mesAtual]);
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -513,6 +561,10 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
                       setCartaoAtivoUid(c.uid);
                       if (c.limite) setLimiteTotal(c.limite);
                       if (c.diaVencimento) setDiaVencimento(c.diaVencimento);
+                      try {
+                        localStorage.setItem('moneyhub_cartao_ativo_uid', c.uid);
+                      } catch (err) {}
+                      notificarAtualizacaoCartoes();
                     }}
                     className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl border text-xs sm:text-sm font-bold transition-all flex-shrink-0 cursor-pointer ${
                       isAtivo
@@ -673,44 +725,73 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
           <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
             <span>Linha do Tempo de Faturas</span>
             <span className="text-xs sm:text-sm font-mono font-bold text-slate-600 dark:text-slate-300 bg-slate-200/70 dark:bg-white/[0.08] px-2.5 py-0.5 rounded-full">
-              {faturas.length} {faturas.length === 1 ? 'mês' : 'meses'}
+              {faturasBaseTimeline.length} {faturasBaseTimeline.length === 1 ? 'mês' : 'meses'}
             </span>
           </h3>
 
-          <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl self-start sm:self-auto">
-            <button
-              type="button"
-              onClick={() => setFiltroStatus('todas')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all ${
-                filtroStatus === 'todas'
-                  ? 'bg-white text-slate-900 shadow-sm dark:bg-rose-500/20 dark:text-rose-300'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
-              }`}
-            >
-              Todas
-            </button>
-            <button
-              type="button"
-              onClick={() => setFiltroStatus('atual')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all ${
-                filtroStatus === 'atual'
-                  ? 'bg-white text-slate-900 shadow-sm dark:bg-rose-500/20 dark:text-rose-300'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
-              }`}
-            >
-              Fatura Atual
-            </button>
-            <button
-              type="button"
-              onClick={() => setFiltroStatus('futuras')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all ${
-                filtroStatus === 'futuras'
-                  ? 'bg-white text-slate-900 shadow-sm dark:bg-rose-500/20 dark:text-rose-300'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
-              }`}
-            >
-              Futuras
-            </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {cartoesCadastrados.length > 1 && (
+              <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setFiltroVisualizacaoCartao('ativo')}
+                  className={`px-3 py-1 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+                    filtroVisualizacaoCartao === 'ativo'
+                      ? 'bg-white text-slate-900 shadow-sm dark:bg-rose-500/20 dark:text-rose-300'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
+                  }`}
+                >
+                  💳 {cartaoAtivo?.apelido || 'Cartão Ativo'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFiltroVisualizacaoCartao('todos')}
+                  className={`px-3 py-1 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+                    filtroVisualizacaoCartao === 'todos'
+                      ? 'bg-white text-slate-900 shadow-sm dark:bg-rose-500/20 dark:text-rose-300'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
+                  }`}
+                >
+                  🌐 Todos os Cartões
+                </button>
+              </div>
+            )}
+
+            <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-xl self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setFiltroStatus('todas')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+                  filtroStatus === 'todas'
+                    ? 'bg-white text-slate-900 shadow-sm dark:bg-rose-500/20 dark:text-rose-300'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
+                }`}
+              >
+                Todas
+              </button>
+              <button
+                type="button"
+                onClick={() => setFiltroStatus('atual')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+                  filtroStatus === 'atual'
+                    ? 'bg-white text-slate-900 shadow-sm dark:bg-rose-500/20 dark:text-rose-300'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
+                }`}
+              >
+                Fatura Atual
+              </button>
+              <button
+                type="button"
+                onClick={() => setFiltroStatus('futuras')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+                  filtroStatus === 'futuras'
+                    ? 'bg-white text-slate-900 shadow-sm dark:bg-rose-500/20 dark:text-rose-300'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
+                }`}
+              >
+                Futuras
+              </button>
+            </div>
           </div>
         </div>
 
@@ -831,6 +912,13 @@ export function CreditCardDashboard({ saidas = [], onRemoveSaida }) {
                                 <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.04] px-3 py-0.5 rounded-full border border-slate-200 dark:border-white/[0.06]">
                                   {item.categoria}
                                 </span>
+
+                                {/* Badge de Cartão */}
+                                {item.cartaoNome && (
+                                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 bg-rose-50 dark:bg-rose-500/10 px-2.5 py-0.5 rounded-full border border-rose-200 dark:border-rose-500/20">
+                                    💳 {item.cartaoNome}
+                                  </span>
+                                )}
 
                                 {item.isFaturaTotal && (
                                   <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-400/40">

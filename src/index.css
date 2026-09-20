@@ -21,6 +21,22 @@
     font-family: var(--font-secondary);
   }
 
+  /* Padronização de Tipografia Numérica:
+     - font-num-primary: SF Pro Display (usada em 'Quantia Utilizada', destaques e saldos principais)
+     - font-num-secondary: Helvetica (usada em 'Limite Disponível', limites, subtotais e badges)
+  */
+  .font-num-primary {
+    font-family: var(--font-primary) !important;
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+  }
+
+  .font-num-secondary {
+    font-family: var(--font-secondary) !important;
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+  }
+
 
   /* Custom scrollbar adaptativo */
   ::-webkit-scrollbar {

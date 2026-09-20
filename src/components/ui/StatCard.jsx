@@ -34,7 +34,7 @@ export function StatCard({
           </span>
         )}
       </div>
-      <div className={`text-xl sm:text-2xl lg:text-3xl font-mono font-black tabular-nums tracking-tight ${textAccentStyles[accent] || textAccentStyles.default}`}>
+      <div className={`text-xl sm:text-2xl lg:text-3xl font-num-primary font-black tracking-tight ${textAccentStyles[accent] || textAccentStyles.default}`}>
         {value}
       </div>
       {subtitle && (

@@ -655,17 +655,17 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
               <CreditCard className="w-4 h-4" />
             </div>
           </div>
-          <span className="font-mono text-xl sm:text-2xl lg:text-3xl font-black text-rose-600 dark:text-rose-400 tabular-nums block">
+          <span className="font-num-primary text-xl sm:text-2xl lg:text-3xl font-black text-rose-600 dark:text-rose-400 block">
             R$ {formatarBRL(faturaAtual.total)}
           </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 block">
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 block font-secondary">
             {faturaAtual.temFaturaDeclarada 
               ? `Consolidada (${faturaAtual.pctConciliado}% detalhado)` 
               : `Vencimento dia ${diaVencimento}`}
           </span>
         </div>
 
-        {/* Caixa 2: Limite Disponível */}
+        {/* Caixa 2: Limite Disponível (Fonte Secundária) */}
         <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.08] shadow-xs backdrop-blur-md transition-all hover:border-emerald-300 dark:hover:border-emerald-500/30">
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
@@ -675,15 +675,15 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
               <Wallet className="w-4 h-4" />
             </div>
           </div>
-          <span className="font-mono text-xl sm:text-2xl lg:text-3xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums block">
+          <span className="font-num-secondary text-xl sm:text-2xl lg:text-3xl font-black text-emerald-600 dark:text-emerald-400 block">
             R$ {formatarBRL(limiteDisponivel)}
           </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 block">
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 block font-secondary">
             Livre para novas compras
           </span>
         </div>
 
-        {/* Caixa 3: Limite Cadastrado */}
+        {/* Caixa 3: Limite Cadastrado (Fonte Secundária) */}
         <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.08] shadow-xs backdrop-blur-md transition-all hover:border-slate-300 dark:hover:border-white/20">
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
@@ -693,15 +693,15 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
               <Layers className="w-4 h-4" />
             </div>
           </div>
-          <span className="font-mono text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-slate-100 tabular-nums block">
+          <span className="font-num-secondary text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-slate-100 block">
             R$ {formatarBRL(limiteEfetivo)}
           </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 truncate block">
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 truncate block font-secondary">
             {cartaoAtivo ? (cartaoAtivo.apelido || cartaoAtivo.cartaoNome) : 'Limite Total'}
           </span>
         </div>
 
-        {/* Caixa 4: Saldo Líquido do Mês */}
+        {/* Caixa 4: Saldo Líquido do Mês (Fonte Primária) */}
         <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.08] shadow-xs backdrop-blur-md transition-all hover:border-amber-300 dark:hover:border-amber-500/30">
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
@@ -711,10 +711,10 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
               {saldoMes >= 0 ? <TrendingUp className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
             </div>
           </div>
-          <span className={`font-mono text-xl sm:text-2xl lg:text-3xl font-black tabular-nums block ${saldoMes >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+          <span className={`font-num-primary text-xl sm:text-2xl lg:text-3xl font-black block ${saldoMes >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
             R$ {formatarBRL(saldoMes)}
           </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 block">
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 block font-secondary">
             Receitas: R$ {formatarBRL(totalEntradasMes)}
           </span>
         </div>
@@ -735,20 +735,20 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
                     Quantia Utilizada
                   </span>
                   <div className="flex items-baseline gap-2">
-                    <span className="font-mono text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
+                    <span className="font-num-primary text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
                       R$ {formatarBRL(totalComprometido)}
                     </span>
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-200/80 dark:bg-white/[0.08] text-slate-700 dark:text-slate-300 font-mono">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-200/80 dark:bg-white/[0.08] text-slate-700 dark:text-slate-300 font-num-secondary">
                       {percentualConsumo}%
                     </span>
                   </div>
                 </div>
 
                 <div className="text-right">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block font-secondary">
                     Limite do Cartão
                   </span>
-                  <span className="font-mono text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
+                  <span className="font-num-secondary text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400">
                     R$ {formatarBRL(limiteEfetivo)}
                   </span>
                 </div>
@@ -941,9 +941,9 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 text-xs font-mono">
-                <span className="text-slate-500 dark:text-slate-400 font-secondary">Média Mensal:</span>
-                <span className="font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-white/[0.05] px-2.5 py-1 rounded-full border border-slate-200 dark:border-white/[0.08]">
+              <div className="flex items-center gap-2 text-xs font-secondary">
+                <span className="text-slate-500 dark:text-slate-400">Média Mensal:</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-white/[0.05] px-2.5 py-1 rounded-full border border-slate-200 dark:border-white/[0.08] font-num-secondary">
                   R$ {formatarBRL(historicoGastosMensais.mediaGasto)}
                 </span>
               </div>
@@ -966,10 +966,10 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
                       title={`${item.mesLabel}: R$ ${formatarBRL(item.valor)}`}
                     >
                       {/* Valor Flutuante */}
-                      <span className={`text-[10px] sm:text-xs font-mono font-bold transition-all truncate max-w-full text-center ${
+                      <span className={`text-[10px] sm:text-xs font-bold transition-all truncate max-w-full text-center ${
                         isSelected 
-                          ? 'text-emerald-600 dark:text-emerald-400 scale-105' 
-                          : 'text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'
+                          ? 'text-emerald-600 dark:text-emerald-400 scale-105 font-num-primary font-black' 
+                          : 'text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 font-num-secondary'
                       }`}>
                         {item.valor >= 1000 ? `${(item.valor / 1000).toFixed(1)}k` : `R$ ${Math.round(item.valor)}`}
                       </span>
@@ -1002,17 +1002,17 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
 
             {/* Resumo do Mês Selecionado */}
             <div className="pt-3 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between flex-wrap gap-2 text-xs">
-              <span className="text-slate-600 dark:text-slate-400">
+              <span className="text-slate-600 dark:text-slate-400 font-secondary">
                 Mês em foco: <strong className="text-slate-900 dark:text-white capitalize">{formatarMesAno(mesSelecionado)}</strong>
               </span>
-              <div className="flex items-center gap-3 font-mono">
-                <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+              <div className="flex items-center gap-3">
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold font-num-primary">
                   Receitas: R$ {formatarBRL(totalEntradasMes)}
                 </span>
-                <span className="text-rose-600 dark:text-rose-400 font-bold">
+                <span className="text-rose-600 dark:text-rose-400 font-bold font-num-primary">
                   Despesas: R$ {formatarBRL(totalSaidasMes)}
                 </span>
-                <span className={`font-black ${saldoMes >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                <span className={`font-black font-num-primary ${saldoMes >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                   Saldo: R$ {formatarBRL(saldoMes)}
                 </span>
               </div>
@@ -1032,13 +1032,13 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
                 </p>
               </div>
 
-              <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.05] px-3 py-1 rounded-full border border-slate-200 dark:border-white/[0.08] self-start sm:self-auto">
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.05] px-3 py-1 rounded-full border border-slate-200 dark:border-white/[0.08] self-start sm:self-auto font-num-secondary">
                 Total de Gastos: R$ {formatarBRL(totalCategorias)}
               </span>
             </div>
 
             {totalCategorias === 0 ? (
-              <div className="py-10 text-center text-slate-400 dark:text-slate-500 text-xs sm:text-sm">
+              <div className="py-10 text-center text-slate-400 dark:text-slate-500 text-xs sm:text-sm font-secondary">
                 Nenhuma despesa registrada para o mês de {formatarMesAno(mesSelecionado)}.
               </div>
             ) : (
@@ -1076,7 +1076,7 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
                       })}
                     </svg>
                   </div>
-                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 font-mono mt-3">
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 font-secondary mt-3">
                     100% dos Gastos do Mês
                   </span>
                 </div>
@@ -1103,7 +1103,7 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
                             <span className="block text-xs font-bold text-slate-800 dark:text-slate-200 truncate leading-tight">
                               {cat.nome}
                             </span>
-                            <span className="block text-sm font-mono font-black text-slate-900 dark:text-white tabular-nums mt-0.5">
+                            <span className="block text-sm font-black text-slate-900 dark:text-white mt-0.5 font-num-secondary">
                               R$ {formatarBRL(cat.valor)}
                             </span>
                           </div>
@@ -1111,7 +1111,7 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
 
                         <div className="text-right flex-shrink-0">
                           <span
-                            className="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold border"
+                            className="px-2 py-0.5 rounded-full text-[11px] font-bold border font-num-secondary"
                             style={{
                               backgroundColor: `${cat.cor}18`,
                               color: cat.cor,

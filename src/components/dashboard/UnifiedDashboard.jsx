@@ -44,7 +44,7 @@ const CORES_FALLBACK = [
   '#E11D48', '#0D9488', '#F97316', '#4F46E5', '#DB2777'
 ];
 
-export function UnifiedDashboard({ entradas = [], saidas = [], calc }) {
+export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, onRemoveSaida }) {
   // Limite total configurável pelo usuário
   const [limiteTotal, setLimiteTotal] = useState(() => {
     try {
@@ -71,6 +71,34 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc }) {
 
   const mesAtual = useMemo(() => obterDataHojeISO().slice(0, 7), []);
 
+  // Determina o mês de criação da conta (YYYY-MM)
+  const mesCriacaoConta = useMemo(() => {
+    // 1. Caso usuário autenticado via Supabase
+    if (usuario?.created_at) {
+      try {
+        const d = new Date(usuario.created_at);
+        if (!isNaN(d.getTime())) {
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        }
+      } catch (e) {}
+    }
+
+    // 2. Caso local / sem login: recupera ou inicializa data de criação local
+    try {
+      let dataLocal = localStorage.getItem('moneyhub_data_criacao_conta');
+      if (!dataLocal) {
+        dataLocal = new Date().toISOString();
+        localStorage.setItem('moneyhub_data_criacao_conta', dataLocal);
+      }
+      const d = new Date(dataLocal);
+      if (!isNaN(d.getTime())) {
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      }
+    } catch (e) {}
+
+    return mesAtual;
+  }, [usuario, mesAtual]);
+
   // Meses disponíveis para o filtro do dashboard
   const mesesDisponiveis = useMemo(() => {
     const mesesSet = new Set();
@@ -86,8 +114,18 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc }) {
       if (d && d.length >= 7) mesesSet.add(d.slice(0, 7));
     });
 
-    return Array.from(mesesSet).sort((a, b) => b.localeCompare(a));
-  }, [entradas, saidas, mesAtual]);
+    // Filtra meses anteriores à criação da conta, a menos que existam lançamentos explícitos
+    const lista = Array.from(mesesSet)
+      .filter(m => {
+        if (m >= mesCriacaoConta) return true;
+        const temEntrada = entradas.some(e => (e.data_pagamento || e.data || '').startsWith(m));
+        const temSaida = saidas.some(s => (s.data_pagamento || s.data || '').startsWith(m));
+        return temEntrada || temSaida;
+      })
+      .sort((a, b) => b.localeCompare(a));
+
+    return lista.length > 0 ? lista : [mesAtual];
+  }, [entradas, saidas, mesAtual, mesCriacaoConta]);
 
   const [mesSelecionado, setMesSelecionado] = useState(() => {
     return mesesDisponiveis[0] || mesAtual;
@@ -431,20 +469,26 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc }) {
 
   const saldoMes = totalEntradasMes - totalSaidasMes;
 
-  // 1. Histórico de Gastos Mensais para o NOVO Gráfico de Barras (Últimos 6 meses)
+  // 1. Histórico de Gastos Mensais para o Gráfico de Barras
+  // EXCLUSIVAMENTE a partir do mês em que o usuário criou a conta no sistema
   const historicoGastosMensais = useMemo(() => {
     const mapaMeses = {};
     const hoje = new Date();
 
-    // Gera os últimos 6 meses cronológicos
+    // Gera até os últimos 6 meses, filtrando qualquer mês anterior à criação da conta
     for (let i = 5; i >= 0; i--) {
       const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
       const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      mapaMeses[chave] = 0;
+      if (chave >= mesCriacaoConta) {
+        mapaMeses[chave] = 0;
+      }
     }
 
-    // Garante que o mês selecionado esteja presente
-    if (mesSelecionado && !mapaMeses[mesSelecionado]) {
+    // Garante que o mês de criação ou o mês atual/selecionado estejam presentes
+    if (Object.keys(mapaMeses).length === 0) {
+      mapaMeses[mesCriacaoConta || mesAtual] = 0;
+    }
+    if (mesSelecionado && mesSelecionado >= mesCriacaoConta && !mapaMeses[mesSelecionado]) {
       mapaMeses[mesSelecionado] = 0;
     }
 
@@ -499,7 +543,7 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc }) {
       maxGasto,
       mediaGasto
     };
-  }, [saidas, mesSelecionado]);
+  }, [saidas, mesSelecionado, mesCriacaoConta, mesAtual]);
 
   // 2. Agrupamento de Gastos por Categoria
   const { categoriasAgrupadas, totalCategorias } = useMemo(() => {
@@ -884,30 +928,30 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc }) {
         {/* COLUNA DIREITA: DASHBOARDS AO LADO DO CARTÃO COM GRÁFICO DE BARRA E PIZZA + CARTÕES DE CATEGORIAS */}
         <div className="lg:col-span-7 space-y-6">
           
-          {/* 1. NOVO GRÁFICO DE BARRAS: GASTOS MENSAIS (Substitui a linha do tempo de faturas conforme solicitado) */}
+          {/* 1. GRÁFICO DE BARRAS: GASTOS MENSAIS (A partir da criação da conta) */}
           <div className="glass-panel p-5 sm:p-6 rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 dark:border-white/[0.06] pb-3">
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-emerald-500" />
-                  <span>Gastos Mensais (Monthly Spending)</span>
+                  <span>Gastos Mensais</span>
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Comparativo de gastos mês a mês. Clique na barra para navegar pelo mês desejado.
+                <p className="text-xs font-secondary text-slate-500 dark:text-slate-400">
+                  Histórico a partir da criação da sua conta no sistema. Clique para focar no mês desejado.
                 </p>
               </div>
 
               <div className="flex items-center gap-2 text-xs font-mono">
-                <span className="text-slate-500 dark:text-slate-400">Gasto Médio:</span>
+                <span className="text-slate-500 dark:text-slate-400 font-secondary">Média Mensal:</span>
                 <span className="font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-white/[0.05] px-2.5 py-1 rounded-full border border-slate-200 dark:border-white/[0.08]">
                   R$ {formatarBRL(historicoGastosMensais.mediaGasto)}
                 </span>
               </div>
             </div>
 
-            {/* Visualização em Barras Verticais */}
+            {/* Visualização em Barras Verticais Responsiva */}
             <div className="pt-2 pb-1">
-              <div className="grid grid-cols-6 gap-2 sm:gap-4 items-end h-44 sm:h-52 px-2">
+              <div className="flex items-end justify-around h-44 sm:h-52 px-2 gap-2 sm:gap-4 max-w-full overflow-x-auto">
                 {historicoGastosMensais.lista.map((item) => {
                   const isSelected = item.mes === mesSelecionado;
                   const heightPct = historicoGastosMensais.maxGasto > 0 
@@ -918,11 +962,11 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc }) {
                     <div
                       key={item.mes}
                       onClick={() => setMesSelecionado(item.mes)}
-                      className="flex flex-col items-center justify-end h-full gap-2 cursor-pointer group select-none transition-all"
+                      className="flex-1 max-w-[80px] flex flex-col items-center justify-end h-full gap-2 cursor-pointer group select-none transition-all"
                       title={`${item.mesLabel}: R$ ${formatarBRL(item.valor)}`}
                     >
                       {/* Valor Flutuante */}
-                      <span className={`text-[10px] sm:text-xs font-mono font-bold transition-all ${
+                      <span className={`text-[10px] sm:text-xs font-mono font-bold transition-all truncate max-w-full text-center ${
                         isSelected 
                           ? 'text-emerald-600 dark:text-emerald-400 scale-105' 
                           : 'text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'
@@ -931,7 +975,7 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc }) {
                       </span>
 
                       {/* Barra Vertical */}
-                      <div className="w-full max-w-[48px] h-full flex items-end">
+                      <div className="w-full max-w-[48px] h-full flex items-end justify-center">
                         <div
                           style={{ height: `${heightPct}%` }}
                           className={`w-full rounded-2xl transition-all duration-500 relative overflow-hidden ${
@@ -943,7 +987,7 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc }) {
                       </div>
 
                       {/* Etiqueta do Mês */}
-                      <span className={`text-[11px] sm:text-xs font-bold uppercase transition-all ${
+                      <span className={`text-[11px] sm:text-xs font-bold uppercase transition-all font-secondary ${
                         isSelected 
                           ? 'text-emerald-600 dark:text-emerald-400 font-black' 
                           : 'text-slate-500 dark:text-slate-400'
@@ -981,10 +1025,10 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc }) {
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <PieChart className="w-5 h-5 text-amber-500" />
-                  <span>Gastos por Categoria (Spending Categories)</span>
+                  <span>Gastos por Categoria</span>
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Gráfico de pizza com a totalidade dos gastos e cartões detalhados por área.
+                <p className="text-xs font-secondary text-slate-500 dark:text-slate-400">
+                  Gráfico de pizza com a totalidade dos gastos e cartões detalhados por categoria.
                 </p>
               </div>
 

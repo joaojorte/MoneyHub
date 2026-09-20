@@ -137,6 +137,7 @@ export function App() {
               entradas={entradas}
               saidas={saidas}
               calc={calc}
+              usuario={usuario}
               onRemoveSaida={removeSaida}
             />
           )}

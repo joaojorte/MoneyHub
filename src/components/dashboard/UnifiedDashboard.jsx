@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { 
   CreditCard, Calendar, Wallet, AlertCircle, CheckCircle2, ChevronRight, 
   Filter, Plus, Check, Trash2, Sparkles, X, Edit3, ArrowUpRight, ArrowDownRight, 
-  PieChart, DollarSign, TrendingUp, Layers, BarChart3
+  DollarSign, TrendingUp, Layers, BarChart3, Minimize2, ChevronLeft
 } from 'lucide-react';
 import { formatarBRL, formatarDataBR, formatarMesAno, obterDataHojeISO } from '../../utils/formatters';
 import { STORAGE_KEYS } from '../../utils/constants';
@@ -127,9 +127,8 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
     return lista.length > 0 ? lista : [mesAtual];
   }, [entradas, saidas, mesAtual, mesCriacaoConta]);
 
-  const [mesSelecionado, setMesSelecionado] = useState(() => {
-    return mesesDisponiveis[0] || mesAtual;
-  });
+  // mesFoco: quando null, exibe todas as barras (minimizado); quando 'YYYY-MM', amplia aquele mês em específico
+  const [mesFoco, setMesFoco] = useState(null);
 
   // Modal para Adicionar ou Editar Cartão
   const [modalAberto, setModalAberto] = useState(false);
@@ -425,16 +424,18 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
   const entradasMes = useMemo(() => {
     return entradas.filter(item => {
       const d = item.data_pagamento || item.data || '';
-      return d.startsWith(mesSelecionado);
+      if (!mesFoco) return true;
+      return d.startsWith(mesFoco);
     });
-  }, [entradas, mesSelecionado]);
+  }, [entradas, mesFoco]);
 
   const saidasMes = useMemo(() => {
     return saidas.filter(item => {
       const d = item.data_pagamento || item.data || '';
-      return d.startsWith(mesSelecionado) || item.recorrente === true;
+      if (!mesFoco) return true;
+      return d.startsWith(mesFoco) || item.recorrente === true;
     });
-  }, [saidas, mesSelecionado]);
+  }, [saidas, mesFoco]);
 
   const totalEntradasMes = useMemo(() => {
     return entradasMes.reduce((acc, cur) => acc + (parseFloat(cur.valor) || 0), 0);
@@ -470,26 +471,20 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
   const saldoMes = totalEntradasMes - totalSaidasMes;
 
   // 1. Histórico de Gastos Mensais para o Gráfico de Barras
-  // EXCLUSIVAMENTE a partir do mês em que o usuário criou a conta no sistema
   const historicoGastosMensais = useMemo(() => {
     const mapaMeses = {};
     const hoje = new Date();
 
-    // Gera até os últimos 6 meses, filtrando qualquer mês anterior à criação da conta
+    // Gera os últimos 6 meses cronológicos para visão comparativa completa
     for (let i = 5; i >= 0; i--) {
       const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
       const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      if (chave >= mesCriacaoConta) {
-        mapaMeses[chave] = 0;
-      }
+      mapaMeses[chave] = 0;
     }
 
-    // Garante que o mês de criação ou o mês atual/selecionado estejam presentes
-    if (Object.keys(mapaMeses).length === 0) {
-      mapaMeses[mesCriacaoConta || mesAtual] = 0;
-    }
-    if (mesSelecionado && mesSelecionado >= mesCriacaoConta && !mapaMeses[mesSelecionado]) {
-      mapaMeses[mesSelecionado] = 0;
+    // Se houver mês focado fora da janela padrão de 6 meses, inclui também
+    if (mesFoco && !mapaMeses[mesFoco]) {
+      mapaMeses[mesFoco] = 0;
     }
 
     Object.keys(mapaMeses).forEach(mes => {
@@ -543,7 +538,17 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
       maxGasto,
       mediaGasto
     };
-  }, [saidas, mesSelecionado, mesCriacaoConta, mesAtual]);
+  }, [saidas, mesFoco]);
+
+  const handleToggleMes = (mes) => {
+    if (mesFoco === mes) {
+      // 2º clique no mesmo mês: minimiza e volta a exibir todas as barras
+      setMesFoco(null);
+    } else {
+      // 1º clique: amplia e visualiza aquele mês em específico
+      setMesFoco(mes);
+    }
+  };
 
   // 2. Agrupamento de Gastos por Categoria
   const { categoriasAgrupadas, totalCategorias } = useMemo(() => {
@@ -611,35 +616,8 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
     return { categoriasAgrupadas: lista, totalCategorias: total };
   }, [saidasMes]);
 
-  // 3. Gráfico de Pizza Completo (Sendo toda a pizza 100% dos gastos totais)
-  const pieSlices = useMemo(() => {
-    if (totalCategorias <= 0) return [];
-    const cx = 90;
-    const cy = 90;
-    const radius = 80;
-    let currentAngle = -Math.PI / 2; // Começa no topo (12h)
-
-    return categoriasAgrupadas.map(cat => {
-      const sliceAngle = (cat.valor / totalCategorias) * (2 * Math.PI);
-      const startAngle = currentAngle;
-      const endAngle = currentAngle + sliceAngle;
-      currentAngle = endAngle;
-
-      const x1 = cx + radius * Math.cos(startAngle);
-      const y1 = cy + radius * Math.sin(startAngle);
-      const x2 = cx + radius * Math.cos(endAngle);
-      const y2 = cy + radius * Math.sin(endAngle);
-
-      const isLargeArc = sliceAngle > Math.PI ? 1 : 0;
-      const pathData = `M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${isLargeArc} 1 ${x2} ${y2} Z`;
-
-      return {
-        ...cat,
-        pathData,
-        isFullCircle: cat.porcentagem >= 99.9
-      };
-    });
-  }, [categoriasAgrupadas, totalCategorias]);
+  // Estado para destacar categoria ao passar o cursor no gráfico de barras empilhadas ou no cartão
+  const [categoriaHover, setCategoriaHover] = useState(null);
 
   return (
     <div className="space-y-6 animate-fadeIn pb-10">
@@ -705,7 +683,7 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
         <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.08] shadow-xs backdrop-blur-md transition-all hover:border-amber-300 dark:hover:border-amber-500/30">
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-              Saldo Líquido do Mês
+              {mesFoco ? `Saldo (${formatarMesAno(mesFoco)})` : 'Saldo Líquido do Mês'}
             </span>
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${saldoMes >= 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-rose-500/10 text-rose-600'}`}>
               {saldoMes >= 0 ? <TrendingUp className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
@@ -715,7 +693,7 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
             R$ {formatarBRL(saldoMes)}
           </span>
           <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 block font-secondary">
-            Receitas: R$ {formatarBRL(totalEntradasMes)}
+            {mesFoco ? 'Mês em foco ampliado' : `Mês vigente (${formatarMesAno(mesAtual)})`}
           </span>
         </div>
       </section>
@@ -928,7 +906,7 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
         {/* COLUNA DIREITA: DASHBOARDS AO LADO DO CARTÃO COM GRÁFICO DE BARRA E PIZZA + CARTÕES DE CATEGORIAS */}
         <div className="lg:col-span-7 space-y-6">
           
-          {/* 1. GRÁFICO DE BARRAS: GASTOS MENSAIS (A partir da criação da conta) */}
+          {/* 1. GRÁFICO DE BARRAS: GASTOS MENSAIS (Clique para ampliar, novo clique para minimizar) */}
           <div className="glass-panel p-5 sm:p-6 rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 dark:border-white/[0.06] pb-3">
               <div>
@@ -937,74 +915,181 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
                   <span>Gastos Mensais</span>
                 </h3>
                 <p className="text-xs font-secondary text-slate-500 dark:text-slate-400">
-                  Histórico a partir da criação da sua conta no sistema. Clique para focar no mês desejado.
+                  {mesFoco 
+                    ? `Visualizando ${formatarMesAno(mesFoco)} ampliado. Clique na barra ou no botão para minimizar.`
+                    : 'Histórico dos últimos meses. Clique em um mês para ampliar.'}
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 text-xs font-secondary">
-                <span className="text-slate-500 dark:text-slate-400">Média Mensal:</span>
-                <span className="font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-white/[0.05] px-2.5 py-1 rounded-full border border-slate-200 dark:border-white/[0.08] font-num-secondary">
-                  R$ {formatarBRL(historicoGastosMensais.mediaGasto)}
-                </span>
+              <div className="flex items-center gap-2 text-xs font-secondary flex-wrap">
+                {mesFoco ? (
+                  <button
+                    type="button"
+                    onClick={() => setMesFoco(null)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold transition-all shadow-xs cursor-pointer"
+                    title="Minimizar e voltar a ver todas as barras"
+                  >
+                    <Minimize2 className="w-3.5 h-3.5" />
+                    <span>Minimizar (Ver todas as barras)</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-500 dark:text-slate-400">Média Mensal:</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-white/[0.05] px-2.5 py-1 rounded-full border border-slate-200 dark:border-white/[0.08] font-num-secondary">
+                      R$ {formatarBRL(historicoGastosMensais.mediaGasto)}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Visualização em Barras Verticais Responsiva */}
-            <div className="pt-2 pb-1">
-              <div className="flex items-end justify-around h-44 sm:h-52 px-2 gap-2 sm:gap-4 max-w-full overflow-x-auto">
-                {historicoGastosMensais.lista.map((item) => {
-                  const isSelected = item.mes === mesSelecionado;
-                  const heightPct = historicoGastosMensais.maxGasto > 0 
-                    ? Math.max(12, Math.round((item.valor / historicoGastosMensais.maxGasto) * 100))
-                    : 12;
+            {/* Visualização em Barras: MODO AMPLIADO vs MODO MINIMIZADO */}
+            {mesFoco ? (
+              /* MODO AMPLIADO (Visualiza aquele mês em específico, com clique para minimizar) */
+              <div className="pt-2 pb-1">
+                <div className="flex items-center justify-between px-2 sm:px-8">
+                  {/* Navegação Mês Anterior */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const idx = historicoGastosMensais.lista.findIndex(i => i.mes === mesFoco);
+                      if (idx > 0) {
+                        setMesFoco(historicoGastosMensais.lista[idx - 1].mes);
+                      }
+                    }}
+                    disabled={historicoGastosMensais.lista.findIndex(i => i.mes === mesFoco) <= 0}
+                    className="p-2.5 rounded-2xl border border-slate-200 dark:border-white/10 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] disabled:opacity-20 disabled:pointer-events-none transition-all cursor-pointer"
+                    title="Mês anterior"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
 
-                  return (
-                    <div
-                      key={item.mes}
-                      onClick={() => setMesSelecionado(item.mes)}
-                      className="flex-1 max-w-[80px] flex flex-col items-center justify-end h-full gap-2 cursor-pointer group select-none transition-all"
-                      title={`${item.mesLabel}: R$ ${formatarBRL(item.valor)}`}
-                    >
-                      {/* Valor Flutuante */}
-                      <span className={`text-[10px] sm:text-xs font-bold transition-all truncate max-w-full text-center ${
-                        isSelected 
-                          ? 'text-emerald-600 dark:text-emerald-400 scale-105 font-num-primary font-black' 
-                          : 'text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 font-num-secondary'
-                      }`}>
-                        {item.valor >= 1000 ? `${(item.valor / 1000).toFixed(1)}k` : `R$ ${Math.round(item.valor)}`}
-                      </span>
+                  {/* Barra Central Ampliada */}
+                  {(() => {
+                    const itemFoco = historicoGastosMensais.lista.find(i => i.mes === mesFoco) || {
+                      mes: mesFoco,
+                      mesLabel: formatarMesAno(mesFoco),
+                      mesCurto: mesFoco.slice(5, 7),
+                      valor: totalSaidasMes
+                    };
 
-                      {/* Barra Vertical */}
-                      <div className="w-full max-w-[48px] h-full flex items-end justify-center">
-                        <div
-                          style={{ height: `${heightPct}%` }}
-                          className={`w-full rounded-2xl transition-all duration-500 relative overflow-hidden ${
-                            isSelected
-                              ? 'bg-gradient-to-t from-emerald-600 to-teal-400 shadow-lg shadow-emerald-500/30 ring-2 ring-emerald-400/40'
-                              : 'bg-slate-200 hover:bg-slate-300 dark:bg-white/[0.07] dark:hover:bg-white/[0.14]'
-                          }`}
-                        />
+                    return (
+                      <div
+                        onClick={() => setMesFoco(null)}
+                        className="flex flex-col items-center justify-end h-48 sm:h-56 w-36 sm:w-44 cursor-pointer group select-none transition-all"
+                        title="Clique novamente na barra para minimizar e voltar a ver todas as barras"
+                      >
+                        {/* Valor Flutuante Ampliado */}
+                        <div className="mb-2 text-center">
+                          <span className="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400 font-num-primary block scale-110 drop-shadow-sm">
+                            R$ {formatarBRL(itemFoco.valor)}
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 font-secondary block mt-0.5 group-hover:text-emerald-500 transition-colors">
+                            (Clique para minimizar)
+                          </span>
+                        </div>
+
+                        {/* Barra Vertical Ampliada */}
+                        <div className="w-20 sm:w-24 h-36 sm:h-40 flex items-end justify-center">
+                          <div
+                            className="w-full h-full rounded-2xl bg-gradient-to-t from-emerald-600 to-teal-400 shadow-xl shadow-emerald-500/30 ring-4 ring-emerald-400/40 relative overflow-hidden transition-all duration-300 group-hover:scale-105 group-hover:shadow-emerald-500/50"
+                          />
+                        </div>
+
+                        {/* Etiqueta do Mês Ampliada */}
+                        <div className="mt-2 text-center">
+                          <span className="text-sm font-black uppercase text-emerald-600 dark:text-emerald-400 font-secondary block">
+                            {itemFoco.mesCurto}
+                          </span>
+                          <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 font-secondary">
+                            {itemFoco.mesLabel}
+                          </span>
+                        </div>
                       </div>
+                    );
+                  })()}
 
-                      {/* Etiqueta do Mês */}
-                      <span className={`text-[11px] sm:text-xs font-bold uppercase transition-all font-secondary ${
-                        isSelected 
-                          ? 'text-emerald-600 dark:text-emerald-400 font-black' 
-                          : 'text-slate-500 dark:text-slate-400'
-                      }`}>
-                        {item.mesCurto}
-                      </span>
-                    </div>
-                  );
-                })}
+                  {/* Navegação Próximo Mês */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const idx = historicoGastosMensais.lista.findIndex(i => i.mes === mesFoco);
+                      if (idx >= 0 && idx < historicoGastosMensais.lista.length - 1) {
+                        setMesFoco(historicoGastosMensais.lista[idx + 1].mes);
+                      }
+                    }}
+                    disabled={historicoGastosMensais.lista.findIndex(i => i.mes === mesFoco) >= historicoGastosMensais.lista.length - 1}
+                    className="p-2.5 rounded-2xl border border-slate-200 dark:border-white/10 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] disabled:opacity-20 disabled:pointer-events-none transition-all cursor-pointer"
+                    title="Próximo mês"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              /* MODO MINIMIZADO (Todas as barras visíveis lado a lado como estava) */
+              <div className="pt-2 pb-1">
+                <div className="flex items-end justify-around h-44 sm:h-52 px-2 gap-2 sm:gap-4 max-w-full overflow-x-auto">
+                  {historicoGastosMensais.lista.map((item) => {
+                    const heightPct = historicoGastosMensais.maxGasto > 0 
+                      ? Math.max(12, Math.round((item.valor / historicoGastosMensais.maxGasto) * 100))
+                      : 12;
 
-            {/* Resumo do Mês Selecionado */}
+                    return (
+                      <div
+                        key={item.mes}
+                        onClick={() => handleToggleMes(item.mes)}
+                        className="flex-1 max-w-[80px] flex flex-col items-center justify-end h-full gap-2 cursor-pointer group select-none transition-all"
+                        title={`${item.mesLabel}: R$ ${formatarBRL(item.valor)} (Clique para ampliar)`}
+                      >
+                        {/* Valor Flutuante */}
+                        <span className="text-[10px] sm:text-xs font-bold transition-all truncate max-w-full text-center text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 font-num-secondary group-hover:scale-105">
+                          {item.valor >= 1000 ? `${(item.valor / 1000).toFixed(1)}k` : `R$ ${Math.round(item.valor)}`}
+                        </span>
+
+                        {/* Barra Vertical */}
+                        <div className="w-full max-w-[48px] h-full flex items-end justify-center">
+                          <div
+                            style={{ height: `${heightPct}%` }}
+                            className="w-full rounded-2xl transition-all duration-500 relative overflow-hidden bg-slate-200 hover:bg-gradient-to-t hover:from-emerald-600 hover:to-teal-400 dark:bg-white/[0.07] dark:hover:bg-gradient-to-t dark:hover:from-emerald-600 dark:hover:to-teal-400 group-hover:shadow-md group-hover:ring-2 group-hover:ring-emerald-400/30"
+                          />
+                        </div>
+
+                        {/* Etiqueta do Mês */}
+                        <span className="text-[11px] sm:text-xs font-bold uppercase transition-all font-secondary text-slate-500 dark:text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 group-hover:font-black">
+                          {item.mesCurto}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Resumo Inferior: Mês em Foco ou Visão Consolidada */}
             <div className="pt-3 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between flex-wrap gap-2 text-xs">
-              <span className="text-slate-600 dark:text-slate-400 font-secondary">
-                Mês em foco: <strong className="text-slate-900 dark:text-white capitalize">{formatarMesAno(mesSelecionado)}</strong>
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-600 dark:text-slate-400 font-secondary">
+                  {mesFoco ? (
+                    <>
+                      Mês em foco: <strong className="text-slate-900 dark:text-white capitalize">{formatarMesAno(mesFoco)}</strong>
+                    </>
+                  ) : (
+                    <>
+                      Visão consolidada: <strong className="text-slate-900 dark:text-white capitalize">Todos os Meses</strong>
+                    </>
+                  )}
+                </span>
+                {mesFoco && (
+                  <button
+                    type="button"
+                    onClick={() => setMesFoco(null)}
+                    className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                  >
+                    (minimizar)
+                  </button>
+                )}
+              </div>
               <div className="flex items-center gap-3">
                 <span className="text-emerald-600 dark:text-emerald-400 font-bold font-num-primary">
                   Receitas: R$ {formatarBRL(totalEntradasMes)}
@@ -1019,16 +1104,16 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
             </div>
           </div>
 
-          {/* 2. GASTOS POR CATEGORIA: GRÁFICO DE PIZZA (TODA A PIZZA É O TOTAL) + ESTILO DE CARTÕES */}
+          {/* 2. GASTOS POR CATEGORIA: GRÁFICO DE BARRAS EMPILHADAS NA VERTICAL + CARTÕES */}
           <div className="glass-panel p-5 sm:p-6 rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-sm space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 dark:border-white/[0.06] pb-3">
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <PieChart className="w-5 h-5 text-amber-500" />
+                  <Layers className="w-5 h-5 text-amber-500" />
                   <span>Gastos por Categoria</span>
                 </h3>
                 <p className="text-xs font-secondary text-slate-500 dark:text-slate-400">
-                  Gráfico de pizza com a totalidade dos gastos e cartões detalhados por categoria.
+                  Gráfico de barras empilhadas na vertical com a distribuição e cartões detalhados por categoria.
                 </p>
               </div>
 
@@ -1039,90 +1124,133 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
 
             {totalCategorias === 0 ? (
               <div className="py-10 text-center text-slate-400 dark:text-slate-500 text-xs sm:text-sm font-secondary">
-                Nenhuma despesa registrada para o mês de {formatarMesAno(mesSelecionado)}.
+                Nenhuma despesa registrada para {mesFoco ? formatarMesAno(mesFoco) : 'o período selecionado'}.
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
                 
-                {/* GRÁFICO DE PIZZA COMPLETO (Toda a pizza são os gastos totais) */}
-                <div className="md:col-span-5 flex flex-col items-center justify-center">
-                  <div className="relative w-44 h-44 sm:w-48 sm:h-48 flex items-center justify-center">
-                    <svg className="w-full h-full transform drop-shadow-md" viewBox="0 0 180 180">
-                      {pieSlices.map((slice) => {
-                        if (slice.isFullCircle) {
-                          return (
-                            <circle
-                              key={slice.nome}
-                              cx="90"
-                              cy="90"
-                              r="80"
-                              fill={slice.cor}
-                              className="transition-all duration-500 hover:opacity-90"
-                            />
-                          );
-                        }
+                {/* GRÁFICO DE BARRAS EMPILHADAS NA VERTICAL */}
+                <div className="md:col-span-5 lg:col-span-4 flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.06]">
+                  <div className="flex items-center gap-3">
+                    {/* Escala Percentual Vertical */}
+                    <div className="flex flex-col justify-between h-[250px] text-[10px] font-mono text-slate-400 dark:text-slate-500 select-none text-right py-1 font-num-secondary">
+                      <span>100%</span>
+                      <span>75%</span>
+                      <span>50%</span>
+                      <span>25%</span>
+                      <span>0%</span>
+                    </div>
+
+                    {/* Coluna da Barra Empilhada Vertical */}
+                    <div className="relative w-16 sm:w-20 h-[250px] rounded-2xl overflow-hidden bg-slate-200/60 dark:bg-white/[0.05] border border-slate-300/80 dark:border-white/10 shadow-inner flex flex-col-reverse">
+                      {categoriasAgrupadas.map((cat) => {
+                        const isHovered = categoriaHover === cat.nome;
+                        const isAnyHovered = Boolean(categoriaHover);
+
                         return (
-                          <path
-                            key={slice.nome}
-                            d={slice.pathData}
-                            fill={slice.cor}
-                            stroke="rgba(255,255,255,0.2)"
-                            strokeWidth="1.5"
-                            className="transition-all duration-300 hover:opacity-90 cursor-pointer"
+                          <div
+                            key={cat.nome}
+                            style={{ 
+                              height: `${cat.porcentagem}%`, 
+                              backgroundColor: cat.cor 
+                            }}
+                            onMouseEnter={() => setCategoriaHover(cat.nome)}
+                            onMouseLeave={() => setCategoriaHover(null)}
+                            className={`w-full transition-all duration-300 relative group cursor-pointer flex items-center justify-center border-t border-white/20 first:border-t-0 ${
+                              isHovered 
+                                ? 'brightness-125 z-10 scale-[1.03] shadow-md ring-2 ring-white/60' 
+                                : isAnyHovered 
+                                  ? 'opacity-40' 
+                                  : 'hover:brightness-110'
+                            }`}
+                            title={`${cat.nome}: R$ ${formatarBRL(cat.valor)} (${cat.porcentagem.toFixed(1)}%)`}
                           >
-                            <title>{`${slice.nome}: R$ ${formatarBRL(slice.valor)} (${slice.porcentagem.toFixed(1)}%)`}</title>
-                          </path>
+                            {/* Percentual dentro do segmento se altura for suficiente */}
+                            {cat.porcentagem >= 12 && (
+                              <span className="text-[11px] font-black text-white drop-shadow select-none font-num-secondary">
+                                {cat.porcentagem.toFixed(0)}%
+                              </span>
+                            )}
+                          </div>
                         );
                       })}
-                    </svg>
+                    </div>
                   </div>
-                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 font-secondary mt-3">
-                    100% dos Gastos do Mês
-                  </span>
+
+                  {/* Legenda sob a barra empilhada */}
+                  <div className="mt-3 text-center">
+                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300 font-secondary block">
+                      100% dos Gastos do Mês
+                    </span>
+                    <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 font-secondary">
+                      {categoriasAgrupadas.length} {categoriasAgrupadas.length === 1 ? 'categoria' : 'categorias'} empilhadas
+                    </span>
+                  </div>
                 </div>
 
-                {/* GASTOS POR CATEGORIA NO ESTILO DE CARTÕES (Conforme solicitado) */}
-                <div className="md:col-span-7">
+                {/* GASTOS POR CATEGORIA: CARTÕES DETALHADOS REESTRUTURADOS */}
+                <div className="md:col-span-7 lg:col-span-8">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[340px] overflow-y-auto pr-1">
-                    {categoriasAgrupadas.map((cat) => (
-                      <div
-                        key={cat.nome}
-                        className="p-3 sm:p-3.5 rounded-2xl bg-slate-50/90 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/20 transition-all shadow-xs hover:scale-[1.02] flex items-center justify-between gap-3"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div
-                            className="w-9 h-9 rounded-xl flex items-center justify-center text-base shadow-xs flex-shrink-0"
-                            style={{ 
-                              backgroundColor: `${cat.cor}20`,
-                              border: `1px solid ${cat.cor}40`
-                            }}
-                          >
-                            <span>{ICONES_CATEGORIAS[cat.nome] || '🏷️'}</span>
-                          </div>
-                          <div className="min-w-0">
-                            <span className="block text-xs font-bold text-slate-800 dark:text-slate-200 truncate leading-tight">
-                              {cat.nome}
-                            </span>
-                            <span className="block text-sm font-black text-slate-900 dark:text-white mt-0.5 font-num-secondary">
-                              R$ {formatarBRL(cat.valor)}
-                            </span>
-                          </div>
-                        </div>
+                    {categoriasAgrupadas.map((cat) => {
+                      const isHovered = categoriaHover === cat.nome;
 
-                        <div className="text-right flex-shrink-0">
-                          <span
-                            className="px-2 py-0.5 rounded-full text-[11px] font-bold border font-num-secondary"
-                            style={{
-                              backgroundColor: `${cat.cor}18`,
-                              color: cat.cor,
-                              borderColor: `${cat.cor}35`
-                            }}
-                          >
-                            {cat.porcentagem.toFixed(1)}%
-                          </span>
+                      return (
+                        <div
+                          key={cat.nome}
+                          onMouseEnter={() => setCategoriaHover(cat.nome)}
+                          onMouseLeave={() => setCategoriaHover(null)}
+                          className={`p-3.5 sm:p-4 rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col justify-between ${
+                            isHovered
+                              ? 'border-amber-400 dark:border-amber-400 bg-white dark:bg-white/[0.08] shadow-md scale-[1.02]'
+                              : 'bg-slate-50/90 dark:bg-white/[0.03] border-slate-200/80 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/20'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2.5">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div
+                                className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 shadow-xs"
+                                style={{ 
+                                  backgroundColor: `${cat.cor}20`,
+                                  border: `1px solid ${cat.cor}40`
+                                }}
+                              >
+                                <span>{ICONES_CATEGORIAS[cat.nome] || '🏷️'}</span>
+                              </div>
+                              <div className="min-w-0">
+                                <span className="block text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight">
+                                  {cat.nome}
+                                </span>
+                                <span className="block text-base font-black text-slate-900 dark:text-white mt-1 font-num-secondary">
+                                  R$ {formatarBRL(cat.valor)}
+                                </span>
+                              </div>
+                            </div>
+
+                            <span
+                              className="px-2.5 py-1 rounded-full text-xs font-bold border font-num-secondary flex-shrink-0 self-start"
+                              style={{
+                                backgroundColor: `${cat.cor}18`,
+                                color: cat.cor,
+                                borderColor: `${cat.cor}35`
+                              }}
+                            >
+                              {cat.porcentagem.toFixed(1)}%
+                            </span>
+                          </div>
+
+                          {/* Mini barra horizontal proporcional */}
+                          <div className="w-full h-1.5 rounded-full bg-slate-200/70 dark:bg-white/[0.08] overflow-hidden mt-3">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${cat.porcentagem}%`,
+                                backgroundColor: cat.cor
+                              }}
+                            />
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>

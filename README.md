@@ -29,8 +29,8 @@ O **MoneyHub** passou por uma reformulação estrutural e de design inspirada na
   * **Números e Moedas**: 
     * **Fonte Numérica Primária (`font-num-primary`)**: Utiliza **SF Pro Display** com peso `font-black`, inspirada na métrica *"Quantia Utilizada"*. Aplicada nos saldos de destaque, fatura atual e títulos monetários principais.
     * **Fonte Numérica Secundária (`font-num-secondary`)**: Utiliza **Helvetica** com peso `font-bold` e suporte a números tabulares (`tabular-nums`), inspirada no quadro *"Limite Disponível"*. Aplicada em limites de crédito, valores de categorias, badges e médias mensais.
-* **Gráfico de Barras com Filtro de Adesão**: Histórico mensal de despesas que projeta **estritamente os meses a partir da data de criação da conta** do usuário (`usuario.created_at` ou registro de conta local), evitando barras vazias ou meses anteriores à entrada no sistema.
-* **Gastos por Categoria (Pizza 100% + Cartões)**: Gráfico de pizza vetorial SVG onde o círculo completo representa a totalidade das despesas do período, complementado por um grid de cartões detalhados por área de consumo.
+* **Gráfico de Barras com Sistema Ampliar/Minimizar**: Histórico mensal de despesas com visualização comparativa dos últimos meses. No **1º clique** em uma barra, o mês é ampliado em foco detalhado; ao realizar um **novo clique** (na barra ou no botão de minimizar), o gráfico volta a exibir todas as barras em visão consolidada.
+* **Gastos por Categoria (Barras Empilhadas na Vertical + Cartões Detalhados)**: Substituição do antigo gráfico circular por um moderno gráfico de barras empilhadas na vertical com escala percentual de 0% a 100%, sincronizado a cartões espaçosos com nomes completos de categorias, formatação monetária e micro-barras de progresso.
 * **Motor Avançado de Cartão de Crédito**:
   * Adição de parcelas já em andamento (ex.: compra cadastrada a partir da 3ª de 10 parcelas).
   * Lançamento de **Fatura Consolidada** com conciliação automática, permitindo lançar o valor total da fatura sem duplicação de saídas no saldo líquido.
@@ -66,12 +66,12 @@ Desenvolvida seguindo rigorosamente a disposição e hierarquia de informações
   * **Modal de Gestão Ampliado**: Interface moderna para cadastrar novos cartões ou editar limite, dia de vencimento e apelido.
   * **Barra de Conciliação**: Acompanhamento percentual entre saídas detalhadas e o total lançado para a fatura.
 * **Gráfico de Barras de Despesas Mensais**:
-  * Substituição de antigas timelines por colunas verticais interativas.
-  * Filtro dinâmico que exibe apenas os meses desde o cadastro da conta do usuário.
-  * Seleção interativa: ao clicar em uma barra, o dashboard filtra as métricas para o mês correspondente.
+  * Substituição de antigas timelines por colunas verticais responsivas e interativas.
+  * **1º Clique**: Amplia o mês selecionado, exibindo a coluna em destaque com atalhos de navegação e resumo isolado.
+  * **2º Clique (ou Botão Minimizar)**: Minimiza e retorna imediatamente à visualização de todas as barras lado a lado.
 * **Gastos por Categoria**:
-  * **Gráfico de Pizza SVG**: Visualização em rosca/pizza em que a totalidade das despesas compõe 100% da área do gráfico.
-  * **Grid de Cartões**: Cada categoria (Alimentação, Moradia, Transporte, Saúde, Lazer, etc.) recebe um card elegante com ícone temático, valor total em BRL e badge de percentual relativo.
+  * **Gráfico de Barras Empilhadas na Vertical**: Coluna vertical proporcional com segmentos coloridos empilhados de 0% a 100%, refletindo com precisão o peso de cada despesa no orçamento.
+  * **Grid de Cartões Reestruturado**: Blocos amplos e sem cortes de texto, com ícone temático, nome integral da categoria (sem truncamento), valor em R$ com fonte numérica secundária e indicador percentual sincronizado com a barra empilhada.
 
 ---
 

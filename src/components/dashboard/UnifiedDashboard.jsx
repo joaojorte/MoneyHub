@@ -114,18 +114,13 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
       if (d && d.length >= 7) mesesSet.add(d.slice(0, 7));
     });
 
-    // Filtra meses anteriores à criação da conta, a menos que existam lançamentos explícitos
+    // Filtra estritamente meses anteriores a setembro de 2026
     const lista = Array.from(mesesSet)
-      .filter(m => {
-        if (m >= mesCriacaoConta) return true;
-        const temEntrada = entradas.some(e => (e.data_pagamento || e.data || '').startsWith(m));
-        const temSaida = saidas.some(s => (s.data_pagamento || s.data || '').startsWith(m));
-        return temEntrada || temSaida;
-      })
+      .filter(m => m >= '2026-09')
       .sort((a, b) => b.localeCompare(a));
 
-    return lista.length > 0 ? lista : [mesAtual];
-  }, [entradas, saidas, mesAtual, mesCriacaoConta]);
+    return lista.length > 0 ? lista : ['2026-09'];
+  }, [entradas, saidas, mesAtual]);
 
   // mesFoco: quando null, exibe todas as barras (minimizado); quando 'YYYY-MM', amplia aquele mês em específico
   const [mesFoco, setMesFoco] = useState(null);
@@ -471,19 +466,39 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
   const saldoMes = totalEntradasMes - totalSaidasMes;
 
   // 1. Histórico de Gastos Mensais para o Gráfico de Barras
+  // Regra: Não mostrar meses anteriores a setembro/2026.
+  // Meses posteriores demonstram-se APENAS em casos de ter parcelas futuras ou despesas programadas.
+  const MES_BASE = '2026-09';
+
   const historicoGastosMensais = useMemo(() => {
     const mapaMeses = {};
-    const hoje = new Date();
 
-    // Gera os últimos 6 meses cronológicos para visão comparativa completa
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
-      const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      mapaMeses[chave] = 0;
+    // 1. Sempre inclui o mês base de setembro/2026
+    mapaMeses[MES_BASE] = 0;
+    if (mesAtual >= MES_BASE) {
+      mapaMeses[mesAtual] = 0;
     }
 
-    // Se houver mês focado fora da janela padrão de 6 meses, inclui também
-    if (mesFoco && !mapaMeses[mesFoco]) {
+    // 2. Meses posteriores a setembro: adiciona APENAS caso haja parcelas futuras ou despesas cadastradas
+    saidas.forEach(item => {
+      const d = item.data_pagamento || item.data || '';
+      if (d && d.length >= 7) {
+        const mesItem = d.slice(0, 7);
+        if (mesItem >= MES_BASE) {
+          mapaMeses[mesItem] = 0;
+        }
+      }
+    });
+
+    // Verifica também faturas futuras com parcelas comprometidas
+    faturasCartaoAtivo.forEach(f => {
+      if (f.mesFatura >= MES_BASE && f.total > 0) {
+        mapaMeses[f.mesFatura] = 0;
+      }
+    });
+
+    // Se houver mês focado (>= MES_BASE), garante presença
+    if (mesFoco && mesFoco >= MES_BASE) {
       mapaMeses[mesFoco] = 0;
     }
 
@@ -493,6 +508,10 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
 
       const itensMes = saidas.filter(item => {
         const d = item.data_pagamento || item.data || '';
+        // Para meses futuros, considera apenas as parcelas e transações com vencimento naquele mês
+        if (mes > (mesAtual >= MES_BASE ? mesAtual : MES_BASE)) {
+          return d.startsWith(mes);
+        }
         return d.startsWith(mes) || item.recorrente === true;
       });
 
@@ -518,6 +537,7 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
     });
 
     const lista = Object.entries(mapaMeses)
+      .filter(([mes]) => mes >= MES_BASE)
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([mes, valor]) => {
         const nomesMes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -538,7 +558,7 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
       maxGasto,
       mediaGasto
     };
-  }, [saidas, mesFoco]);
+  }, [saidas, faturasCartaoAtivo, mesFoco, mesAtual]);
 
   const handleToggleMes = (mes) => {
     if (mesFoco === mes) {
@@ -643,7 +663,7 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
           </span>
         </div>
 
-        {/* Caixa 2: Limite Disponível (Fonte Secundária) */}
+        {/* Caixa 2: Limite Disponível (Fonte Primária Padronizada) */}
         <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.08] shadow-xs backdrop-blur-md transition-all hover:border-emerald-300 dark:hover:border-emerald-500/30">
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
@@ -653,7 +673,7 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
               <Wallet className="w-4 h-4" />
             </div>
           </div>
-          <span className="font-num-secondary text-xl sm:text-2xl lg:text-3xl font-black text-emerald-600 dark:text-emerald-400 block">
+          <span className="font-num-primary text-xl sm:text-2xl lg:text-3xl font-black text-emerald-600 dark:text-emerald-400 block">
             R$ {formatarBRL(limiteDisponivel)}
           </span>
           <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 block font-secondary">
@@ -661,7 +681,7 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
           </span>
         </div>
 
-        {/* Caixa 3: Limite Cadastrado (Fonte Secundária) */}
+        {/* Caixa 3: Limite Cadastrado (Fonte Primária Padronizada) */}
         <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.08] shadow-xs backdrop-blur-md transition-all hover:border-slate-300 dark:hover:border-white/20">
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
@@ -671,7 +691,7 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
               <Layers className="w-4 h-4" />
             </div>
           </div>
-          <span className="font-num-secondary text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-slate-100 block">
+          <span className="font-num-primary text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-slate-100 block">
             R$ {formatarBRL(limiteEfetivo)}
           </span>
           <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 truncate block font-secondary">
@@ -726,7 +746,7 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block font-secondary">
                     Limite do Cartão
                   </span>
-                  <span className="font-num-secondary text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400">
+                  <span className="font-num-primary text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400">
                     R$ {formatarBRL(limiteEfetivo)}
                   </span>
                 </div>
@@ -917,7 +937,9 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
                 <p className="text-xs font-secondary text-slate-500 dark:text-slate-400">
                   {mesFoco 
                     ? `Visualizando ${formatarMesAno(mesFoco)} ampliado. Clique na barra ou no botão para minimizar.`
-                    : 'Histórico dos últimos meses. Clique em um mês para ampliar.'}
+                    : historicoGastosMensais.lista.length > 1
+                      ? 'Histórico a partir de setembro e projeção de parcelas futuras. Clique em um mês para ampliar.'
+                      : 'Mês de referência (Setembro/2026). Parcelas futuras cadastradas aparecerão automaticamente aqui.'}
                 </p>
               </div>
 

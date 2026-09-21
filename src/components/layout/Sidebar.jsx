@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Calculator, TrendingUp, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Calculator, TrendingUp } from 'lucide-react';
 
 export function Sidebar({ activeTab, onSelectTab }) {
   const navItems = [
@@ -80,21 +80,6 @@ export function Sidebar({ activeTab, onSelectTab }) {
             );
           })}
         </nav>
-      </div>
-
-      {/* Rodapé da Sidebar: Assinatura visual elegante */}
-      <div className="pt-6 mt-6 border-t border-slate-100 dark:border-white/[0.06]">
-        <div className="p-3 rounded-2xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.05] flex items-center justify-between gap-2">
-          <div className="space-y-0.5">
-            <span className="text-[11px] font-black tracking-tight text-slate-800 dark:text-slate-200 block">
-              MoneyHub Fintech
-            </span>
-            <span className="text-[10px] text-slate-400 dark:text-slate-500 block font-mono">
-              Gestão Inteligente & Cartões
-            </span>
-          </div>
-          <Sparkles className="w-4 h-4 text-amber-500 flex-shrink-0" />
-        </div>
       </div>
     </aside>
   );

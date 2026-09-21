@@ -44,8 +44,8 @@ O MoneyHub divide as operações em 3 hubs complementares acessíveis pela barra
 
 ```text
 MoneyHub/
+├── 🧮 Lançamentos      → Fluxo de caixa: entradas, saídas, parcelamentos em andamento e extrato temporal
 ├── 📊 Dashboard        → Visão unificada: métricas de crédito, Apple Wallet, gráfico de barras e categorias
-├── 🧮 Calculadora      → Fluxo de caixa: entradas, saídas, parcelamentos em andamento e extrato temporal
 └── 📈 Investimentos    → Planejamento patrimonial: regra 50/30/20, juros compostos e histórico de aportes
 ```
 

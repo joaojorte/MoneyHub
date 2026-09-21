@@ -4,18 +4,18 @@ import { LayoutDashboard, Calculator, TrendingUp } from 'lucide-react';
 export function Sidebar({ activeTab, onSelectTab }) {
   const navItems = [
     {
+      id: 'calculadora',
+      label: 'Lançamentos',
+      subtitle: 'Entradas, Saídas & Fluxo',
+      icon: Calculator,
+      activeColor: 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
+    },
+    {
       id: 'dashboard',
       label: 'Dashboard',
       subtitle: 'Visão Geral & Cartões',
       icon: LayoutDashboard,
       activeColor: 'bg-[#0e4b6c] text-white shadow-lg shadow-[#0e4b6c]/30'
-    },
-    {
-      id: 'calculadora',
-      label: 'Calculadora',
-      subtitle: 'Lançamentos & Fluxo',
-      icon: Calculator,
-      activeColor: 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
     },
     {
       id: 'investimentos',

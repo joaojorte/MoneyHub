@@ -1064,9 +1064,9 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
                         className="flex-1 max-w-[80px] flex flex-col items-center justify-end h-full gap-2 cursor-pointer group select-none transition-all"
                         title={`${item.mesLabel}: R$ ${formatarBRL(item.valor)} (Clique para ampliar)`}
                       >
-                        {/* Valor Flutuante */}
-                        <span className="text-[10px] sm:text-xs font-bold transition-all truncate max-w-full text-center text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 font-num-secondary group-hover:scale-105">
-                          {item.valor >= 1000 ? `${(item.valor / 1000).toFixed(1)}k` : `R$ ${Math.round(item.valor)}`}
+                        {/* Valor Flutuante com Centavos */}
+                        <span className="text-[10px] sm:text-xs font-bold transition-all truncate max-w-full text-center text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 font-num-primary group-hover:scale-105">
+                          R$ {formatarBRL(item.valor)}
                         </span>
 
                         {/* Barra Vertical */}

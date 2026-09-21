@@ -14,7 +14,7 @@ import { formatarBRL } from './utils/formatters';
 import { Cloud } from 'lucide-react';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'calculadora' | 'investimentos'
+  const [activeTab, setActiveTab] = useState('calculadora'); // 'calculadora' (Lançamentos) | 'dashboard' | 'investimentos'
   const { isDark, toggleTheme } = useTheme();
 
   const {
@@ -44,7 +44,7 @@ export function App() {
           {/* CANTO SUPERIOR ESQUERDO: APENAS A LOGO (Conforme solicitado) */}
           <div className="flex items-center gap-3">
             <h1
-              onClick={() => setActiveTab('dashboard')}
+              onClick={() => setActiveTab('calculadora')}
               className="text-2xl sm:text-3xl font-black tracking-tight flex items-center cursor-pointer select-none transition-transform hover:scale-105"
             >
               <span className="text-slate-900 dark:text-white">Money</span>
@@ -52,8 +52,19 @@ export function App() {
             </h1>
           </div>
 
-          {/* Abas Mobile (Apenas em telas pequenas para fácil navegação) */}
+          {/* Abas Mobile (Lançamentos em 1º, Dashboard em 2º, Investimentos em 3º) */}
           <div className="flex lg:hidden items-center p-1 bg-slate-100 dark:bg-white/[0.05] rounded-xl border border-slate-200 dark:border-white/10 text-xs">
+            <button
+              type="button"
+              onClick={() => setActiveTab('calculadora')}
+              className={`px-2.5 py-1.5 rounded-lg font-bold transition-all ${
+                activeTab === 'calculadora'
+                  ? 'bg-white text-slate-900 shadow dark:bg-amber-500/20 dark:text-amber-300'
+                  : 'text-slate-500'
+              }`}
+            >
+              Lançamentos
+            </button>
             <button
               type="button"
               onClick={() => setActiveTab('dashboard')}
@@ -64,17 +75,6 @@ export function App() {
               }`}
             >
               Dashboard
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('calculadora')}
-              className={`px-2.5 py-1.5 rounded-lg font-bold transition-all ${
-                activeTab === 'calculadora'
-                  ? 'bg-white text-slate-900 shadow dark:bg-amber-500/20 dark:text-amber-300'
-                  : 'text-slate-500'
-              }`}
-            >
-              Calculadora
             </button>
             <button
               type="button"

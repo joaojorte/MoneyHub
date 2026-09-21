@@ -44,49 +44,49 @@ O MoneyHub divide as operações em 3 hubs complementares acessíveis pela barra
 
 ```text
 MoneyHub/
-├── 🧮 Lançamentos      → Fluxo de caixa: entradas, saídas, parcelamentos em andamento e extrato temporal
-├── 📊 Dashboard        → Visão unificada: métricas de crédito, Apple Wallet, gráfico de barras e categorias
+├── 🧮 Lançamentos      → Balanço Geral, Modal Fintech de Lançamentos, Dashboards de Gastos Gerais e Extrato Unificado
+├── 💳 Dashboard        → Central de Crédito: Apple Wallet View, Limites, Faturas e Extrato do Cartão
 └── 📈 Investimentos    → Planejamento patrimonial: regra 50/30/20, juros compostos e histórico de aportes
 ```
 
 ---
 
-### 1. Hub Dashboard Unificado (`UnifiedDashboard.jsx`)
+### 1. Hub de Lançamentos & Fluxo Geral (`UnifiedTransactionHub.jsx`)
 
-Desenvolvida seguindo rigorosamente a disposição e hierarquia de informações do `MODEL.PDF`:
+Inspirada nos aplicativos modernos de fintechs globais (Wise, Revolut, iOS Fintech Style):
 
-* **Indicadores no Topo**:
-  * **Fatura Atual**: Soma consolidada das despesas do cartão no ciclo vigente.
-  * **Limite Disponível**: Crédito livre para utilização imediata (`Limite Cadastrado - Quantia Utilizada`).
-  * **Limite Cadastrado**: Teto total de crédito atribuído ao cartão selecionado.
-  * **Saldo Líquido do Mês**: Saldo real apurado entre Receitas Líquidas e Despesas Totais.
-* **Seção de Cartões (Apple Wallet)**:
-  * **Barra de Progresso com Quantia Utilizada**: Exibição destacada em `font-num-primary` com medidor percentual de consumo de crédito.
-  * **Cartão Gráfico Realista**: Renderização visual do cartão com gradientes customizados por bandeira/emissor (Nubank, Itaú, Inter, Bradesco, etc.), chip de segurança EMV e alternador entre cartões cadastrados.
-  * **Modal de Gestão Ampliado**: Interface moderna para cadastrar novos cartões ou editar limite, dia de vencimento e apelido.
-  * **Barra de Conciliação**: Acompanhamento percentual entre saídas detalhadas e o total lançado para a fatura.
-* **Gráfico de Barras de Despesas Mensais**:
-  * Substituição de antigas timelines por colunas verticais responsivas e interativas.
-  * **1º Clique**: Amplia o mês selecionado, exibindo a coluna em destaque com atalhos de navegação e resumo isolado.
-  * **2º Clique (ou Botão Minimizar)**: Minimiza e retorna imediatamente à visualização de todas as barras lado a lado.
-* **Gastos por Categoria**:
-  * **Gráfico de Barras Empilhadas na Vertical**: Coluna vertical proporcional com segmentos coloridos empilhados de 0% a 100%, refletindo com precisão o peso de cada despesa no orçamento.
-  * **Grid de Cartões Reestruturado**: Blocos amplos e sem cortes de texto, com ícone temático, nome integral da categoria (sem truncamento), valor em R$ com fonte numérica secundária e indicador percentual sincronizado com a barra empilhada.
+* **Hero de Saldo Disponível ("Total Balance")**:
+  * Exibição proeminente do saldo em tipografia `font-num-primary` (`SF Pro Display font-black`).
+  * Pílulas com Receitas Líquidas, Despesas Totais e Resultado Líquido.
+  * **Ações Ágeis**: Botões `[ + Nova Entrada ]` e `[ − Nova Saída ]`.
+* **Modal de Lançamento Unificado (`TransactionModal.jsx`)**:
+  * Substitui formulários estáticos pesados por uma experiência focada (inspirada nas telas "Send Money / Add Money").
+  * Digitação de quantia em destaque centralizado, chips rápidos de categorias, seletores de data e opções avançadas para despesas (PIX vs Cartão, parcelamento em até 48x, recorrência/assinatura, delivery vs mercado).
+* **Dashboards de Gastos Gerais Integrados**:
+  * **Gastos Mensais**: Gráfico de barras interativo a partir de setembro de 2026 com projeção de parcelas futuras, valores com 2 casas decimais e sistema de zoom (1º clique amplia, 2º clique minimiza).
+  * **Gastos por Categoria**: Gráfico de barras empilhadas na vertical com escala de 0% a 100% acompanhado de cartões detalhados com micro-barras proporcionais.
+* **Extrato Unificado (`Recent Transactions`)**:
+  * Feed cronológico único com todas as entradas e saídas integradas, ícones coloridos por categoria, tags de pagamento e parcelamento, busca instantânea e filtros por tipo.
 
 ---
 
-### 2. Hub Calculadora Financeira (`ExpenseForm.jsx`, `IncomeForm.jsx`)
+### 2. Hub de Cartões & Crédito (`UnifiedDashboard.jsx`)
 
-* **Lançamento Ágil de Receitas**:
-  * Registro de proventos, salários, dividendos e rendimentos extras.
-  * Seletores de data rápida (*Hoje*, *Ontem*, *Anteontem*).
-* **Lançamento Completo de Despesas**:
-  * Formas de pagamento suportadas: Pix, Dinheiro, Transferência Bancária, Débito e Cartão de Crédito.
-  * **Parcelas em Andamento**: Permite registrar gastos que já começaram em meses anteriores, definindo o número da parcela atual e o total de repetições (ex.: parcela 4 de 12).
-  * **Lançamento de Fatura Total (Anti-Duplicação)**: Opção de registrar o valor total da fatura fechada do cartão. Ao ser ativado (`isFaturaTotal: true`), as saídas individuais do cartão atuam exclusivamente para detalhamento analítico (conciliação), assegurando que o saldo em conta não seja debitado duas vezes.
-  * **Vinculação a Cartões Específicos**: Diferenciação automática caso o usuário possua mais de um cartão de crédito.
-* **Extrato e Histórico (`TransactionList.jsx`)**:
-  * Listagem cronológica dos lançamentos com busca e filtros por período e categoria.
+Focada exclusivamente na gestão de cartões de crédito e faturas:
+
+* **Métricas Superiores do Cartão**:
+  * **Fatura Atual**: Valor da fatura no ciclo vigente.
+  * **Limite Disponível**: Crédito livre para novas compras.
+  * **Limite Cadastrado**: Limite contratado no banco emissor.
+  * **Total Comprometido**: Soma das parcelas futuras e faturas programadas.
+* **Experiência Apple Wallet**:
+  * Visualização realista do cartão de crédito com design institucional.
+  * Barra de consumo percentual do limite com alerta de saturação.
+  * Seletor carrossel de cartões cadastrados, botão `+ Cartão` e `Editar Cartão`.
+  * Painel de conciliação de fatura (detalhamento de compras vs fatura fechada).
+* **Extrato do Cartão & Faturas Programadas**:
+  * Lista de compras e parcelas vinculadas especificamente ao cartão selecionado.
+  * Visão detalhada de faturas dos próximos meses com data de vencimento e status de conciliação.
 
 ---
 

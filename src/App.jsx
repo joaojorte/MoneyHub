@@ -4,9 +4,7 @@ import { useFinancialCalculator } from './hooks/useFinancialCalculator';
 import { useTheme } from './hooks/useTheme';
 import { StatCard } from './components/ui/StatCard';
 import { ThemeToggle } from './components/ui/ThemeToggle';
-import { IncomeForm } from './components/calculator/IncomeForm';
-import { ExpenseForm } from './components/calculator/ExpenseForm';
-import { TransactionList } from './components/history/TransactionList';
+import { UnifiedTransactionHub } from './components/calculator/UnifiedTransactionHub';
 import { UnifiedDashboard } from './components/dashboard/UnifiedDashboard';
 import { InvestmentsHub } from './components/investments/InvestmentsHub';
 import { Sidebar } from './components/layout/Sidebar';
@@ -142,60 +140,18 @@ export function App() {
             />
           )}
 
-          {/* HUB CALCULADORA: LANÇAMENTOS E EXTRATOS */}
+          {/* HUB CALCULADORA: NOVO MODELO DE LANÇAMENTOS E DASHBOARDS GERAIS */}
           {activeTab === 'calculadora' && (
-            <div className="space-y-6 animate-fadeIn pb-10">
-              {/* Métricas Resumidas da Calculadora */}
-              <section className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-                <StatCard
-                  title="Saldo Disponível"
-                  value={`R$ ${formatarBRL(calc.sobraReal)}`}
-                  accent="brand"
-                />
-                <StatCard
-                  title="Total Entradas"
-                  value={`R$ ${formatarBRL(calc.totalEntradas)}`}
-                  subtitle={`${entradas.length} lançamento(s)`}
-                  accent="income"
-                />
-                <StatCard
-                  title="Total Saídas"
-                  value={`R$ ${formatarBRL(calc.totalSaidas)}`}
-                  subtitle={`${saidas.length} lançamento(s)`}
-                  accent="expense"
-                />
-                <StatCard
-                  title="Resultado Líquido"
-                  value={`R$ ${formatarBRL(calc.totalEntradas - calc.totalSaidas)}`}
-                  subtitle="Receitas − Despesas"
-                  accent={calc.totalEntradas >= calc.totalSaidas ? 'income' : 'expense'}
-                />
-              </section>
-
-              {/* Formulários de Lançamento (Grid 2 colunas) */}
-              <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                <IncomeForm onAddIncome={addEntrada} />
-                <ExpenseForm onAddExpense={addSaida} saidas={saidas} />
-              </section>
-
-              {/* Históricos de Lançamentos */}
-              <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                <TransactionList
-                  titulo="Extrato de Entradas"
-                  items={entradas}
-                  tipo="entrada"
-                  onRemove={removeEntrada}
-                  emptyMessage="Nenhuma entrada registrada ainda."
-                />
-                <TransactionList
-                  titulo="Extrato de Saídas"
-                  items={saidas}
-                  tipo="saida"
-                  onRemove={removeSaida}
-                  emptyMessage="Nenhuma saída registrada ainda."
-                />
-              </section>
-            </div>
+            <UnifiedTransactionHub
+              entradas={entradas}
+              saidas={saidas}
+              addEntrada={addEntrada}
+              removeEntrada={removeEntrada}
+              addSaida={addSaida}
+              removeSaida={removeSaida}
+              calc={calc}
+              usuario={usuario}
+            />
           )}
 
           {/* HUB ESPECÍFICA DE INVESTIMENTOS */}

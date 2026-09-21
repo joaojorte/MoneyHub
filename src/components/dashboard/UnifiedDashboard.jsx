@@ -699,21 +699,21 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
           </span>
         </div>
 
-        {/* Caixa 4: Saldo Líquido do Mês (Fonte Primária) */}
+        {/* Caixa 4: Total Comprometido (Fonte Primária Padronizada) */}
         <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.08] shadow-xs backdrop-blur-md transition-all hover:border-amber-300 dark:hover:border-amber-500/30">
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-              {mesFoco ? `Saldo (${formatarMesAno(mesFoco)})` : 'Saldo Líquido do Mês'}
+              Total Comprometido
             </span>
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${saldoMes >= 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-rose-500/10 text-rose-600'}`}>
-              {saldoMes >= 0 ? <TrendingUp className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+            <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <span className={`font-num-primary text-xl sm:text-2xl lg:text-3xl font-black block ${saldoMes >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-            R$ {formatarBRL(saldoMes)}
+          <span className="font-num-primary text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-white block">
+            R$ {formatarBRL(totalComprometido)}
           </span>
           <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 block font-secondary">
-            {mesFoco ? 'Mês em foco ampliado' : `Mês vigente (${formatarMesAno(mesAtual)})`}
+            {percentualConsumo}% do limite cadastrado
           </span>
         </div>
       </section>
@@ -923,358 +923,162 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
           </div>
         </div>
 
-        {/* COLUNA DIREITA: DASHBOARDS AO LADO DO CARTÃO COM GRÁFICO DE BARRA E PIZZA + CARTÕES DE CATEGORIAS */}
+        {/* COLUNA DIREITA: LANÇAMENTOS E FATURAS DO CARTÃO SELECIONADO */}
         <div className="lg:col-span-7 space-y-6">
           
-          {/* 1. GRÁFICO DE BARRAS: GASTOS MENSAIS (Clique para ampliar, novo clique para minimizar) */}
+          {/* 1. EXTRATO DETALHADO DO CARTÃO DE CRÉDITO */}
           <div className="glass-panel p-5 sm:p-6 rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 dark:border-white/[0.06] pb-3">
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-emerald-500" />
-                  <span>Gastos Mensais</span>
+                  <CreditCard className="w-5 h-5 text-rose-500" />
+                  <span>Compras no {cartaoAtivo?.apelido || cartaoAtivo?.cartaoNome || 'Cartão'}</span>
                 </h3>
                 <p className="text-xs font-secondary text-slate-500 dark:text-slate-400">
-                  {mesFoco 
-                    ? `Visualizando ${formatarMesAno(mesFoco)} ampliado. Clique na barra ou no botão para minimizar.`
-                    : historicoGastosMensais.lista.length > 1
-                      ? 'Histórico a partir de setembro e projeção de parcelas futuras. Clique em um mês para ampliar.'
-                      : 'Mês de referência (Setembro/2026). Parcelas futuras cadastradas aparecerão automaticamente aqui.'}
+                  Lançamentos e compras parceladas vinculadas a este cartão.
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 text-xs font-secondary flex-wrap">
-                {mesFoco ? (
-                  <button
-                    type="button"
-                    onClick={() => setMesFoco(null)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold transition-all shadow-xs cursor-pointer"
-                    title="Minimizar e voltar a ver todas as barras"
-                  >
-                    <Minimize2 className="w-3.5 h-3.5" />
-                    <span>Minimizar (Ver todas as barras)</span>
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-500 dark:text-slate-400">Média Mensal:</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-white/[0.05] px-2.5 py-1 rounded-full border border-slate-200 dark:border-white/[0.08] font-num-secondary">
-                      R$ {formatarBRL(historicoGastosMensais.mediaGasto)}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Visualização em Barras: MODO AMPLIADO vs MODO MINIMIZADO */}
-            {mesFoco ? (
-              /* MODO AMPLIADO (Visualiza aquele mês em específico, com clique para minimizar) */
-              <div className="pt-2 pb-1">
-                <div className="flex items-center justify-between px-2 sm:px-8">
-                  {/* Navegação Mês Anterior */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const idx = historicoGastosMensais.lista.findIndex(i => i.mes === mesFoco);
-                      if (idx > 0) {
-                        setMesFoco(historicoGastosMensais.lista[idx - 1].mes);
-                      }
-                    }}
-                    disabled={historicoGastosMensais.lista.findIndex(i => i.mes === mesFoco) <= 0}
-                    className="p-2.5 rounded-2xl border border-slate-200 dark:border-white/10 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] disabled:opacity-20 disabled:pointer-events-none transition-all cursor-pointer"
-                    title="Mês anterior"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-
-                  {/* Barra Central Ampliada */}
-                  {(() => {
-                    const itemFoco = historicoGastosMensais.lista.find(i => i.mes === mesFoco) || {
-                      mes: mesFoco,
-                      mesLabel: formatarMesAno(mesFoco),
-                      mesCurto: mesFoco.slice(5, 7),
-                      valor: totalSaidasMes
-                    };
-
-                    return (
-                      <div
-                        onClick={() => setMesFoco(null)}
-                        className="flex flex-col items-center justify-end h-48 sm:h-56 w-36 sm:w-44 cursor-pointer group select-none transition-all"
-                        title="Clique novamente na barra para minimizar e voltar a ver todas as barras"
-                      >
-                        {/* Valor Flutuante Ampliado */}
-                        <div className="mb-2 text-center">
-                          <span className="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400 font-num-primary block scale-110 drop-shadow-sm">
-                            R$ {formatarBRL(itemFoco.valor)}
-                          </span>
-                          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 font-secondary block mt-0.5 group-hover:text-emerald-500 transition-colors">
-                            (Clique para minimizar)
-                          </span>
-                        </div>
-
-                        {/* Barra Vertical Ampliada */}
-                        <div className="w-20 sm:w-24 h-36 sm:h-40 flex items-end justify-center">
-                          <div
-                            className="w-full h-full rounded-2xl bg-gradient-to-t from-emerald-600 to-teal-400 shadow-xl shadow-emerald-500/30 ring-4 ring-emerald-400/40 relative overflow-hidden transition-all duration-300 group-hover:scale-105 group-hover:shadow-emerald-500/50"
-                          />
-                        </div>
-
-                        {/* Etiqueta do Mês Ampliada */}
-                        <div className="mt-2 text-center">
-                          <span className="text-sm font-black uppercase text-emerald-600 dark:text-emerald-400 font-secondary block">
-                            {itemFoco.mesCurto}
-                          </span>
-                          <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 font-secondary">
-                            {itemFoco.mesLabel}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Navegação Próximo Mês */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const idx = historicoGastosMensais.lista.findIndex(i => i.mes === mesFoco);
-                      if (idx >= 0 && idx < historicoGastosMensais.lista.length - 1) {
-                        setMesFoco(historicoGastosMensais.lista[idx + 1].mes);
-                      }
-                    }}
-                    disabled={historicoGastosMensais.lista.findIndex(i => i.mes === mesFoco) >= historicoGastosMensais.lista.length - 1}
-                    className="p-2.5 rounded-2xl border border-slate-200 dark:border-white/10 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] disabled:opacity-20 disabled:pointer-events-none transition-all cursor-pointer"
-                    title="Próximo mês"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              /* MODO MINIMIZADO (Todas as barras visíveis lado a lado como estava) */
-              <div className="pt-2 pb-1">
-                <div className="flex items-end justify-around h-44 sm:h-52 px-2 gap-2 sm:gap-4 max-w-full overflow-x-auto">
-                  {historicoGastosMensais.lista.map((item) => {
-                    const heightPct = historicoGastosMensais.maxGasto > 0 
-                      ? Math.max(12, Math.round((item.valor / historicoGastosMensais.maxGasto) * 100))
-                      : 12;
-
-                    return (
-                      <div
-                        key={item.mes}
-                        onClick={() => handleToggleMes(item.mes)}
-                        className="flex-1 max-w-[80px] flex flex-col items-center justify-end h-full gap-2 cursor-pointer group select-none transition-all"
-                        title={`${item.mesLabel}: R$ ${formatarBRL(item.valor)} (Clique para ampliar)`}
-                      >
-                        {/* Valor Flutuante com Centavos */}
-                        <span className="text-[10px] sm:text-xs font-bold transition-all truncate max-w-full text-center text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 font-num-primary group-hover:scale-105">
-                          R$ {formatarBRL(item.valor)}
-                        </span>
-
-                        {/* Barra Vertical */}
-                        <div className="w-full max-w-[48px] h-full flex items-end justify-center">
-                          <div
-                            style={{ height: `${heightPct}%` }}
-                            className="w-full rounded-2xl transition-all duration-500 relative overflow-hidden bg-slate-200 hover:bg-gradient-to-t hover:from-emerald-600 hover:to-teal-400 dark:bg-white/[0.07] dark:hover:bg-gradient-to-t dark:hover:from-emerald-600 dark:hover:to-teal-400 group-hover:shadow-md group-hover:ring-2 group-hover:ring-emerald-400/30"
-                          />
-                        </div>
-
-                        {/* Etiqueta do Mês */}
-                        <span className="text-[11px] sm:text-xs font-bold uppercase transition-all font-secondary text-slate-500 dark:text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 group-hover:font-black">
-                          {item.mesCurto}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Resumo Inferior: Mês em Foco ou Visão Consolidada */}
-            <div className="pt-3 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between flex-wrap gap-2 text-xs">
-              <div className="flex items-center gap-2">
-                <span className="text-slate-600 dark:text-slate-400 font-secondary">
-                  {mesFoco ? (
-                    <>
-                      Mês em foco: <strong className="text-slate-900 dark:text-white capitalize">{formatarMesAno(mesFoco)}</strong>
-                    </>
-                  ) : (
-                    <>
-                      Visão consolidada: <strong className="text-slate-900 dark:text-white capitalize">Todos os Meses</strong>
-                    </>
-                  )}
-                </span>
-                {mesFoco && (
-                  <button
-                    type="button"
-                    onClick={() => setMesFoco(null)}
-                    className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
-                  >
-                    (minimizar)
-                  </button>
-                )}
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-emerald-600 dark:text-emerald-400 font-bold font-num-primary">
-                  Receitas: R$ {formatarBRL(totalEntradasMes)}
-                </span>
-                <span className="text-rose-600 dark:text-rose-400 font-bold font-num-primary">
-                  Despesas: R$ {formatarBRL(totalSaidasMes)}
-                </span>
-                <span className={`font-black font-num-primary ${saldoMes >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                  Saldo: R$ {formatarBRL(saldoMes)}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* 2. GASTOS POR CATEGORIA: GRÁFICO DE BARRAS EMPILHADAS NA VERTICAL + CARTÕES */}
-          <div className="glass-panel p-5 sm:p-6 rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-sm space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 dark:border-white/[0.06] pb-3">
-              <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Layers className="w-5 h-5 text-amber-500" />
-                  <span>Gastos por Categoria</span>
-                </h3>
-                <p className="text-xs font-secondary text-slate-500 dark:text-slate-400">
-                  Gráfico de barras empilhadas na vertical com a distribuição e cartões detalhados por categoria.
-                </p>
-              </div>
-
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.05] px-3 py-1 rounded-full border border-slate-200 dark:border-white/[0.08] self-start sm:self-auto font-num-secondary">
-                Total de Gastos: R$ {formatarBRL(totalCategorias)}
+              <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.05] px-3 py-1 rounded-full border border-slate-200 dark:border-white/[0.08] self-start sm:self-auto font-num-secondary">
+                {transacoesCartaoAtivo.length} lançamento(s)
               </span>
             </div>
 
-            {totalCategorias === 0 ? (
-              <div className="py-10 text-center text-slate-400 dark:text-slate-500 text-xs sm:text-sm font-secondary">
-                Nenhuma despesa registrada para {mesFoco ? formatarMesAno(mesFoco) : 'o período selecionado'}.
+            {transacoesCartaoAtivo.length === 0 ? (
+              <div className="py-12 text-center flex flex-col items-center justify-center gap-2">
+                <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-white/[0.04] flex items-center justify-center text-2xl">
+                  💳
+                </div>
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                  Nenhuma despesa vinculada a este cartão
+                </p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 max-w-xs">
+                  Ao realizar lançamentos no crédito na aba de Lançamentos, selecione este cartão para acompanhá-lo aqui.
+                </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                
-                {/* GRÁFICO DE BARRAS EMPILHADAS NA VERTICAL */}
-                <div className="md:col-span-5 lg:col-span-4 flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.06]">
-                  <div className="flex items-center gap-3">
-                    {/* Escala Percentual Vertical */}
-                    <div className="flex flex-col justify-between h-[250px] text-[10px] font-mono text-slate-400 dark:text-slate-500 select-none text-right py-1 font-num-secondary">
-                      <span>100%</span>
-                      <span>75%</span>
-                      <span>50%</span>
-                      <span>25%</span>
-                      <span>0%</span>
-                    </div>
+              <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                {transacoesCartaoAtivo.map((item) => {
+                  const dataCompra = formatarDataBR(item.data);
+                  const dataVenc = item.data_pagamento ? formatarDataBR(item.data_pagamento) : '';
+                  const isParcelado = item.frequencia === 'parcelado' || (item.totalParcelas && item.totalParcelas > 1);
 
-                    {/* Coluna da Barra Empilhada Vertical */}
-                    <div className="relative w-16 sm:w-20 h-[250px] rounded-2xl overflow-hidden bg-slate-200/60 dark:bg-white/[0.05] border border-slate-300/80 dark:border-white/10 shadow-inner flex flex-col-reverse">
-                      {categoriasAgrupadas.map((cat) => {
-                        const isHovered = categoriaHover === cat.nome;
-                        const isAnyHovered = Boolean(categoriaHover);
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between p-3.5 rounded-2xl bg-white/60 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.06] hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-all group"
+                    >
+                      <div className="flex items-center gap-3 min-w-0 pr-2">
+                        <div className="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center text-base flex-shrink-0">
+                          {ICONES_CATEGORIAS[item.categoria] || '💳'}
+                        </div>
 
-                        return (
-                          <div
-                            key={cat.nome}
-                            style={{ 
-                              height: `${cat.porcentagem}%`, 
-                              backgroundColor: cat.cor 
-                            }}
-                            onMouseEnter={() => setCategoriaHover(cat.nome)}
-                            onMouseLeave={() => setCategoriaHover(null)}
-                            className={`w-full transition-all duration-300 relative group cursor-pointer flex items-center justify-center border-t border-white/20 first:border-t-0 ${
-                              isHovered 
-                                ? 'brightness-125 z-10 scale-[1.03] shadow-md ring-2 ring-white/60' 
-                                : isAnyHovered 
-                                  ? 'opacity-40' 
-                                  : 'hover:brightness-110'
-                            }`}
-                            title={`${cat.nome}: R$ ${formatarBRL(cat.valor)} (${cat.porcentagem.toFixed(1)}%)`}
-                          >
-                            {/* Percentual dentro do segmento se altura for suficiente */}
-                            {cat.porcentagem >= 12 && (
-                              <span className="text-[11px] font-black text-white drop-shadow select-none font-num-secondary">
-                                {cat.porcentagem.toFixed(0)}%
+                        <div className="min-w-0 space-y-0.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 truncate max-w-[160px] sm:max-w-[240px]">
+                              {item.descricao || item.categoria}
+                            </span>
+                            <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 dark:bg-white/[0.05] px-2 py-0.5 rounded-full border border-slate-200 dark:border-white/10">
+                              {item.categoria}
+                            </span>
+                            {isParcelado && (
+                              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-500/20 dark:text-amber-300">
+                                {item.parcelaAtual}/{item.totalParcelas}
                               </span>
                             )}
                           </div>
-                        );
-                      })}
-                    </div>
-                  </div>
 
-                  {/* Legenda sob a barra empilhada */}
-                  <div className="mt-3 text-center">
-                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300 font-secondary block">
-                      100% dos Gastos do Mês
-                    </span>
-                    <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 font-secondary">
-                      {categoriasAgrupadas.length} {categoriasAgrupadas.length === 1 ? 'categoria' : 'categorias'} empilhadas
-                    </span>
-                  </div>
-                </div>
-
-                {/* GASTOS POR CATEGORIA: CARTÕES DETALHADOS REESTRUTURADOS */}
-                <div className="md:col-span-7 lg:col-span-8">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[340px] overflow-y-auto pr-1">
-                    {categoriasAgrupadas.map((cat) => {
-                      const isHovered = categoriaHover === cat.nome;
-
-                      return (
-                        <div
-                          key={cat.nome}
-                          onMouseEnter={() => setCategoriaHover(cat.nome)}
-                          onMouseLeave={() => setCategoriaHover(null)}
-                          className={`p-3.5 sm:p-4 rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col justify-between ${
-                            isHovered
-                              ? 'border-amber-400 dark:border-amber-400 bg-white dark:bg-white/[0.08] shadow-md scale-[1.02]'
-                              : 'bg-slate-50/90 dark:bg-white/[0.03] border-slate-200/80 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/20'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-2.5">
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <div
-                                className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 shadow-xs"
-                                style={{ 
-                                  backgroundColor: `${cat.cor}20`,
-                                  border: `1px solid ${cat.cor}40`
-                                }}
-                              >
-                                <span>{ICONES_CATEGORIAS[cat.nome] || '🏷️'}</span>
-                              </div>
-                              <div className="min-w-0">
-                                <span className="block text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight">
-                                  {cat.nome}
-                                </span>
-                                <span className="block text-base font-black text-slate-900 dark:text-white mt-1 font-num-secondary">
-                                  R$ {formatarBRL(cat.valor)}
-                                </span>
-                              </div>
-                            </div>
-
-                            <span
-                              className="px-2.5 py-1 rounded-full text-xs font-bold border font-num-secondary flex-shrink-0 self-start"
-                              style={{
-                                backgroundColor: `${cat.cor}18`,
-                                color: cat.cor,
-                                borderColor: `${cat.cor}35`
-                              }}
-                            >
-                              {cat.porcentagem.toFixed(1)}%
-                            </span>
-                          </div>
-
-                          {/* Mini barra horizontal proporcional */}
-                          <div className="w-full h-1.5 rounded-full bg-slate-200/70 dark:bg-white/[0.08] overflow-hidden mt-3">
-                            <div
-                              className="h-full rounded-full transition-all duration-500"
-                              style={{
-                                width: `${cat.porcentagem}%`,
-                                backgroundColor: cat.cor
-                              }}
-                            />
+                          <div className="text-[11px] text-slate-400 font-mono">
+                            Compra: {dataCompra} {dataVenc && `· Venc.: ${dataVenc}`}
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                      </div>
+
+                      <div className="flex items-center gap-2.5 flex-shrink-0">
+                        <span className="font-num-primary text-sm sm:text-base font-black text-rose-600 dark:text-rose-400 tabular-nums">
+                          R$ {formatarBRL(item.valor)}
+                        </span>
+                        {onRemoveSaida && (
+                          <button
+                            type="button"
+                            onClick={() => onRemoveSaida(item.id)}
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:text-rose-400 dark:hover:bg-rose-500/20 transition-all cursor-pointer"
+                            title="Remover lançamento do cartão"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* 2. FATURAS DO CARTÃO & PROJEÇÃO */}
+          <div className="glass-panel p-5 sm:p-6 rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-amber-500" />
+                  <span>Faturas Programadas</span>
+                </h3>
+                <p className="text-xs font-secondary text-slate-500 dark:text-slate-400">
+                  Previsão de vencimentos e valores das faturas futuras do cartão.
+                </p>
+              </div>
+            </div>
+
+            {faturasCartaoAtivo.length === 0 ? (
+              <div className="py-8 text-center text-xs text-slate-400 dark:text-slate-500">
+                Nenhuma fatura com compras registradas para este cartão.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[280px] overflow-y-auto pr-1">
+                {faturasCartaoAtivo.map((fatura) => {
+                  const isAtual = fatura.mesFatura === mesAtual;
+
+                  return (
+                    <div
+                      key={fatura.mesFatura}
+                      className={`p-3.5 rounded-2xl border transition-all ${
+                        isAtual
+                          ? 'bg-rose-50/60 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30'
+                          : 'bg-slate-50/70 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                          {formatarMesAno(fatura.mesFatura)}
+                        </span>
+                        {isAtual && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500 text-white shadow-xs">
+                            Atual
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="mt-2 flex items-baseline justify-between">
+                        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                          Venc. dia {fatura.diaVencimento}
+                        </span>
+                        <span className="font-num-primary text-base font-black text-rose-600 dark:text-rose-400">
+                          R$ {formatarBRL(fatura.total)}
+                        </span>
+                      </div>
+
+                      <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-white/[0.06] flex items-center justify-between text-[11px] text-slate-500">
+                        <span>{fatura.itens.length} compra(s)</span>
+                        {fatura.temFaturaDeclarada && (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                            {fatura.pctConciliado}% conciliado
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

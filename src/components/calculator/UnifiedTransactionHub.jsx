@@ -29,6 +29,32 @@ const CORES_FALLBACK = [
   '#E11D48', '#0D9488', '#F97316', '#4F46E5', '#DB2777'
 ];
 
+function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+  const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
+  return {
+    x: centerX + radius * Math.cos(angleInRadians),
+    y: centerY + radius * Math.sin(angleInRadians)
+  };
+}
+
+function describeArc(x, y, radius, startAngle, endAngle) {
+  const delta = endAngle - startAngle;
+  if (delta >= 359.99) {
+    const p1 = polarToCartesian(x, y, radius, 0);
+    const p2 = polarToCartesian(x, y, radius, 180);
+    return `M ${p1.x} ${p1.y} A ${radius} ${radius} 0 1 1 ${p2.x} ${p2.y} A ${radius} ${radius} 0 1 1 ${p1.x} ${p1.y}`;
+  }
+
+  const pStart = polarToCartesian(x, y, radius, startAngle);
+  const pEnd = polarToCartesian(x, y, radius, endAngle);
+  const largeArcFlag = delta > 180 ? 1 : 0;
+
+  return [
+    "M", pStart.x, pStart.y,
+    "A", radius, radius, 0, largeArcFlag, 1, pEnd.x, pEnd.y
+  ].join(" ");
+}
+
 export function UnifiedTransactionHub({
   entradas = [],
   saidas = [],
@@ -175,6 +201,49 @@ export function UnifiedTransactionHub({
   }, [saidasMes]);
 
   const [categoriaHover, setCategoriaHover] = useState(null);
+
+  // Cálculo do Gráfico de Anel (Donut) com fatias proporcionais, gaps suaves e percentagens
+  const slices = useMemo(() => {
+    if (totalCategorias <= 0 || categoriasAgrupadas.length === 0) return [];
+
+    let currentAngle = 0;
+    const isSingle = categoriasAgrupadas.length === 1;
+
+    return categoriasAgrupadas.map((cat) => {
+      const sweep = (cat.porcentagem / 100) * 360;
+      const startAngle = currentAngle;
+      const endAngle = currentAngle + sweep;
+      const midAngle = startAngle + sweep / 2;
+      currentAngle += sweep;
+
+      // Gap suave entre fatias (apenas se houver mais de 1 categoria)
+      const effectiveGap = isSingle ? 0 : Math.min(2.5, sweep * 0.2);
+      const visualStart = startAngle + effectiveGap;
+      const visualEnd = endAngle - effectiveGap;
+
+      // Coordenadas para o texto da porcentagem (direto na fatia se >= 7%, adjacente se < 7%)
+      const rad = ((midAngle - 90) * Math.PI) / 180;
+      const isDirect = cat.porcentagem >= 7;
+      const textRadius = isDirect ? 88 : 108;
+
+      return {
+        ...cat,
+        startAngle,
+        endAngle,
+        visualStart,
+        visualEnd,
+        midAngle,
+        isDirect,
+        textX: 130 + textRadius * Math.cos(rad),
+        textY: 130 + textRadius * Math.sin(rad),
+      };
+    });
+  }, [categoriasAgrupadas, totalCategorias]);
+
+  const categoriaHoverItem = useMemo(() => {
+    if (!categoriaHover) return null;
+    return categoriasAgrupadas.find(c => c.nome === categoriaHover) || null;
+  }, [categoriaHover, categoriasAgrupadas]);
 
   return (
     <div className="space-y-7 animate-fadeIn pb-12">
@@ -481,54 +550,137 @@ export function UnifiedTransactionHub({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-14 items-center">
-              {/* Barra Empilhada Vertical (Sem Box-ception: integrado de forma fluida e direta) */}
-              <div className="md:col-span-5 lg:col-span-4 flex flex-col items-center justify-center py-2">
-                <div className="flex items-center gap-3">
-                  <div className="flex flex-col justify-between h-[250px] text-[10px] font-mono text-slate-400 dark:text-slate-500 select-none text-right py-1 font-num-secondary">
-                    <span>100%</span>
-                    <span>75%</span>
-                    <span>50%</span>
-                    <span>25%</span>
-                    <span>0%</span>
-                  </div>
+              {/* Gráfico de Anel / Donut Circular (Lado Esquerdo) */}
+              <div className="md:col-span-5 flex flex-col items-center justify-center py-2">
+                <div className="w-full max-w-[260px] sm:max-w-[280px] aspect-square relative flex items-center justify-center select-none">
+                  <svg 
+                    viewBox="0 0 260 260" 
+                    className="w-full h-full overflow-visible"
+                  >
+                    {/* Anel de trilha sutil de fundo */}
+                    <circle
+                      cx="130"
+                      cy="130"
+                      r="88"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="16"
+                      className="text-slate-100 dark:text-white/[0.04]"
+                    />
 
-                  <div className="relative w-16 sm:w-20 h-[250px] rounded-2xl overflow-hidden bg-slate-200/60 dark:bg-white/[0.05] border border-slate-300/80 dark:border-white/10 shadow-inner flex flex-col-reverse">
-                    {categoriasAgrupadas.map((cat) => {
-                      const isHovered = categoriaHover === cat.nome;
-                      const isAnyHovered = Boolean(categoriaHover);
+                    {/* Mostrador interno decorativo estilo relógio/velocímetro */}
+                    <circle
+                      cx="130"
+                      cy="130"
+                      r="68"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1"
+                      className="text-slate-200/80 dark:text-white/[0.07]"
+                    />
+                    <circle
+                      cx="130"
+                      cy="130"
+                      r="73"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeDasharray="1.5 4.5"
+                      className="text-slate-300/70 dark:text-white/10"
+                    />
+
+                    {/* Fatias coloridas do Gráfico de Anel */}
+                    {categoriasAgrupadas.length === 1 ? (
+                      <circle
+                        cx="130"
+                        cy="130"
+                        r="88"
+                        fill="none"
+                        stroke={categoriasAgrupadas[0].cor}
+                        strokeWidth={categoriaHover === categoriasAgrupadas[0].nome ? 22 : 18}
+                        className="transition-all duration-300 cursor-pointer"
+                        onMouseEnter={() => setCategoriaHover(categoriasAgrupadas[0].nome)}
+                        onMouseLeave={() => setCategoriaHover(null)}
+                      />
+                    ) : (
+                      slices.map((slice) => {
+                        const isHovered = categoriaHover === slice.nome;
+                        const isAnyHovered = Boolean(categoriaHover);
+
+                        if (slice.visualEnd <= slice.visualStart) return null;
+
+                        const pathD = describeArc(130, 130, 88, slice.visualStart, slice.visualEnd);
+
+                        return (
+                          <path
+                            key={`slice-${slice.nome}`}
+                            d={pathD}
+                            fill="none"
+                            stroke={slice.cor}
+                            strokeWidth={isHovered ? 22 : 18}
+                            strokeLinecap="round"
+                            onMouseEnter={() => setCategoriaHover(slice.nome)}
+                            onMouseLeave={() => setCategoriaHover(null)}
+                            className={`transition-all duration-300 cursor-pointer ${
+                              isHovered
+                                ? 'brightness-125 z-10'
+                                : isAnyHovered
+                                  ? 'opacity-35'
+                                  : 'hover:brightness-110'
+                            }`}
+                            style={{
+                              filter: isHovered ? `drop-shadow(0 0 8px ${slice.cor})` : undefined
+                            }}
+                          >
+                            <title>{`${slice.nome}: R$ ${formatarBRL(slice.valor)} (${slice.porcentagem.toFixed(1)}%)`}</title>
+                          </path>
+                        );
+                      })
+                    )}
+
+                    {/* Percentagens nas Fatias (sobre a fatia ou imediatamente adjacente) */}
+                    {slices.map((slice) => {
+                      if (slice.porcentagem < 4) return null;
 
                       return (
-                        <div
-                          key={cat.nome}
-                          style={{ 
-                            height: `${cat.porcentagem}%`, 
-                            backgroundColor: cat.cor 
-                          }}
-                          onMouseEnter={() => setCategoriaHover(cat.nome)}
-                          onMouseLeave={() => setCategoriaHover(null)}
-                          className={`w-full transition-all duration-300 relative group cursor-pointer flex items-center justify-center border-t border-white/20 first:border-t-0 ${
-                            isHovered 
-                              ? 'brightness-125 z-10 scale-[1.03] shadow-md ring-2 ring-white/60' 
-                              : isAnyHovered 
-                                ? 'opacity-40' 
-                                : 'hover:brightness-110'
+                        <text
+                          key={`pct-${slice.nome}`}
+                          x={slice.textX}
+                          y={slice.textY}
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          fill={slice.isDirect ? '#FFFFFF' : slice.cor}
+                          className={`font-num-primary font-black select-none pointer-events-none transition-all duration-200 ${
+                            slice.isDirect
+                              ? 'text-[11px] sm:text-xs drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]'
+                              : 'text-[10px] sm:text-[11px] drop-shadow-sm'
                           }`}
-                          title={`${cat.nome}: R$ ${formatarBRL(cat.valor)} (${cat.porcentagem.toFixed(1)}%)`}
                         >
-                          {cat.porcentagem >= 12 && (
-                            <span className="text-[11px] font-black text-white drop-shadow select-none font-num-secondary">
-                              {cat.porcentagem.toFixed(0)}%
-                            </span>
-                          )}
-                        </div>
+                          {slice.porcentagem.toFixed(0)}%
+                        </text>
                       );
                     })}
+                  </svg>
+
+                  {/* Texto perfeitamente centralizado no interior do anel: Valor Total e 'Total' abaixo */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none text-center px-4">
+                    <div className="flex items-baseline gap-1 justify-center">
+                      <span className="text-xs sm:text-sm font-black text-slate-400 dark:text-slate-500 font-num-primary">
+                        R$
+                      </span>
+                      <span className="font-num-primary text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-white tracking-tight drop-shadow-sm">
+                        {formatarBRL(categoriaHoverItem ? categoriaHoverItem.valor : totalCategorias)}
+                      </span>
+                    </div>
+                    <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-secondary mt-0.5">
+                      {categoriaHoverItem ? categoriaHoverItem.nome : 'Total'}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              {/* Lista Limpa e Minimalista de Categorias (Bolinha e Nome na esquerda; Valor e Porcentagem na direita) */}
-              <div className="md:col-span-7 lg:col-span-8">
+              {/* Lista Limpa e Minimalista de Categorias (Lado Direito: sem linhas divisórias ou margem inferior) */}
+              <div className="md:col-span-7">
                 <ul className="max-h-[380px] overflow-y-auto pr-2 space-y-1">
                   {categoriasAgrupadas.map((cat) => {
                     const isHovered = categoriaHover === cat.nome;
@@ -538,16 +690,16 @@ export function UnifiedTransactionHub({
                         key={cat.nome}
                         onMouseEnter={() => setCategoriaHover(cat.nome)}
                         onMouseLeave={() => setCategoriaHover(null)}
-                        className={`py-2.5 sm:py-3 px-3 -mx-3 rounded-xl transition-all duration-150 flex items-center justify-between gap-4 cursor-pointer group ${
+                        className={`py-2 sm:py-2.5 px-3 -mx-3 rounded-xl transition-all duration-150 flex items-center justify-between gap-4 cursor-pointer group ${
                           isHovered 
                             ? 'bg-slate-100/70 dark:bg-white/[0.04]' 
                             : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'
                         }`}
                       >
-                        {/* Esquerda: Bolinha colorida e Nome da Categoria */}
+                        {/* Esquerda: Indicador colorido arredondado e Nome da Categoria */}
                         <div className="flex items-center gap-3 min-w-0">
                           <span
-                            className="w-2.5 h-2.5 rounded-full flex-shrink-0 transition-transform duration-200 group-hover:scale-125"
+                            className="w-3 h-3 rounded-[4px] flex-shrink-0 transition-transform duration-200 group-hover:scale-110 shadow-xs"
                             style={{ 
                               backgroundColor: cat.cor,
                               boxShadow: isHovered ? `0 0 10px ${cat.cor}` : undefined

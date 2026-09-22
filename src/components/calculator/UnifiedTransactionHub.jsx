@@ -503,20 +503,11 @@ export function UnifiedTransactionHub({
                     })}
                   </div>
                 </div>
-
-                <div className="mt-3 text-center">
-                  <span className="text-xs font-bold text-slate-600 dark:text-slate-300 font-secondary block">
-                    100% dos Gastos do Período
-                  </span>
-                  <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 font-secondary">
-                    {categoriasAgrupadas.length} {categoriasAgrupadas.length === 1 ? 'categoria empilhada' : 'categorias empilhadas'}
-                  </span>
-                </div>
               </div>
 
-              {/* Lista Limpa e Minimalista de Categorias (Sem Box-ception, Sem Emojis, com divisor ultrafino) */}
+              {/* Lista Limpa e Minimalista de Categorias (Bolinha e Nome na esquerda; Valor e Porcentagem na direita) */}
               <div className="md:col-span-7 lg:col-span-8">
-                <ul className="max-h-[380px] overflow-y-auto pr-2 divide-y divide-slate-100 dark:divide-white/[0.04]">
+                <ul className="max-h-[380px] overflow-y-auto pr-2 space-y-1">
                   {categoriasAgrupadas.map((cat) => {
                     const isHovered = categoriaHover === cat.nome;
 
@@ -525,13 +516,13 @@ export function UnifiedTransactionHub({
                         key={cat.nome}
                         onMouseEnter={() => setCategoriaHover(cat.nome)}
                         onMouseLeave={() => setCategoriaHover(null)}
-                        className={`py-3.5 sm:py-4 px-3 -mx-3 rounded-xl transition-all duration-150 flex items-center justify-between gap-4 cursor-pointer group ${
+                        className={`py-2.5 sm:py-3 px-3 -mx-3 rounded-xl transition-all duration-150 flex items-center justify-between gap-4 cursor-pointer group ${
                           isHovered 
                             ? 'bg-slate-100/70 dark:bg-white/[0.04]' 
                             : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'
                         }`}
                       >
-                        {/* Indicador de cor e Nome */}
+                        {/* Esquerda: Bolinha colorida e Nome da Categoria */}
                         <div className="flex items-center gap-3 min-w-0">
                           <span
                             className="w-2.5 h-2.5 rounded-full flex-shrink-0 transition-transform duration-200 group-hover:scale-125"
@@ -540,29 +531,17 @@ export function UnifiedTransactionHub({
                               boxShadow: isHovered ? `0 0 10px ${cat.cor}` : undefined
                             }}
                           />
-                          <div className="min-w-0">
-                            <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 block truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
-                              {cat.nome}
-                            </span>
-                            {/* Barra proporcional sutil e limpa */}
-                            <div className="w-24 sm:w-36 h-1 rounded-full bg-slate-200/60 dark:bg-white/[0.06] overflow-hidden mt-1.5">
-                              <div
-                                className="h-full rounded-full transition-all duration-500"
-                                style={{
-                                  width: `${cat.porcentagem}%`,
-                                  backgroundColor: cat.cor
-                                }}
-                              />
-                            </div>
-                          </div>
+                          <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                            {cat.nome}
+                          </span>
                         </div>
 
-                        {/* Valor e Percentual */}
-                        <div className="flex items-center gap-3 flex-shrink-0">
+                        {/* Direita: Valor (R$) e Porcentagem (%) alinhados */}
+                        <div className="flex items-center gap-4 flex-shrink-0">
                           <span className="font-num-primary text-sm sm:text-base font-black text-slate-900 dark:text-white tabular-nums">
                             R$ {formatarBRL(cat.valor)}
                           </span>
-                          <span className="text-xs font-bold font-num-secondary text-slate-400 dark:text-slate-500 min-w-[44px] text-right group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
+                          <span className="text-xs font-bold font-num-secondary text-slate-400 dark:text-slate-500 min-w-[48px] text-right group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
                             {cat.porcentagem.toFixed(1)}%
                           </span>
                         </div>

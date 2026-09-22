@@ -178,10 +178,10 @@ export function UnifiedTransactionHub({
     }
   };
 
-  // 2. Gastos por Categoria (Barras Empilhadas na Vertical + Cartões)
+  // 2. Gastos por Categoria (Cálculo Global: todo o histórico de despesas cadastradas no sistema)
   const { categoriasAgrupadas, totalCategorias } = useMemo(() => {
     const mapa = {};
-    saidasMes.forEach(item => {
+    saidas.forEach(item => {
       const cat = item.categoria || 'Não identificado';
       const val = parseFloat(item.valor) || 0;
       mapa[cat] = (mapa[cat] || 0) + val;
@@ -198,7 +198,7 @@ export function UnifiedTransactionHub({
       .sort((a, b) => b.valor - a.valor);
 
     return { categoriasAgrupadas: lista, totalCategorias: total };
-  }, [saidasMes]);
+  }, [saidas]);
 
   const [categoriaHover, setCategoriaHover] = useState(null);
 
@@ -531,11 +531,11 @@ export function UnifiedTransactionHub({
                   Gastos por Categoria
                 </h3>
                 <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10 font-secondary">
-                  Distribuição
+                  Histórico Global
                 </span>
               </div>
               <p className="text-xs font-secondary text-slate-500 dark:text-slate-400">
-                Distribuição proporcional das despesas por categoria.
+                Distribuição proporcional de todas as despesas cadastradas no sistema.
               </p>
             </div>
 
@@ -557,7 +557,7 @@ export function UnifiedTransactionHub({
 
           {totalCategorias === 0 ? (
             <div className="py-10 text-center text-slate-400 dark:text-slate-500 text-xs sm:text-sm font-secondary">
-              Nenhuma despesa registrada para {mesFoco ? formatarMesAno(mesFoco) : 'o período'}.
+              Nenhuma despesa registrada no histórico do sistema.
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-14 items-center">

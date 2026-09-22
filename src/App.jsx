@@ -29,7 +29,7 @@ export function App() {
   const calc = useFinancialCalculator(entradas, saidas);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#080D1A] text-slate-800 dark:text-slate-100 selection:bg-rose-500/20 relative overflow-x-hidden transition-colors duration-200">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#080D1A] text-slate-800 dark:text-slate-100 selection:bg-rose-500/20 relative overflow-x-clip transition-colors duration-200">
       {/* Luzes ambiente de fundo discretas */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-sky-500/5 dark:bg-sky-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute top-40 right-10 w-[500px] h-[500px] bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
@@ -120,7 +120,7 @@ export function App() {
       <div className="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col lg:flex-row gap-6 items-start">
         
         {/* NAVEGAÇÃO ENTRE HUBS NA ESQUERDA (Desktop Sidebar) */}
-        <div className="hidden lg:block sticky top-28">
+        <div className="hidden lg:block sticky top-24 self-start z-30">
           <Sidebar
             activeTab={activeTab}
             onSelectTab={setActiveTab}

@@ -27,7 +27,7 @@ export function Sidebar({ activeTab, onSelectTab }) {
   ];
 
   return (
-    <aside className="w-full lg:w-64 xl:w-72 flex-shrink-0 flex flex-col justify-between p-4 sm:p-5 glass-panel rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-md bg-white/70 dark:bg-[#060911]/80 backdrop-blur-xl">
+    <aside className="w-full lg:w-64 xl:w-72 flex-shrink-0 sticky top-24 self-start flex flex-col justify-between p-4 sm:p-5 glass-panel rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-md bg-white/70 dark:bg-[#060911]/80 backdrop-blur-xl">
       <div className="space-y-6">
         {/* Título de Navegação */}
         <div className="px-2 pt-1 flex items-center justify-between">

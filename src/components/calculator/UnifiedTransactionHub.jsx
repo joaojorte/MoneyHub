@@ -221,10 +221,10 @@ export function UnifiedTransactionHub({
       const visualStart = startAngle + effectiveGap;
       const visualEnd = endAngle - effectiveGap;
 
-      // Coordenadas para o texto da porcentagem (direto na fatia se >= 7%, adjacente se < 7%)
+      // Coordenadas para o texto da porcentagem (com espessura dobrada para 36px no raio 100)
       const rad = ((midAngle - 90) * Math.PI) / 180;
       const isDirect = cat.porcentagem >= 7;
-      const textRadius = isDirect ? 88 : 108;
+      const textRadius = isDirect ? 100 : 128;
 
       return {
         ...cat,
@@ -234,8 +234,8 @@ export function UnifiedTransactionHub({
         visualEnd,
         midAngle,
         isDirect,
-        textX: 130 + textRadius * Math.cos(rad),
-        textY: 130 + textRadius * Math.sin(rad),
+        textX: 150 + textRadius * Math.cos(rad),
+        textY: 150 + textRadius * Math.sin(rad),
       };
     });
   }, [categoriasAgrupadas, totalCategorias]);
@@ -521,7 +521,7 @@ export function UnifiedTransactionHub({
           <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
           <div className="absolute bottom-0 left-10 w-72 h-72 bg-orange-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
 
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 dark:border-white/[0.06] pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b border-slate-100 dark:border-white/[0.06] pb-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-amber-500/15 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-sm">
@@ -535,12 +535,23 @@ export function UnifiedTransactionHub({
                 </span>
               </div>
               <p className="text-xs font-secondary text-slate-500 dark:text-slate-400">
-                Gráfico de barras empilhadas na vertical com a distribuição proporcional das despesas.
+                Distribuição proporcional das despesas por categoria.
               </p>
             </div>
 
-            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-bold font-num-primary self-start sm:self-auto">
-              <span>Total: R$ {formatarBRL(totalCategorias)}</span>
+            {/* Total Grande e Limpo (Estilo Saldo Disponível - Sem Box) */}
+            <div className="flex items-baseline gap-2.5 self-start sm:self-auto">
+              <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-secondary">
+                Total
+              </span>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-lg sm:text-xl font-black text-slate-400 dark:text-slate-500 font-num-primary">
+                  R$
+                </span>
+                <span className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white font-num-primary tracking-tight">
+                  {formatarBRL(totalCategorias)}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -550,54 +561,54 @@ export function UnifiedTransactionHub({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-14 items-center">
-              {/* Gráfico de Anel / Donut Circular (Lado Esquerdo) */}
+              {/* Gráfico de Anel / Donut Circular Expandido (Lado Esquerdo) */}
               <div className="md:col-span-5 flex flex-col items-center justify-center py-2">
-                <div className="w-full max-w-[260px] sm:max-w-[280px] aspect-square relative flex items-center justify-center select-none">
+                <div className="w-full max-w-[320px] sm:max-w-[360px] lg:max-w-[380px] aspect-square relative flex items-center justify-center select-none">
                   <svg 
-                    viewBox="0 0 260 260" 
+                    viewBox="0 0 300 300" 
                     className="w-full h-full overflow-visible"
                   >
-                    {/* Anel de trilha sutil de fundo */}
+                    {/* Anel de trilha sutil de fundo (espessura dobrada para 36px) */}
                     <circle
-                      cx="130"
-                      cy="130"
-                      r="88"
+                      cx="150"
+                      cy="150"
+                      r="100"
                       fill="none"
                       stroke="currentColor"
-                      strokeWidth="16"
+                      strokeWidth="36"
                       className="text-slate-100 dark:text-white/[0.04]"
                     />
 
                     {/* Mostrador interno decorativo estilo relógio/velocímetro */}
                     <circle
-                      cx="130"
-                      cy="130"
-                      r="68"
+                      cx="150"
+                      cy="150"
+                      r="70"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="1"
                       className="text-slate-200/80 dark:text-white/[0.07]"
                     />
                     <circle
-                      cx="130"
-                      cy="130"
-                      r="73"
+                      cx="150"
+                      cy="150"
+                      r="75"
                       fill="none"
                       stroke="currentColor"
-                      strokeWidth="3"
+                      strokeWidth="2.5"
                       strokeDasharray="1.5 4.5"
                       className="text-slate-300/70 dark:text-white/10"
                     />
 
-                    {/* Fatias coloridas do Gráfico de Anel */}
+                    {/* Fatias coloridas do Gráfico de Anel (espessura dobrada para 36px / 40px no hover) */}
                     {categoriasAgrupadas.length === 1 ? (
                       <circle
-                        cx="130"
-                        cy="130"
-                        r="88"
+                        cx="150"
+                        cy="150"
+                        r="100"
                         fill="none"
                         stroke={categoriasAgrupadas[0].cor}
-                        strokeWidth={categoriaHover === categoriasAgrupadas[0].nome ? 22 : 18}
+                        strokeWidth={categoriaHover === categoriasAgrupadas[0].nome ? 40 : 36}
                         className="transition-all duration-300 cursor-pointer"
                         onMouseEnter={() => setCategoriaHover(categoriasAgrupadas[0].nome)}
                         onMouseLeave={() => setCategoriaHover(null)}
@@ -609,7 +620,7 @@ export function UnifiedTransactionHub({
 
                         if (slice.visualEnd <= slice.visualStart) return null;
 
-                        const pathD = describeArc(130, 130, 88, slice.visualStart, slice.visualEnd);
+                        const pathD = describeArc(150, 150, 100, slice.visualStart, slice.visualEnd);
 
                         return (
                           <path
@@ -617,7 +628,7 @@ export function UnifiedTransactionHub({
                             d={pathD}
                             fill="none"
                             stroke={slice.cor}
-                            strokeWidth={isHovered ? 22 : 18}
+                            strokeWidth={isHovered ? 40 : 36}
                             strokeLinecap="round"
                             onMouseEnter={() => setCategoriaHover(slice.nome)}
                             onMouseLeave={() => setCategoriaHover(null)}
@@ -629,7 +640,7 @@ export function UnifiedTransactionHub({
                                   : 'hover:brightness-110'
                             }`}
                             style={{
-                              filter: isHovered ? `drop-shadow(0 0 8px ${slice.cor})` : undefined
+                              filter: isHovered ? `drop-shadow(0 0 10px ${slice.cor})` : undefined
                             }}
                           >
                             <title>{`${slice.nome}: R$ ${formatarBRL(slice.valor)} (${slice.porcentagem.toFixed(1)}%)`}</title>
@@ -638,7 +649,7 @@ export function UnifiedTransactionHub({
                       })
                     )}
 
-                    {/* Percentagens nas Fatias (sobre a fatia ou imediatamente adjacente) */}
+                    {/* Percentagens nas Fatias (sobre a fatia de 36px ou imediatamente adjacente) */}
                     {slices.map((slice) => {
                       if (slice.porcentagem < 4) return null;
 
@@ -652,8 +663,8 @@ export function UnifiedTransactionHub({
                           fill={slice.isDirect ? '#FFFFFF' : slice.cor}
                           className={`font-num-primary font-black select-none pointer-events-none transition-all duration-200 ${
                             slice.isDirect
-                              ? 'text-[11px] sm:text-xs drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]'
-                              : 'text-[10px] sm:text-[11px] drop-shadow-sm'
+                              ? 'text-xs sm:text-[13px] drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]'
+                              : 'text-[10px] sm:text-[11px] font-bold drop-shadow-sm'
                           }`}
                         >
                           {slice.porcentagem.toFixed(0)}%
@@ -663,25 +674,25 @@ export function UnifiedTransactionHub({
                   </svg>
 
                   {/* Texto perfeitamente centralizado no interior do anel: Valor Total e 'Total' abaixo */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none text-center px-4">
-                    <div className="flex items-baseline gap-1 justify-center">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none text-center px-6">
+                    <div className="flex items-baseline gap-1.5 justify-center">
                       <span className="text-xs sm:text-sm font-black text-slate-400 dark:text-slate-500 font-num-primary">
                         R$
                       </span>
-                      <span className="font-num-primary text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-white tracking-tight drop-shadow-sm">
+                      <span className="font-num-primary text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight drop-shadow-sm">
                         {formatarBRL(categoriaHoverItem ? categoriaHoverItem.valor : totalCategorias)}
                       </span>
                     </div>
-                    <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-secondary mt-0.5">
+                    <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-secondary mt-1">
                       {categoriaHoverItem ? categoriaHoverItem.nome : 'Total'}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Lista Limpa e Minimalista de Categorias (Lado Direito: sem linhas divisórias ou margem inferior) */}
-              <div className="md:col-span-7">
-                <ul className="max-h-[380px] overflow-y-auto pr-2 space-y-1">
+              {/* Lista Limpa e Minimalista de Categorias (Lado Direito: sem linhas divisórias ou restrições de overflow) */}
+              <div className="md:col-span-7 lg:col-span-7 w-full">
+                <ul className="space-y-1.5 w-full">
                   {categoriasAgrupadas.map((cat) => {
                     const isHovered = categoriaHover === cat.nome;
 
@@ -690,19 +701,19 @@ export function UnifiedTransactionHub({
                         key={cat.nome}
                         onMouseEnter={() => setCategoriaHover(cat.nome)}
                         onMouseLeave={() => setCategoriaHover(null)}
-                        className={`py-2 sm:py-2.5 px-3 -mx-3 rounded-xl transition-all duration-150 flex items-center justify-between gap-4 cursor-pointer group ${
+                        className={`py-2 sm:py-2.5 px-3 rounded-xl transition-all duration-150 flex items-center justify-between gap-4 cursor-pointer group ${
                           isHovered 
                             ? 'bg-slate-100/70 dark:bg-white/[0.04]' 
                             : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'
                         }`}
                       >
-                        {/* Esquerda: Indicador colorido arredondado e Nome da Categoria */}
-                        <div className="flex items-center gap-3 min-w-0">
+                        {/* Esquerda: Proximidade imediata entre a bolinha colorida e o nome */}
+                        <div className="flex items-center gap-2 min-w-0">
                           <span
-                            className="w-3 h-3 rounded-[4px] flex-shrink-0 transition-transform duration-200 group-hover:scale-110 shadow-xs"
+                            className="w-2.5 h-2.5 rounded-full flex-shrink-0 transition-transform duration-200 group-hover:scale-125"
                             style={{ 
                               backgroundColor: cat.cor,
-                              boxShadow: isHovered ? `0 0 10px ${cat.cor}` : undefined
+                              boxShadow: isHovered ? `0 0 8px ${cat.cor}` : undefined
                             }}
                           />
                           <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">

@@ -118,73 +118,117 @@ export function InvestmentsHub({ calc }) {
       </div>
 
       {/* 4 Caixas de Métricas Principais de Investimento */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/5 dark:from-emerald-500/15 dark:to-teal-500/5 border border-emerald-200/80 dark:border-emerald-500/20 shadow-xs">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-              Patrimônio Acumulado
-            </span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-              <DollarSign className="w-4 h-4" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+        <div className="glass-panel p-5 sm:p-6 rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-md hover:shadow-xl transition-all duration-300 relative overflow-hidden bg-gradient-to-b from-white/90 via-white/60 to-slate-50/80 dark:from-[#0B1224]/90 dark:via-[#080D1A]/80 dark:to-[#04070F]/90">
+          <div className="absolute -top-6 -right-6 w-36 h-36 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none -z-10" />
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                <DollarSign className="w-4 h-4" />
+              </div>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-secondary truncate">
+                Patrimônio Acumulado
+              </span>
             </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 flex-shrink-0 font-num-secondary">
+              Total
+            </span>
           </div>
-          <span className="font-mono text-xl sm:text-2xl lg:text-3xl font-black text-emerald-700 dark:text-emerald-300 tabular-nums block">
-            R$ {formatarBRL(calc.totalInvestidoAcumulado)}
-          </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 block">
-            {numAportes} {numAportes === 1 ? 'aporte realizado' : 'aportes realizados'}
-          </span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-lg sm:text-xl font-black text-emerald-500/80 dark:text-emerald-400/60 font-num-primary">
+              R$
+            </span>
+            <h3 className="text-2xl sm:text-3xl font-black text-emerald-700 dark:text-emerald-300 font-num-primary tracking-tight">
+              {formatarBRL(calc.totalInvestidoAcumulado)}
+            </h3>
+          </div>
+          <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-secondary">
+            <span>{numAportes} {numAportes === 1 ? 'aporte realizado' : 'aportes realizados'}</span>
+          </div>
         </div>
 
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.06] shadow-xs">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-              Aporte Mensal Sugerido
-            </span>
-            <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-              <PieChart className="w-4 h-4" />
+        <div className="glass-panel p-5 sm:p-6 rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-md hover:shadow-xl transition-all duration-300 relative overflow-hidden bg-gradient-to-b from-white/90 via-white/60 to-slate-50/80 dark:from-[#0B1224]/90 dark:via-[#080D1A]/80 dark:to-[#04070F]/90">
+          <div className="absolute -top-6 -right-6 w-36 h-36 bg-amber-500/10 rounded-full blur-2xl pointer-events-none -z-10" />
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-amber-500/15 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                <PieChart className="w-4 h-4" />
+              </div>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-secondary truncate">
+                Aporte Sugerido
+              </span>
             </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 flex-shrink-0 font-num-secondary">
+              {calc.percentualInvestimento}%
+            </span>
           </div>
-          <span className="font-mono text-xl sm:text-2xl lg:text-3xl font-black text-amber-700 dark:text-amber-300 tabular-nums block">
-            R$ {formatarBRL(calc.investimentoRecomendado)}
-          </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 block">
-            {calc.percentualInvestimento}% da base calculada
-          </span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-lg sm:text-xl font-black text-amber-500/80 dark:text-amber-400/60 font-num-primary">
+              R$
+            </span>
+            <h3 className="text-2xl sm:text-3xl font-black text-amber-700 dark:text-amber-300 font-num-primary tracking-tight">
+              {formatarBRL(calc.investimentoRecomendado)}
+            </h3>
+          </div>
+          <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-secondary">
+            <span>{calc.percentualInvestimento}% da base calculada</span>
+          </div>
         </div>
 
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.06] shadow-xs">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-              Reserva de Emergência
-            </span>
-            <div className="w-8 h-8 rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center">
-              <ShieldCheck className="w-4 h-4" />
+        <div className="glass-panel p-5 sm:p-6 rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-md hover:shadow-xl transition-all duration-300 relative overflow-hidden bg-gradient-to-b from-white/90 via-white/60 to-slate-50/80 dark:from-[#0B1224]/90 dark:via-[#080D1A]/80 dark:to-[#04070F]/90">
+          <div className="absolute -top-6 -right-6 w-36 h-36 bg-sky-500/10 rounded-full blur-2xl pointer-events-none -z-10" />
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-sky-500/15 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-secondary truncate">
+                Reserva de Emergência
+              </span>
             </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-500/20 flex-shrink-0 font-num-secondary">
+              {calc.percentualReserva}%
+            </span>
           </div>
-          <span className="font-mono text-xl sm:text-2xl lg:text-3xl font-black text-sky-700 dark:text-sky-300 tabular-nums block">
-            R$ {formatarBRL(calc.reservaRecomendada)}
-          </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 block">
-            {calc.percentualReserva}% da base calculada
-          </span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-lg sm:text-xl font-black text-sky-500/80 dark:text-sky-400/60 font-num-primary">
+              R$
+            </span>
+            <h3 className="text-2xl sm:text-3xl font-black text-sky-700 dark:text-sky-300 font-num-primary tracking-tight">
+              {formatarBRL(calc.reservaRecomendada)}
+            </h3>
+          </div>
+          <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-secondary">
+            <span>{calc.percentualReserva}% da base calculada</span>
+          </div>
         </div>
 
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.06] shadow-xs">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-              Livre / Estilo de Vida
-            </span>
-            <div className="w-8 h-8 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-              <ArrowUpRight className="w-4 h-4" />
+        <div className="glass-panel p-5 sm:p-6 rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-md hover:shadow-xl transition-all duration-300 relative overflow-hidden bg-gradient-to-b from-white/90 via-white/60 to-slate-50/80 dark:from-[#0B1224]/90 dark:via-[#080D1A]/80 dark:to-[#04070F]/90">
+          <div className="absolute -top-6 -right-6 w-36 h-36 bg-purple-500/10 rounded-full blur-2xl pointer-events-none -z-10" />
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-purple-500/15 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                <ArrowUpRight className="w-4 h-4" />
+              </div>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-secondary truncate">
+                Livre / Estilo de Vida
+              </span>
             </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-500/20 flex-shrink-0 font-num-secondary">
+              Livre
+            </span>
           </div>
-          <span className="font-mono text-xl sm:text-2xl lg:text-3xl font-black text-purple-700 dark:text-purple-300 tabular-nums block">
-            R$ {formatarBRL(calc.livreRecomendado)}
-          </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 block">
-            Disponível para lazer e gastos livres
-          </span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-lg sm:text-xl font-black text-purple-500/80 dark:text-purple-400/60 font-num-primary">
+              R$
+            </span>
+            <h3 className="text-2xl sm:text-3xl font-black text-purple-700 dark:text-purple-300 font-num-primary tracking-tight">
+              {formatarBRL(calc.livreRecomendado)}
+            </h3>
+          </div>
+          <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-secondary">
+            <span>Disponível para lazer e estilo</span>
+          </div>
         </div>
       </div>
 

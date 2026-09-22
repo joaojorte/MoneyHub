@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  Search, Filter, ArrowUpRight, ArrowDownRight, 
+  Search, Filter, ArrowUpRight, ArrowDownRight, ArrowLeftRight,
   Trash2, CreditCard, Zap, Calendar, Tag, ChevronDown
 } from 'lucide-react';
 import { formatarBRL, formatarDataBR } from '../../utils/formatters';
@@ -117,19 +117,26 @@ export function RecentTransactions({
   };
 
   return (
-    <div className="glass-panel p-5 sm:p-7 rounded-[32px] border-slate-200/90 dark:border-white/[0.08] shadow-sm space-y-5">
+    <div className="glass-panel p-6 sm:p-8 rounded-[36px] border-slate-200/90 dark:border-white/[0.08] shadow-lg relative overflow-hidden bg-gradient-to-b from-white/90 via-white/60 to-slate-50/80 dark:from-[#0B1224]/90 dark:via-[#080D1A]/80 dark:to-[#04070F]/90 space-y-6">
+      {/* Glow de fundo */}
+      <div className="absolute top-0 right-0 w-80 h-80 bg-sky-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="absolute bottom-0 left-10 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
+
       {/* Topo do Extrato: Título + Filtros Ágeis (Inspirado nas Imagens 1 e 2) */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 dark:border-white/[0.06] pb-4">
-        <div>
+        <div className="space-y-1">
           <div className="flex items-center gap-2.5">
-            <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+            <div className="w-8 h-8 rounded-full bg-sky-500/15 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold text-sm">
+              <ArrowLeftRight className="w-4 h-4" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white font-primary tracking-tight">
               Transações Recentes
             </h3>
-            <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-white/10 tabular-nums">
+            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10 font-secondary font-num-primary tabular-nums">
               {transacoesFiltradas.length} de {transacoesUnificadas.length}
             </span>
           </div>
-          <p className="text-xs font-secondary text-slate-500 dark:text-slate-400 mt-0.5">
+          <p className="text-xs font-secondary text-slate-500 dark:text-slate-400">
             Feed unificado de movimentações financeiras com entradas e saídas integradas.
           </p>
         </div>

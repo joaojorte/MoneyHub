@@ -420,77 +420,123 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
       {/* 1. CAIXAS ACIMA DO CARTÃO: Fatura Atual, Limite Disponível, Limite Cadastrado e Saldo do Mês */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         {/* Caixa 1: Fatura Atual */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.08] shadow-xs backdrop-blur-md transition-all hover:border-rose-300 dark:hover:border-rose-500/30">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-              Fatura Atual ({formatarMesAno(mesAtual).split(' de ')[0]})
-            </span>
-            <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
-              <CreditCard className="w-4 h-4" />
+        <div className="glass-panel p-5 sm:p-6 rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-md hover:shadow-xl transition-all duration-300 relative overflow-hidden bg-gradient-to-b from-white/90 via-white/60 to-slate-50/80 dark:from-[#0B1224]/90 dark:via-[#080D1A]/80 dark:to-[#04070F]/90">
+          <div className="absolute -top-6 -right-6 w-36 h-36 bg-rose-500/10 rounded-full blur-2xl pointer-events-none -z-10" />
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-rose-500/15 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                <CreditCard className="w-4 h-4" />
+              </div>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-secondary truncate">
+                Fatura Atual ({formatarMesAno(mesAtual).split(' de ')[0]})
+              </span>
             </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20 flex-shrink-0">
+              {diaVencimento ? `Dia ${diaVencimento}` : 'Atual'}
+            </span>
           </div>
-          <span className="font-num-primary text-xl sm:text-2xl lg:text-3xl font-black text-rose-600 dark:text-rose-400 block">
-            R$ {formatarBRL(faturaAtual.total)}
-          </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 block font-secondary">
-            {faturaAtual.temFaturaDeclarada 
-              ? `Consolidada (${faturaAtual.pctConciliado}% detalhado)` 
-              : `Vencimento dia ${diaVencimento}`}
-          </span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-lg sm:text-xl font-black text-rose-400/80 dark:text-rose-400/60 font-num-primary">
+              R$
+            </span>
+            <h3 className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400 font-num-primary tracking-tight">
+              {formatarBRL(faturaAtual.total)}
+            </h3>
+          </div>
+          <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-secondary">
+            <span className="truncate">
+              {faturaAtual.temFaturaDeclarada 
+                ? `Consolidada (${faturaAtual.pctConciliado}% detalhado)` 
+                : `Vencimento dia ${diaVencimento}`}
+            </span>
+          </div>
         </div>
 
         {/* Caixa 2: Limite Disponível (Fonte Primária Padronizada) */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.08] shadow-xs backdrop-blur-md transition-all hover:border-emerald-300 dark:hover:border-emerald-500/30">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-              Limite Disponível
-            </span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-              <Wallet className="w-4 h-4" />
+        <div className="glass-panel p-5 sm:p-6 rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-md hover:shadow-xl transition-all duration-300 relative overflow-hidden bg-gradient-to-b from-white/90 via-white/60 to-slate-50/80 dark:from-[#0B1224]/90 dark:via-[#080D1A]/80 dark:to-[#04070F]/90">
+          <div className="absolute -top-6 -right-6 w-36 h-36 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none -z-10" />
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                <Wallet className="w-4 h-4" />
+              </div>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-secondary truncate">
+                Limite Disponível
+              </span>
             </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 flex-shrink-0">
+              Livre
+            </span>
           </div>
-          <span className="font-num-primary text-xl sm:text-2xl lg:text-3xl font-black text-emerald-600 dark:text-emerald-400 block">
-            R$ {formatarBRL(limiteDisponivel)}
-          </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 block font-secondary">
-            Livre para novas compras
-          </span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-lg sm:text-xl font-black text-emerald-500/80 dark:text-emerald-400/60 font-num-primary">
+              R$
+            </span>
+            <h3 className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 font-num-primary tracking-tight">
+              {formatarBRL(limiteDisponivel)}
+            </h3>
+          </div>
+          <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-secondary">
+            <span>Livre para novas compras</span>
+          </div>
         </div>
 
         {/* Caixa 3: Limite Cadastrado (Fonte Primária Padronizada) */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.08] shadow-xs backdrop-blur-md transition-all hover:border-slate-300 dark:hover:border-white/20">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-              Limite Cadastrado
-            </span>
-            <div className="w-8 h-8 rounded-xl bg-slate-200/60 dark:bg-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center">
-              <Layers className="w-4 h-4" />
+        <div className="glass-panel p-5 sm:p-6 rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-md hover:shadow-xl transition-all duration-300 relative overflow-hidden bg-gradient-to-b from-white/90 via-white/60 to-slate-50/80 dark:from-[#0B1224]/90 dark:via-[#080D1A]/80 dark:to-[#04070F]/90">
+          <div className="absolute -top-6 -right-6 w-36 h-36 bg-sky-500/10 rounded-full blur-2xl pointer-events-none -z-10" />
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-sky-500/15 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                <Layers className="w-4 h-4" />
+              </div>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-secondary truncate">
+                Limite Cadastrado
+              </span>
             </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10 flex-shrink-0">
+              Total
+            </span>
           </div>
-          <span className="font-num-primary text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-slate-100 block">
-            R$ {formatarBRL(limiteEfetivo)}
-          </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 truncate block font-secondary">
-            {cartaoAtivo ? (cartaoAtivo.apelido || cartaoAtivo.cartaoNome) : 'Limite Total'}
-          </span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-lg sm:text-xl font-black text-slate-400 dark:text-slate-500 font-num-primary">
+              R$
+            </span>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-num-primary tracking-tight">
+              {formatarBRL(limiteEfetivo)}
+            </h3>
+          </div>
+          <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-secondary">
+            <span className="truncate">{cartaoAtivo ? (cartaoAtivo.apelido || cartaoAtivo.cartaoNome) : 'Limite Total'}</span>
+          </div>
         </div>
 
         {/* Caixa 4: Total Comprometido (Fonte Primária Padronizada) */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.08] shadow-xs backdrop-blur-md transition-all hover:border-amber-300 dark:hover:border-amber-500/30">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-              Total Comprometido
-            </span>
-            <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-              <TrendingUp className="w-4 h-4" />
+        <div className="glass-panel p-5 sm:p-6 rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-md hover:shadow-xl transition-all duration-300 relative overflow-hidden bg-gradient-to-b from-white/90 via-white/60 to-slate-50/80 dark:from-[#0B1224]/90 dark:via-[#080D1A]/80 dark:to-[#04070F]/90">
+          <div className="absolute -top-6 -right-6 w-36 h-36 bg-amber-500/10 rounded-full blur-2xl pointer-events-none -z-10" />
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-amber-500/15 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                <TrendingUp className="w-4 h-4" />
+              </div>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-secondary truncate">
+                Total Comprometido
+              </span>
             </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 flex-shrink-0 font-num-secondary">
+              {percentualConsumo}%
+            </span>
           </div>
-          <span className="font-num-primary text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-white block">
-            R$ {formatarBRL(totalComprometido)}
-          </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 block font-secondary">
-            {percentualConsumo}% do limite cadastrado
-          </span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-lg sm:text-xl font-black text-slate-400 dark:text-slate-500 font-num-primary">
+              R$
+            </span>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-num-primary tracking-tight">
+              {formatarBRL(totalComprometido)}
+            </h3>
+          </div>
+          <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-secondary">
+            <span>{percentualConsumo}% do limite cadastrado</span>
+          </div>
         </div>
       </section>
 
@@ -499,22 +545,32 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
         
         {/* COLUNA ESQUERDA: ÁREA DO CARTÃO COM LIMITE E QUANTIA UTILIZADA EM CIMA */}
         <div className="lg:col-span-5 space-y-5">
-          <div className="glass-panel p-5 sm:p-6 rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-lg space-y-5">
-            
+          <div className="glass-panel p-6 sm:p-7 rounded-[36px] border-slate-200/90 dark:border-white/[0.08] shadow-lg relative overflow-hidden bg-gradient-to-b from-white/90 via-white/60 to-slate-50/80 dark:from-[#0B1224]/90 dark:via-[#080D1A]/80 dark:to-[#04070F]/90 space-y-5">
+            {/* Glow de fundo */}
+            <div className="absolute top-0 right-0 w-80 h-80 bg-rose-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
+
             {/* "em cima do cartão colocar o limite e quantia utilizada" */}
-            <div className="space-y-2.5 pb-2 border-b border-slate-100 dark:border-white/[0.06]">
+            <div className="space-y-3 pb-3 border-b border-slate-100 dark:border-white/[0.06]">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div>
-                  <span className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
-                    Quantia Utilizada
-                  </span>
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-num-primary text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                      R$ {formatarBRL(totalComprometido)}
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-8 h-8 rounded-full bg-rose-500/15 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-sm">
+                      <CreditCard className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-secondary">
+                      Quantia Utilizada
                     </span>
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-200/80 dark:bg-white/[0.08] text-slate-700 dark:text-slate-300 font-num-secondary">
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10 font-num-secondary">
                       {percentualConsumo}%
                     </span>
+                  </div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-xl sm:text-2xl font-black text-slate-400 dark:text-slate-500 font-num-primary">
+                      R$
+                    </span>
+                    <h3 className="font-num-primary text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+                      {formatarBRL(totalComprometido)}
+                    </h3>
                   </div>
                 </div>
 
@@ -522,9 +578,12 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block font-secondary">
                     Limite do Cartão
                   </span>
-                  <span className="font-num-primary text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400">
-                    R$ {formatarBRL(limiteEfetivo)}
-                  </span>
+                  <div className="flex items-baseline gap-1 justify-end">
+                    <span className="text-sm font-black text-emerald-500/80 dark:text-emerald-400/60 font-num-primary">R$</span>
+                    <span className="font-num-primary text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                      {formatarBRL(limiteEfetivo)}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -703,21 +762,27 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
         <div className="lg:col-span-7 space-y-6">
           
           {/* 1. EXTRATO DETALHADO DO CARTÃO DE CRÉDITO */}
-          <div className="glass-panel p-5 sm:p-6 rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 dark:border-white/[0.06] pb-3">
-              <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-rose-500" />
-                  <span>Compras no {cartaoAtivo?.apelido || cartaoAtivo?.cartaoNome || 'Cartão'}</span>
-                </h3>
+          <div className="glass-panel p-6 sm:p-7 rounded-[36px] border-slate-200/90 dark:border-white/[0.08] shadow-lg relative overflow-hidden bg-gradient-to-b from-white/90 via-white/60 to-slate-50/80 dark:from-[#0B1224]/90 dark:via-[#080D1A]/80 dark:to-[#04070F]/90 space-y-5">
+            {/* Glow de fundo */}
+            <div className="absolute top-0 right-0 w-80 h-80 bg-rose-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
+
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 dark:border-white/[0.06] pb-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-rose-500/15 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-sm">
+                    <CreditCard className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-primary tracking-tight">
+                    Compras no {cartaoAtivo?.apelido || cartaoAtivo?.cartaoNome || 'Cartão'}
+                  </h3>
+                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10 font-secondary font-num-primary tabular-nums">
+                    {transacoesCartaoAtivo.length}
+                  </span>
+                </div>
                 <p className="text-xs font-secondary text-slate-500 dark:text-slate-400">
                   Lançamentos e compras parceladas vinculadas a este cartão.
                 </p>
               </div>
-
-              <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.05] px-3 py-1 rounded-full border border-slate-200 dark:border-white/[0.08] self-start sm:self-auto font-num-secondary">
-                {transacoesCartaoAtivo.length} lançamento(s)
-              </span>
             </div>
 
             {transacoesCartaoAtivo.length === 0 ? (
@@ -793,13 +858,23 @@ export function UnifiedDashboard({ entradas = [], saidas = [], calc, usuario, on
           </div>
 
           {/* 2. FATURAS DO CARTÃO & PROJEÇÃO */}
-          <div className="glass-panel p-5 sm:p-6 rounded-[28px] border-slate-200/90 dark:border-white/[0.08] shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3">
-              <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-amber-500" />
-                  <span>Faturas Programadas</span>
-                </h3>
+          <div className="glass-panel p-6 sm:p-7 rounded-[36px] border-slate-200/90 dark:border-white/[0.08] shadow-lg relative overflow-hidden bg-gradient-to-b from-white/90 via-white/60 to-slate-50/80 dark:from-[#0B1224]/90 dark:via-[#080D1A]/80 dark:to-[#04070F]/90 space-y-5">
+            {/* Glow de fundo */}
+            <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
+
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06] pb-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-amber-500/15 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-sm">
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-primary tracking-tight">
+                    Faturas Programadas
+                  </h3>
+                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10 font-secondary font-num-primary tabular-nums">
+                    {faturasCartaoAtivo.length}
+                  </span>
+                </div>
                 <p className="text-xs font-secondary text-slate-500 dark:text-slate-400">
                   Previsão de vencimentos e valores das faturas futuras do cartão.
                 </p>

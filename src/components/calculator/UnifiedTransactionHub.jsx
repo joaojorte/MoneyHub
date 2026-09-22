@@ -255,13 +255,24 @@ export function UnifiedTransactionHub({
       {/* 2. DASHBOARD DE GASTOS GERAIS (Devolvido de Cartões para Lançamentos!) */}
       <section className="space-y-6">
         {/* GRÁFICO 1: GASTOS MENSAIS (Barras com zoom no mês e 2 casas decimais) */}
-        <div className="glass-panel p-5 sm:p-7 rounded-[32px] border-slate-200/90 dark:border-white/[0.08] shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 dark:border-white/[0.06] pb-3">
-            <div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-emerald-500" />
-                <span>Gastos Mensais</span>
-              </h3>
+        <div className="glass-panel p-6 sm:p-8 rounded-[36px] border-slate-200/90 dark:border-white/[0.08] shadow-lg relative overflow-hidden bg-gradient-to-b from-white/90 via-white/60 to-slate-50/80 dark:from-[#0B1224]/90 dark:via-[#080D1A]/80 dark:to-[#04070F]/90 space-y-5">
+          {/* Glow de fundo */}
+          <div className="absolute top-0 right-0 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
+          <div className="absolute bottom-0 left-10 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
+
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 dark:border-white/[0.06] pb-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-sm">
+                  <BarChart3 className="w-4 h-4" />
+                </div>
+                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-primary tracking-tight">
+                  Gastos Mensais
+                </h3>
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10 font-secondary">
+                  Histórico & Projeção
+                </span>
+              </div>
               <p className="text-xs font-secondary text-slate-500 dark:text-slate-400">
                 {mesFoco 
                   ? `Visualizando ${formatarMesAno(mesFoco)} ampliado. Clique na barra ou no botão para minimizar.`
@@ -281,9 +292,9 @@ export function UnifiedTransactionHub({
                   <span>Minimizar (Ver todas as barras)</span>
                 </button>
               ) : (
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-500 dark:text-slate-400">Média Mensal:</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-white/[0.05] px-3 py-1 rounded-full border border-slate-200 dark:border-white/[0.08] font-num-secondary">
+                <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 dark:bg-white/[0.05] border border-slate-200 dark:border-white/10">
+                  <span className="text-slate-500 dark:text-slate-400 font-bold">Média Mensal:</span>
+                  <span className="font-black text-slate-900 dark:text-white font-num-primary">
                     R$ {formatarBRL(historicoGastosMensais.mediaGasto)}
                   </span>
                 </div>
@@ -436,21 +447,32 @@ export function UnifiedTransactionHub({
         </div>
 
         {/* GRÁFICO 2: GASTOS POR CATEGORIA (Barras empilhadas na vertical + cartões) */}
-        <div className="glass-panel p-5 sm:p-7 rounded-[32px] border-slate-200/90 dark:border-white/[0.08] shadow-sm space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 dark:border-white/[0.06] pb-3">
-            <div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Layers className="w-5 h-5 text-amber-500" />
-                <span>Gastos por Categoria</span>
-              </h3>
+        <div className="glass-panel p-6 sm:p-8 rounded-[36px] border-slate-200/90 dark:border-white/[0.08] shadow-lg relative overflow-hidden bg-gradient-to-b from-white/90 via-white/60 to-slate-50/80 dark:from-[#0B1224]/90 dark:via-[#080D1A]/80 dark:to-[#04070F]/90 space-y-5">
+          {/* Glow de fundo */}
+          <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
+          <div className="absolute bottom-0 left-10 w-72 h-72 bg-orange-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
+
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 dark:border-white/[0.06] pb-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-amber-500/15 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-sm">
+                  <Layers className="w-4 h-4" />
+                </div>
+                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-primary tracking-tight">
+                  Gastos por Categoria
+                </h3>
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10 font-secondary">
+                  Distribuição
+                </span>
+              </div>
               <p className="text-xs font-secondary text-slate-500 dark:text-slate-400">
                 Gráfico de barras empilhadas na vertical com a distribuição proporcional das despesas.
               </p>
             </div>
 
-            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.05] px-3.5 py-1.5 rounded-full border border-slate-200 dark:border-white/[0.08] self-start sm:self-auto font-num-secondary">
-              Total: R$ {formatarBRL(totalCategorias)}
-            </span>
+            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-bold font-num-primary self-start sm:self-auto">
+              <span>Total: R$ {formatarBRL(totalCategorias)}</span>
+            </div>
           </div>
 
           {totalCategorias === 0 ? (

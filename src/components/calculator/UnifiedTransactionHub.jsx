@@ -690,50 +690,52 @@ export function UnifiedTransactionHub({
                 </div>
               </div>
 
-              {/* Lista Limpa e Minimalista de Categorias (Lado Direito: sem linhas divisórias ou restrições de overflow) */}
-              <div className="md:col-span-7 lg:col-span-7 w-full">
-                <ul className="space-y-1.5 w-full">
-                  {categoriasAgrupadas.map((cat) => {
-                    const isHovered = categoriaHover === cat.nome;
+              {/* Lista Limpa e Minimalista de Categorias (Lado Direito: com largura controlada confortável) */}
+              <div className="md:col-span-7 flex flex-col justify-center items-start lg:pl-2">
+                <div className="w-full max-w-md">
+                  <ul className="space-y-1.5 w-full">
+                    {categoriasAgrupadas.map((cat) => {
+                      const isHovered = categoriaHover === cat.nome;
 
-                    return (
-                      <li
-                        key={cat.nome}
-                        onMouseEnter={() => setCategoriaHover(cat.nome)}
-                        onMouseLeave={() => setCategoriaHover(null)}
-                        className={`py-2 sm:py-2.5 px-3 rounded-xl transition-all duration-150 flex items-center justify-between gap-4 cursor-pointer group ${
-                          isHovered 
-                            ? 'bg-slate-100/70 dark:bg-white/[0.04]' 
-                            : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'
-                        }`}
-                      >
-                        {/* Esquerda: Proximidade imediata entre a bolinha colorida e o nome */}
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span
-                            className="w-2.5 h-2.5 rounded-full flex-shrink-0 transition-transform duration-200 group-hover:scale-125"
-                            style={{ 
-                              backgroundColor: cat.cor,
-                              boxShadow: isHovered ? `0 0 8px ${cat.cor}` : undefined
-                            }}
-                          />
-                          <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
-                            {cat.nome}
-                          </span>
-                        </div>
+                      return (
+                        <li
+                          key={cat.nome}
+                          onMouseEnter={() => setCategoriaHover(cat.nome)}
+                          onMouseLeave={() => setCategoriaHover(null)}
+                          className={`py-2 sm:py-2.5 px-3.5 rounded-xl transition-all duration-150 flex items-center justify-between gap-4 cursor-pointer group ${
+                            isHovered 
+                              ? 'bg-slate-100/70 dark:bg-white/[0.04]' 
+                              : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'
+                          }`}
+                        >
+                          {/* Esquerda: Proximidade imediata entre a bolinha colorida e o nome */}
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full flex-shrink-0 transition-transform duration-200 group-hover:scale-125"
+                              style={{ 
+                                backgroundColor: cat.cor,
+                                boxShadow: isHovered ? `0 0 8px ${cat.cor}` : undefined
+                              }}
+                            />
+                            <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                              {cat.nome}
+                            </span>
+                          </div>
 
-                        {/* Direita: Valor (R$) e Porcentagem (%) alinhados */}
-                        <div className="flex items-center gap-4 flex-shrink-0">
-                          <span className="font-num-primary text-sm sm:text-base font-black text-slate-900 dark:text-white tabular-nums">
-                            R$ {formatarBRL(cat.valor)}
-                          </span>
-                          <span className="text-xs font-bold font-num-secondary text-slate-400 dark:text-slate-500 min-w-[48px] text-right group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
-                            {cat.porcentagem.toFixed(1)}%
-                          </span>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
+                          {/* Direita: Valor (R$) e Porcentagem (%) alinhados */}
+                          <div className="flex items-center gap-3.5 flex-shrink-0">
+                            <span className="font-num-primary text-sm sm:text-base font-black text-slate-900 dark:text-white tabular-nums">
+                              R$ {formatarBRL(cat.valor)}
+                            </span>
+                            <span className="text-xs font-bold font-num-secondary text-slate-400 dark:text-slate-500 min-w-[44px] text-right group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
+                              {cat.porcentagem.toFixed(1)}%
+                            </span>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
               </div>
             </div>
           )}

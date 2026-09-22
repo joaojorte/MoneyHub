@@ -23,20 +23,6 @@ const CORES_CATEGORIAS = {
   'Não identificado': '#64748B'
 };
 
-const ICONES_CATEGORIAS = {
-  'Alimentação': '🍽️',
-  'Mercado': '🛒',
-  'Transporte': '🚗',
-  'Saúde': '🏥',
-  'Educação': '📚',
-  'Comunicação': '📱',
-  'Compras': '🛍️',
-  'Serviços': '⚙️',
-  'Transferências/Pagamentos pessoais': '💸',
-  'Outros': '📦',
-  'Fatura a conciliar': '📑',
-  'Não identificado': '🏷️'
-};
 
 const CORES_FALLBACK = [
   '#EA580C', '#0284C7', '#D97706', '#059669', '#6366F1',
@@ -472,9 +458,9 @@ export function UnifiedTransactionHub({
               Nenhuma despesa registrada para {mesFoco ? formatarMesAno(mesFoco) : 'o período'}.
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-              {/* Barra Empilhada Vertical */}
-              <div className="md:col-span-5 lg:col-span-4 flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.06]">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-14 items-center">
+              {/* Barra Empilhada Vertical (Sem Box-ception: integrado de forma fluida e direta) */}
+              <div className="md:col-span-5 lg:col-span-4 flex flex-col items-center justify-center py-2">
                 <div className="flex items-center gap-3">
                   <div className="flex flex-col justify-between h-[250px] text-[10px] font-mono text-slate-400 dark:text-slate-500 select-none text-right py-1 font-num-secondary">
                     <span>100%</span>
@@ -523,74 +509,67 @@ export function UnifiedTransactionHub({
                     100% dos Gastos do Período
                   </span>
                   <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 font-secondary">
-                    {categoriasAgrupadas.length} categorias empilhadas
+                    {categoriasAgrupadas.length} {categoriasAgrupadas.length === 1 ? 'categoria empilhada' : 'categorias empilhadas'}
                   </span>
                 </div>
               </div>
 
-              {/* Cartões Detalhados por Categoria */}
+              {/* Lista Limpa e Minimalista de Categorias (Sem Box-ception, Sem Emojis, com divisor ultrafino) */}
               <div className="md:col-span-7 lg:col-span-8">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[340px] overflow-y-auto pr-1">
+                <ul className="max-h-[380px] overflow-y-auto pr-2 divide-y divide-slate-100 dark:divide-white/[0.04]">
                   {categoriasAgrupadas.map((cat) => {
                     const isHovered = categoriaHover === cat.nome;
 
                     return (
-                      <div
+                      <li
                         key={cat.nome}
                         onMouseEnter={() => setCategoriaHover(cat.nome)}
                         onMouseLeave={() => setCategoriaHover(null)}
-                        className={`p-3.5 sm:p-4 rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col justify-between ${
-                          isHovered
-                            ? 'border-amber-400 dark:border-amber-400 bg-white dark:bg-white/[0.08] shadow-md scale-[1.02]'
-                            : 'bg-slate-50/90 dark:bg-white/[0.03] border-slate-200/80 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/20'
+                        className={`py-3.5 sm:py-4 px-3 -mx-3 rounded-xl transition-all duration-150 flex items-center justify-between gap-4 cursor-pointer group ${
+                          isHovered 
+                            ? 'bg-slate-100/70 dark:bg-white/[0.04]' 
+                            : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-2.5">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div
-                              className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 shadow-xs"
-                              style={{ 
-                                backgroundColor: `${cat.cor}20`,
-                                border: `1px solid ${cat.cor}40`
-                              }}
-                            >
-                              <span>{ICONES_CATEGORIAS[cat.nome] || '🏷️'}</span>
-                            </div>
-                            <div className="min-w-0">
-                              <span className="block text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight truncate">
-                                {cat.nome}
-                              </span>
-                              <span className="block text-base font-black text-slate-900 dark:text-white mt-1 font-num-secondary">
-                                R$ {formatarBRL(cat.valor)}
-                              </span>
+                        {/* Indicador de cor e Nome */}
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full flex-shrink-0 transition-transform duration-200 group-hover:scale-125"
+                            style={{ 
+                              backgroundColor: cat.cor,
+                              boxShadow: isHovered ? `0 0 10px ${cat.cor}` : undefined
+                            }}
+                          />
+                          <div className="min-w-0">
+                            <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 block truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                              {cat.nome}
+                            </span>
+                            {/* Barra proporcional sutil e limpa */}
+                            <div className="w-24 sm:w-36 h-1 rounded-full bg-slate-200/60 dark:bg-white/[0.06] overflow-hidden mt-1.5">
+                              <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{
+                                  width: `${cat.porcentagem}%`,
+                                  backgroundColor: cat.cor
+                                }}
+                              />
                             </div>
                           </div>
+                        </div>
 
-                          <span
-                            className="px-2.5 py-1 rounded-full text-xs font-bold border font-num-secondary flex-shrink-0 self-start"
-                            style={{
-                              backgroundColor: `${cat.cor}18`,
-                              color: cat.cor,
-                              borderColor: `${cat.cor}35`
-                            }}
-                          >
+                        {/* Valor e Percentual */}
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <span className="font-num-primary text-sm sm:text-base font-black text-slate-900 dark:text-white tabular-nums">
+                            R$ {formatarBRL(cat.valor)}
+                          </span>
+                          <span className="text-xs font-bold font-num-secondary text-slate-400 dark:text-slate-500 min-w-[44px] text-right group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
                             {cat.porcentagem.toFixed(1)}%
                           </span>
                         </div>
-
-                        <div className="w-full h-1.5 rounded-full bg-slate-200/70 dark:bg-white/[0.08] overflow-hidden mt-3">
-                          <div
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{
-                              width: `${cat.porcentagem}%`,
-                              backgroundColor: cat.cor
-                            }}
-                          />
-                        </div>
-                      </div>
+                      </li>
                     );
                   })}
-                </div>
+                </ul>
               </div>
             </div>
           )}
